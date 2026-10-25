@@ -62,7 +62,7 @@ export class HUD {
       `Vento apparente  ${s.aws.toFixed(0)} nodi · ${Math.abs(s.awa).toFixed(0)}°`,
       `Prua ${String(s.heading.toFixed(0)).padStart(3, '0')}°   VMG ${Math.abs(v).toFixed(1)} nodi ${v >= 0 ? 'verso il vento' : 'sottovento'}`,
       `Scarroccio ${Math.abs(leeway(s)).toFixed(0)}°   Timone ${s.rudder.toFixed(0)}°`,
-      `Vele: ${sim.autoTrim ? 'AUTOMATICHE' : 'MANUALI'}${key('T')}   ·   ${SAIL_PLANS[clamp(s.reef, 0, 3)]}${key(s.reef === 0 ? 'Z' : s.reef === 3 ? 'X' : 'Z/X')}`,
+      `Vele: ${s.bando ? 'IN BANDO' + key('SPAZIO') : (sim.autoTrim ? 'AUTOMATICHE' : 'MANUALI') + key('T')}   ·   ${SAIL_PLANS[clamp(s.reef, 0, 3)]}${key(s.reef === 0 ? 'Z' : s.reef === 3 ? 'X' : 'Z/X')}`,
       `Prossima: ${MARK_NAMES[sim.nextMark].toLowerCase()}  ${len(sub(m, s.pos)).toFixed(0)} m a ${String(bearing(sub(m, s.pos)).toFixed(0)).padStart(3, '0')}°`,
       lap,
     ].map((l) => `<div>${l}</div>`).join('');
@@ -86,7 +86,7 @@ export class HUD {
     $('tell').style.display = aids ? 'block' : 'none';
     if (aids && text) {
       // sui telefoni i tasti Z e X sono i pulsanti RIDUCI e AUMENTA
-      const tip = (t) => this.touch ? t.replace(' (Z)', ' (RIDUCI)').replace(' (X)', ' (AUMENTA)') : t;
+      const tip = (t) => this.touch ? t.replace(' (Z)', ' (RIDUCI)').replace(' (X)', ' (AUMENTA)').replace(' (SPAZIO)', '') : t;
       HUD.put('tipList', Coach.tips(s, this.lake).map(([t, tone]) => `<li style="color:${COLORS[tone]}">${tip(t)}</li>`).join(''), 'innerHTML');
     }
     if (aids) {
@@ -125,6 +125,7 @@ export class HUD {
       Object.assign($('tJibIdeal').style, { left: `${(1 - ideal.jib) * 100}%`, display: show });
     }
     HUD.put('tTrim', sim.autoTrim ? 'VELE AUTO' : 'VELE MAN.').classList.toggle('on', !sim.autoTrim);
+    HUD.put('tBando', s.bando ? 'RIPRENDI LE SCOTTE' : 'VELE IN BANDO').classList.toggle('on', s.bando);
     HUD.put('tPause', sim.paused ? 'RIPARTI' : 'PAUSA').classList.toggle('on', sim.paused);
     HUD.put('tReplay', sim.replay !== null ? 'DIRETTA' : 'MOVIOLA').classList.toggle('on', sim.replay !== null);
     const lap = sim.lapStart !== null ? `  ·  giro ${((sim.time - sim.lapStart) / 60) | 0}:${String(((sim.time - sim.lapStart) | 0) % 60).padStart(2, '0')}` : '';
@@ -277,6 +278,8 @@ export class HUD {
       ['TIMONE', STEERING[st.steering]],
       ['BARCA', BOATS[st.boat].name],
       ['AIUTI ISTRUTTORE', st.aids ? 'SÌ' : 'NO'],
+      ['TRIANGOLO DEI VENTI', st.triangle ? 'SÌ (frecce sull\'acqua)' : 'NO'],
+      ['ARIA SPORCA', st.dirtyAir ? 'SÌ (scia sottovento)' : 'NO'],
     ];
   }
   showMenu(st, onChange) {

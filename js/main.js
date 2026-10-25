@@ -80,6 +80,8 @@ async function main() {
     if (row === 3) st.steering = (st.steering + (d > 0 ? 1 : 2)) % 3;
     if (row === 4) { st.boat = (st.boat + 1) % BOATS.length; world.boat.setStyle(BOATS[st.boat].sails); }
     if (row === 5) st.aids = !st.aids;
+    if (row === 6) st.triangle = !st.triangle;
+    if (row === 7) st.dirtyAir = !st.dirtyAir;
     show('menu');
   }
   // a tutto schermo e in orizzontale dove il browser lo permette (Android, iPad); l'iPhone lo fa dalla schermata Home
@@ -105,8 +107,12 @@ async function main() {
     switch (code) {
       case 'Escape': sim.paused = false; sim.replay = null; show('menu'); break;
       case 'KeyH': sim.paused = true; helpReturn = ''; show('help'); break;
+      case 'Space': sim.toggleBando(); break;          // vele in bando: scotte libere, di nuovo per riprenderle
+      case 'KeyF': st.triangle = !st.triangle; sim.say(st.triangle ? 'TRIANGOLO DEI VENTI: REALE, APPARENTE E VELOCITÀ DELLA BARCA' : 'TRIANGOLO DEI VENTI NASCOSTO', 'info'); break;
+      case 'KeyO': st.dirtyAir = !st.dirtyAir; sim.say(st.dirtyAir ? "ARIA SPORCA: IL VENTO DISTURBATO CHE LE VELE LASCIANO SOTTOVENTO" : 'ARIA SPORCA NASCOSTA', 'info'); break;
       case 'KeyT':
         sim.autoTrim = !sim.autoTrim;
+        sim.boat.bando = false;
         sim.say(sim.autoTrim ? "VELE AUTOMATICHE: L'ALLIEVO PENSA SOLO AL TIMONE" : TOUCH ? 'VELE MANUALI: CAZZA E LASCA IN BASSO A DESTRA' : 'VELE MANUALI: Q/A RANDA, W/S FIOCCO', 'info');
         break;
       case 'KeyC': world.mode = (world.mode + 1) % 4; world.orbitYaw = 0; world.orbitPitch = 0; world.zoom = 1; break;
@@ -136,8 +142,9 @@ async function main() {
       return;
     }
     if (overlay === 'menu') {
-      if (e.code === 'ArrowUp') { hud.menuRow = (hud.menuRow + 5) % 6; show('menu'); }
-      if (e.code === 'ArrowDown') { hud.menuRow = (hud.menuRow + 1) % 6; show('menu'); }
+      const rows = hud.menuRows(sim.settings).length;
+      if (e.code === 'ArrowUp') { hud.menuRow = (hud.menuRow + rows - 1) % rows; show('menu'); }
+      if (e.code === 'ArrowDown') { hud.menuRow = (hud.menuRow + 1) % rows; show('menu'); }
       if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') changeSetting(hud.menuRow, e.code === 'ArrowRight' ? 1 : -1);
       if (e.code === 'Enter' || e.code === 'Space') startSailing();
       if (e.code === 'KeyH') { helpReturn = 'menu'; show('help'); }
@@ -215,7 +222,7 @@ async function main() {
 
   // scotte: cazza e lasca finché si tiene premuto
   const held = { main: 0, jib: 0 };
-  for (const b of document.querySelectorAll('#sheets button')) {
+  for (const b of document.querySelectorAll('#sheets [data-hold]')) {
     const sail = b.dataset.hold, d = +b.dataset.d;
     b.addEventListener('pointerdown', (e) => { e.preventDefault(); capture(b, e); held[sail] = d; b.classList.add('held'); });
     const off = () => { if (held[sail] === d) held[sail] = 0; b.classList.remove('held'); };
@@ -224,7 +231,7 @@ async function main() {
     b.addEventListener('lostpointercapture', off);
   }
   // la barra dei pulsanti fa le veci dei tasti; toccando gli strumenti si vedono tutti i dati
-  for (const b of document.querySelectorAll('#tbar button')) b.addEventListener('click', () => command(b.dataset.k));
+  for (const b of document.querySelectorAll('#tbar button, #tBando')) b.addEventListener('click', () => command(b.dataset.k));
   $('instruments').addEventListener('click', () => { if (TOUCH) $('instruments').classList.toggle('open'); });
   document.addEventListener('visibilitychange', () => {
     if (!audio.ctx) return;

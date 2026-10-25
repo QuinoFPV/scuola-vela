@@ -118,7 +118,7 @@ export function newBoat() {
   return {
     pos: { x: 0, y: 0 }, heading: 90, u: 2, v: 0, r: 0, heel: 0, heelRate: 0, rudder: 0,
     mainSheet: 0.4, jibSheet: 0.4, mainAngle: 30, jibAngle: 25, mainSide: 1, jibSide: 1,
-    mainAlpha: 0, jibAlpha: 0, mainLuff: 0, jibLuff: 0, crew: 0, reef: 0, reefTimer: 0, jibTimer: 0,
+    mainAlpha: 0, jibAlpha: 0, mainLuff: 0, jibLuff: 0, crew: 0, reef: 0, reefTimer: 0, jibTimer: 0, bando: false,
     twd: 0, tws: 10, awa: 0, aws: 10, drive: 0, time: 0,
   };
 }

@@ -18,6 +18,19 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
   - La tormentina arancione sostituisce il fiocco; il cambio dura 10 secondi, durante i quali sbatte il fiocco.
   - Con vento forte l'istruttore suggerisce la riduzione giusta.
 - **Vento fino a 30 nodi** (tasti 1–6): 6, 10, 15, 20, 25, 30 nodi.
+- **Vele in bando** (SPAZIO, sul telefono il pulsante in basso a destra):
+  - le scotte si liberano e randa e fiocco vanno fuori del tutto in un paio di secondi; la barca rallenta (in poppa poco);
+  - di nuovo SPAZIO per riprenderle: con le vele automatiche si regolano da sole, con quelle manuali si cazza a mano;
+  - con le vele manuali anche cazzare una scotta fa uscire dal bando.
+- **Triangolo dei venti** (tasto F o menu): frecce sull'acqua intorno alla barca, con gli stessi colori della rosa del vento:
+  - azzurra il vento reale, gialla il vento apparente, verde la velocità della barca;
+  - la linea verde chiara tra le code dei due venti è il vento creato dal moto della barca;
+  - cerchi a 5, 10 e 20 nodi (1 nodo = 1,2 m);
+  - si legge meglio dall'alto (tasto C fino a "dall'alto").
+- **Aria sporca** (tasto O o menu):
+  - la scia viola parte dalle vele lungo il vento apparente, per circa 90 m, e si allarga;
+  - le particelle scorrono col vento;
+  - quando le vele sbattono la scia quasi sparisce.
 
 ## Telefono e tablet
 Si riconoscono da soli (schermo touch) e si usano in orizzontale; in verticale compare l'invito a girare il dispositivo.

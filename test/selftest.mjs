@@ -163,6 +163,24 @@ const simM = new Simulation(lake), m0 = lake.base.moorings[0];
 simM.boat.pos = add(lake.mooredCenter(m0, simM.wind.direction), { x: 0, y: 1 }); simM.boat.u = 2.5;
 simM.update(1 / 30, {});
 check(simM.boat.u < 1 && simM.message.includes('ORMEGGIO'), "urtando una barca all'ormeggio ci si ferma");
+// vele in bando al traverso: le scotte corrono fuori e la barca rallenta; riprese, riparte
+const simB = new Simulation(lake);
+simB.boat.pos = { ...lake.center }; simB.autoTrim = true;
+const steer = (sm) => ({ tillerTarget: clamp(norm180(twaOf(sm.boat) - 90) * 1.2 - sm.boat.r * 0.8, -25, 25) });
+for (let i = 0; i < 40 * 60; i++) simB.update(1 / 60, steer(simB));
+const bandoFrom = speedKn(simB.boat);
+simB.toggleBando();
+for (let i = 0; i < 25 * 60; i++) simB.update(1 / 60, steer(simB));
+const bandoSpd = speedKn(simB.boat);
+check(simB.boat.mainSheet === 1 && simB.boat.jibSheet === 1 && bandoSpd < bandoFrom * 0.5,
+  `vele in bando: scotte tutte fuori, la barca rallenta (${f1(bandoFrom)} → ${f1(bandoSpd)} kn)`);
+check(Coach.tips(simB.boat, lake).some(([t]) => t.includes('bando')), "l'istruttore spiega il bando");
+simB.toggleBando();
+for (let i = 0; i < 30 * 60; i++) simB.update(1 / 60, steer(simB));
+check(!simB.boat.bando && speedKn(simB.boat) > bandoFrom * 0.85, `riprese le scotte riparte (${f1(speedKn(simB.boat))} kn)`);
+simB.toggleBando(); simB.autoTrim = false;
+simB.update(0.1, { main: 1 });
+check(!simB.boat.bando, 'cazzando la randa si esce dal bando');
 
 console.log(failures === 0 ? 'TUTTO OK' : `${failures} ERRORI`);
 process.exit(failures === 0 ? 0 : 1);

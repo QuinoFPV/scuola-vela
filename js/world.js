@@ -3,6 +3,7 @@
 import * as THREE from './vendor/three.module.min.js';
 import { BoatModel, foamMaterial, rod } from './boat.js';
 import { buildBase } from './base.js';
+import { WindTriangle, DirtyAir } from './overlays.js';
 import { skyTexture, skyDir } from './textures.js';
 import { rad, clamp, dirVec, norm180, norm360, len, sub, bearing, twaOf } from './physics.js';
 import { Waves } from './sim.js';
@@ -210,6 +211,9 @@ export class World {
     this.ribWake = new Wake();
     this.scene.add(this.rib, this.ribWake.mesh);
     this.rib.userData = { pos: { x: 0, y: 0 }, heading: 0, ready: false };
+    this.triangle = new WindTriangle();
+    this.dirtyAir = new DirtyAir();
+    this.scene.add(this.triangle.root, this.dirtyAir.root);
 
     this.cubeTarget = new THREE.WebGLCubeRenderTarget(light ? 256 : 512, { type: THREE.HalfFloatType });
     this.cubeCam = new THREE.CubeCamera(1, 30000, this.cubeTarget);
@@ -239,7 +243,8 @@ export class World {
   captureEnvironment() {
     const c = this.lake.center;
     this.cubeCam.position.set(c.x, 3, -c.y);
-    const hide = [this.water, this.boat.root, this.wake.mesh, this.rib, this.ribWake.mesh, this.boat.sprayPoints, ...this.buoys];
+    const hide = [this.water, this.boat.root, this.wake.mesh, this.rib, this.ribWake.mesh, this.boat.sprayPoints, ...this.buoys,
+                  this.triangle.root, this.dirtyAir.root];
     const vis = hide.map((o) => o.visible);
     hide.forEach((o) => { o.visible = false; });
     this.cubeCam.update(this.renderer, this.scene);
@@ -484,6 +489,9 @@ export class World {
       const rsd = dirVec(r.heading + 90);
       this.ribWake.update({ x: r.pos.x - rf.x * 2.6, y: -r.pos.y + rf.y * 2.6 }, { x: rsd.x, y: -rsd.y }, ribSpeed * 0.6, s.time, waves);
     }
+    // aiuti sull'acqua, se accesi nel menu
+    this.triangle.update(s, sim.settings.triangle, waves, this.camera);
+    this.dirtyAir.update(s, sim.settings.dirtyAir, waves);
     // base: barche all'ormeggio che si girano col vento, manica a vento
     const wb = sim.wind.at({ x: 0, y: 0 });
     this.base.update(wb.dir, wb.speed, waves, s.time);

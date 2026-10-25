@@ -39,7 +39,7 @@ export const MARK_NAMES = ['BOA DI BOLINA', 'BOA DI POPPA', 'BOA DI TRAVERSO'];
 export class Simulation {
   constructor(lake) {
     this.lake = lake;
-    this.settings = { windIndex: 1, windFrom: 0, gusts: true, steering: 0, aids: true, boat: 0 };
+    this.settings = { windIndex: 1, windFrom: 0, gusts: true, steering: 0, aids: true, boat: 0, triangle: false, dirtyAir: false };
     this.waves = new Waves();
     this.autoTrim = false;
     this.paused = false;
@@ -139,6 +139,14 @@ export class Simulation {
     return s;
   }
   get historySpan() { return this.history.length ? [this.history[0].time, this.history[this.history.length - 1].time] : [0, 0]; }
+
+  /** Vele in bando: si liberano le scotte e le vele vanno fuori del tutto; di nuovo per riprenderle. */
+  toggleBando() {
+    const b = this.boat;
+    b.bando = !b.bando;
+    if (b.bando) this.say('VELE IN BANDO: SCOTTE LIBERATE DEL TUTTO, LA BARCA RALLENTA', 'warn');
+    else this.say(this.autoTrim ? 'SI RIPRENDONO LE SCOTTE: LE VELE SI REGOLANO DA SOLE' : 'SCOTTE IN MANO: ORA CAZZA RANDA E FIOCCO', 'info');
+  }
 
   startReplay() {
     if (this.history.length < 30) return;
@@ -245,7 +253,12 @@ export class Simulation {
     else if (c.centerTiller) b.rudder += clamp(-b.rudder, -90 * dt, 90 * dt);
     else if (c.tiller) b.rudder += c.tiller * (c.tillerFine ? 10 : 40) * dt;
     b.rudder = clamp(b.rudder, -Spec.rudderMax, Spec.rudderMax);
-    if (this.autoTrim) {
+    if (b.bando) {
+      // le scotte corrono fuori in un paio di secondi; chi ricomincia a cazzare le riprende in mano
+      b.mainSheet = Math.min(1, b.mainSheet + 0.8 * dt);
+      b.jibSheet = Math.min(1, b.jibSheet + 0.9 * dt);
+      if ((c.main || 0) > 0 || (c.jib || 0) > 0) { this.autoTrim = false; this.toggleBando(); }
+    } else if (this.autoTrim) {
       const id = idealSheets(b);
       b.mainSheet += clamp(id.main - b.mainSheet, -0.4 * dt, 0.4 * dt);
       b.jibSheet += clamp(id.jib - b.jibSheet, -0.4 * dt, 0.4 * dt);
@@ -270,6 +283,7 @@ export const Coach = {
   },
   tack(twa) { return Math.abs(twa) > 177 ? '' : (twa > 0 ? 'MURE A DRITTA' : 'MURE A SINISTRA'); },
   telltales(s) {
+    if (s.bando) return ['Vele in bando: i filetti non lavorano', 'info'];
     if (s.jibTimer > 0) return ['Cambio del fiocco in corso', 'info'];
     if (Math.abs(s.awa) > 120) return ['In poppa i filetti non lavorano: guarda il fiocco', 'info'];
     if (s.jibLuff > 0.5) return ['Il fiocco sbatte: cazza la scotta o poggia', 'bad'];
@@ -283,12 +297,13 @@ export const Coach = {
     if (twa < 36) out.push(Math.abs(kn) < 0.6
       ? ["Sei fermo nell'angolo morto: metti la barra e lascia cadere la prua", 'bad']
       : ['Troppo all\'orza: le vele non portano, poggia di qualche grado', 'bad']);
-    if (s.reefTimer > 0) { /* durante i terzaroli la randa sbatte apposta */ }
+    if (s.bando) out.push(['Vele in bando: senza scotte la barca rallenta (in poppa poco). Per ripartire riprendi le scotte (SPAZIO)', 'info']);
+    else if (s.reefTimer > 0) { /* durante i terzaroli la randa sbatte apposta */ }
     else if (s.mainLuff > 0.35 && twa >= 36 && Math.abs(s.heel) > 20) out.push(['La randa fileggia per scaricare: con questo vento va bene così', 'info']);
     else if (s.mainLuff > 0.35 && twa >= 36) out.push(['La randa fileggia (sbatte): cazzala', 'bad']);
     else if (s.mainSheet - ideal.main > 0.09 && twa < 160) out.push(["Randa troppo lascata: cazzala finché smette di fileggiare", 'warn']);
     else if (ideal.main - s.mainSheet > 0.09 && twa > 45) out.push(["Randa troppo cazzata: lasca finché non fileggia, poi riprendi un po'", 'warn']);
-    if (s.jibTimer > 0) { /* durante il cambio del fiocco la vela sbatte apposta */ }
+    if (s.jibTimer > 0 || s.bando) { /* il fiocco sbatte apposta: cambio in corso o scotte libere */ }
     else if (s.jibLuff > 0.35 && twa >= 36) out.push(['Il fiocco sbatte: cazza la scotta del fiocco', 'bad']);
     else if (s.jibSheet - ideal.jib > 0.1 && twa < 150) out.push(['Fiocco troppo lascato: cazzalo', 'warn']);
     else if (ideal.jib - s.jibSheet > 0.1 && twa > 45) out.push(["Fiocco troppo cazzato: lascalo un po'", 'warn']);
@@ -299,7 +314,8 @@ export const Coach = {
       out.push([s.reef < 2 ? 'Vento forte: prendi una mano di terzaroli (Z)' : 'Ancora troppo vento: metti la tormentina al posto del fiocco (Z)', 'warn']);
     } else if (stormJib(s) && s.tws < 16 && !busy) out.push(['Il vento è calato: togli la tormentina e rimetti il fiocco (X)', 'info']);
     else if (s.reef > 0 && s.reef < 3 && s.tws < 9 && !busy) out.push(['Poco vento: sciogli i terzaroli per avere più tela (X)', 'info']);
-    if (Math.abs(s.heel) > 26) out.push(['Troppo sbandata: lasca la randa per scaricare', 'bad']);
+    if (s.bando) { /* niente consigli sulle scotte: sono libere apposta */ }
+    else if (Math.abs(s.heel) > 26) out.push(['Troppo sbandata: lasca la randa per scaricare', 'bad']);
     else if (Math.abs(s.rudder) > 9 && Math.abs(s.r) < 2 && Math.abs(s.heel) > 15) out.push(["Barca ardente (tira all'orza): lasca un po' di randa", 'warn']);
     if (twa > 168 && s.mainSide * (twaOf(s) > 0 ? 1 : -1) > 0) out.push(['Sei al LEE: rischio di strambata involontaria, orza un poco', 'bad']);
     if (Math.abs(s.rudder) > 22 && Math.abs(kn) > 1) out.push(['Tanto timone frena la barca: correzioni più dolci', 'info']);
