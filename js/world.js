@@ -102,8 +102,8 @@ void main() {
 }`;
 
 /** Specchio d'acqua: griglia fitta vicino alla barca, larga fino a 15 km. */
-function waterGeometry() {
-  const n = 300, s = (t) => 120 * t + 14880 * Math.pow(Math.abs(t), 7) * Math.sign(t);
+function waterGeometry(n = 300) {
+  const s = (t) => 120 * t + 14880 * Math.pow(Math.abs(t), 7) * Math.sign(t);
   const pos = [], idx = [];
   for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) pos.push(s(i / n * 2 - 1), 0, s(j / n * 2 - 1));
   for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
@@ -156,9 +156,11 @@ class Wake {
 const std = (color, rough = 0.5, metal = 0) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal });
 
 export class World {
-  constructor(renderer, lake) {
+  /** light: telefoni e tablet, con ombre, riflessi, acqua e alberi piu' leggeri. */
+  constructor(renderer, lake, { light = false } = {}) {
     this.renderer = renderer;
     this.lake = lake;
+    this.light = light;
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.Fog(0xb3c9db, 900, 22000);
     this.camera = new THREE.PerspectiveCamera(52, 1, 0.1, 30000);
@@ -169,7 +171,7 @@ export class World {
 
     this.sun = new THREE.DirectionalLight(0xfff7e6, 2.6);
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(2048, 2048);
+    this.sun.shadow.mapSize.set(light ? 1024 : 2048, light ? 1024 : 2048);
     Object.assign(this.sun.shadow.camera, { left: -11, right: 11, top: 11, bottom: -11, near: 1, far: 140 });
     this.sun.shadow.bias = -0.0004;
     this.scene.add(this.sun, this.sun.target);
@@ -186,7 +188,7 @@ export class World {
       },
       vertexShader: WATER_VERT, fragmentShader: WATER_FRAG,
     });
-    this.water = new THREE.Mesh(waterGeometry(), this.waterMat);
+    this.water = new THREE.Mesh(waterGeometry(light ? 200 : 300), this.waterMat);
     this.water.frustumCulled = false;
     this.scene.add(this.water);
 
@@ -209,7 +211,7 @@ export class World {
     this.scene.add(this.rib, this.ribWake.mesh);
     this.rib.userData = { pos: { x: 0, y: 0 }, heading: 0, ready: false };
 
-    this.cubeTarget = new THREE.WebGLCubeRenderTarget(512, { type: THREE.HalfFloatType });
+    this.cubeTarget = new THREE.WebGLCubeRenderTarget(light ? 256 : 512, { type: THREE.HalfFloatType });
     this.cubeCam = new THREE.CubeCamera(1, 30000, this.cubeTarget);
     this.scene.add(this.cubeCam);
     this.morning = null;
@@ -277,7 +279,7 @@ export class World {
       g.computeVertexNormals();
       const map = loader.load('data/' + image);
       map.colorSpace = THREE.SRGBColorSpace;
-      map.anisotropy = 8;
+      map.anisotropy = this.light ? 4 : 8;
       const m = new THREE.MeshStandardMaterial({ map, roughness: 0.95, metalness: 0 });
       // la foto e' un po' scura; sui pendii ripidi, stirata, la si sostituisce con bosco e roccia
       m.onBeforeCompile = (sh) => {
@@ -333,7 +335,7 @@ export class World {
     })();
     const greens = [[0.20, 0.30, 0.12], [0.25, 0.34, 0.14], [0.17, 0.27, 0.11], [0.29, 0.36, 0.16], [0.22, 0.29, 0.15]];
     const all = [...this.lake.trees()].filter((t) => !this.lake.inBaseStrip(t.x, t.y));
-    const near = (t) => t.x * t.x + t.y * t.y < 1500 * 1500;
+    const nearR = this.light ? 800 : 1500, near = (t) => t.x * t.x + t.y * t.y < nearR * nearR;
     const make = (geo, list) => {
       const m = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ roughness: 0.95, color: 0xffffff }), list.length);
       const mat = new THREE.Matrix4(), q = new THREE.Quaternion(), col = new THREE.Color();

@@ -2,7 +2,7 @@
 
 Simulatore di vela nel browser, per la scuola **Sportaction** sul Lago d'Iseo (base di Castro).
 
-**Provalo:** https://quinofpv.github.io/scuola-vela/ (computer con tastiera e mouse; Chrome, Safari, Edge o Firefox)
+**Provalo:** https://quinofpv.github.io/scuola-vela/ (computer, telefono o tablet; Chrome, Safari, Edge o Firefox)
 
 - Fisica a forze vere: vento apparente, vele, chiglia, timone, sbandamento, virate, strambate, prua al vento.
 - Lago d'Iseo reale: montagne, foto satellitare, boschi, paesi; base Sportaction con statale, ombrelloni, pontile e barche all'ormeggio.
@@ -13,6 +13,10 @@ Simulatore di vela nel browser, per la scuola **Sportaction** sul Lago d'Iseo (b
 
 Comandi principali: ← → barra · Q/A randa · W/S fiocco · T vele automatiche · Z/X terzaroli e tormentina ·
 C vista · R moviola · P pausa · H tutti i comandi.
+
+Su telefono e tablet, in orizzontale: barra del timone in basso a sinistra, CAZZA/LASCA in basso a destra,
+pulsanti in alto; un dito sulla scena gira la vista, due dita la avvicinano. Con "Aggiungi a schermata Home"
+si apre a tutto schermo come un'app.
 
 ## In locale
 ```

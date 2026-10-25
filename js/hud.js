@@ -1,5 +1,5 @@
 // Strumenti e indicazioni sopra la scena: pannelli HTML e piccoli disegni su canvas.
-import { rad, clamp, len, sub, bearing, idealSheets, speedKn, twaOf, leeway, vmg, SAIL_PLANS } from './physics.js';
+import { rad, clamp, len, sub, bearing, idealSheets, speedKn, twaOf, leeway, vmg, SAIL_PLANS, Spec } from './physics.js';
 import { Coach, WINDS, DIRECTIONS, STEERING, MARK_NAMES } from './sim.js';
 import { CAMERAS } from './world.js';
 import { BOATS } from './textures.js';
@@ -7,8 +7,8 @@ import { BOATS } from './textures.js';
 const COLORS = { good: '#73ff80', warn: '#ffd94d', bad: '#ff6b61', info: '#ffffff' };
 const $ = (id) => document.getElementById(id);
 
-function hiDPI(canvas, w, h) {
-  const k = window.devicePixelRatio || 1;
+function hiDPI(canvas, w, h, maxK = 4) {
+  const k = Math.min(window.devicePixelRatio || 1, maxK);
   canvas.width = w * k; canvas.height = h * k;
   canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
   const g = canvas.getContext('2d');
@@ -17,22 +17,37 @@ function hiDPI(canvas, w, h) {
 }
 
 export class HUD {
-  constructor(lake) {
+  constructor(lake, touch = false) {
     this.lake = lake;
-    this.dial = hiDPI($('dial'), 270, 290);
-    this.map = hiDPI($('map'), 200, 220);
-    this.tell = hiDPI($('tellCanvas'), 226, 96);
-    this.helm = hiDPI($('helmCanvas'), 230, 104);
+    this.touch = touch;                      // telefono o tablet: comandi a dito, niente nomi dei tasti
+    const k = touch ? 2 : 4;                 // sui telefoni (3x) basta il doppio
+    this.dial = hiDPI($('dial'), 270, 290, k);
+    this.map = hiDPI($('map'), 200, 220, k);
+    this.tell = hiDPI($('tellCanvas'), 226, 96, k);
+    this.helm = hiDPI($('helmCanvas'), 230, 104, k);
     this.menuRow = 0;
+    this.textTime = -1;
+    this.phone = matchMedia('(max-height: 520px)');       // telefono in orizzontale: strumenti ridotti
+  }
+
+  /** Scrive solo se cambia: sui telefoni ogni ritocco della pagina costa. */
+  static put(id, text, prop = 'textContent') {
+    const el = $(id);
+    if (el[prop] !== text) el[prop] = text;
+    return el;
   }
 
   refresh(sim, world, time) {
     const s = sim.shown, aids = sim.settings.aids, twa = twaOf(s);
+    if (this.touch) this.refreshTouch(sim, s, world);
+    // i testi bastano 10 volte al secondo
+    const text = !this.touch || time - this.textTime > 0.1 || time < this.textTime;
+    if (text) this.textTime = time;
+    const key = (k) => this.touch ? '' : ` (${k})`;
     // strumenti
     const tack = Coach.tack(twa);
-    $('spd').textContent = `${speedKn(s).toFixed(1)} nodi`;
-    const pos = $('posail');
-    pos.textContent = Coach.pointOfSail(twa) + (tack ? '  ·  ' + tack : '');
+    HUD.put('spd', `${speedKn(s).toFixed(1)} nodi`);
+    const pos = HUD.put('posail', Coach.pointOfSail(twa) + (tack ? '  ·  ' + tack : ''));
     pos.style.color = Math.abs(twa) < 38 ? COLORS.bad : '#99d9ff';
     const v = vmg(s);
     const m = sim.marks[sim.nextMark];
@@ -42,12 +57,12 @@ export class HUD {
       lap = `Giro in corso  ${(t / 60) | 0}:${String(t % 60).padStart(2, '0')}`;
       if (sim.lastLap !== null) lap += `   ultimo ${(sim.lastLap / 60) | 0}:${String((sim.lastLap | 0) % 60).padStart(2, '0')}`;
     }
-    $('lines').innerHTML = [
+    if (text) $('lines').innerHTML = [
       `Vento reale  ${s.tws.toFixed(0)} nodi · ${Math.abs(twa).toFixed(0)}° dalla prua`,
       `Vento apparente  ${s.aws.toFixed(0)} nodi · ${Math.abs(s.awa).toFixed(0)}°`,
       `Prua ${String(s.heading.toFixed(0)).padStart(3, '0')}°   VMG ${Math.abs(v).toFixed(1)} nodi ${v >= 0 ? 'verso il vento' : 'sottovento'}`,
       `Scarroccio ${Math.abs(leeway(s)).toFixed(0)}°   Timone ${s.rudder.toFixed(0)}°`,
-      `Vele: ${sim.autoTrim ? 'AUTOMATICHE' : 'MANUALI'} (T)   ·   ${SAIL_PLANS[clamp(s.reef, 0, 3)]} (${s.reef === 0 ? 'Z' : s.reef === 3 ? 'X' : 'Z/X'})`,
+      `Vele: ${sim.autoTrim ? 'AUTOMATICHE' : 'MANUALI'}${key('T')}   ·   ${SAIL_PLANS[clamp(s.reef, 0, 3)]}${key(s.reef === 0 ? 'Z' : s.reef === 3 ? 'X' : 'Z/X')}`,
       `Prossima: ${MARK_NAMES[sim.nextMark].toLowerCase()}  ${len(sub(m, s.pos)).toFixed(0)} m a ${String(bearing(sub(m, s.pos)).toFixed(0)).padStart(3, '0')}°`,
       lap,
     ].map((l) => `<div>${l}</div>`).join('');
@@ -65,12 +80,16 @@ export class HUD {
       lab.textContent = luff > 0.35 ? 'SBATTE' : `${Math.abs(ang).toFixed(0)}°`;
       lab.style.color = luff > 0.35 ? COLORS.bad : '#fff';
     }
-    this.drawHelm(s, sim.settings.steering === 2);
+    if (!this.touch) this.drawHelm(s, sim.settings.steering === 2);
     // consigli e filetti
     $('tips').style.display = aids ? 'block' : 'none';
     $('tell').style.display = aids ? 'block' : 'none';
+    if (aids && text) {
+      // sui telefoni i tasti Z e X sono i pulsanti RIDUCI e AUMENTA
+      const tip = (t) => this.touch ? t.replace(' (Z)', ' (RIDUCI)').replace(' (X)', ' (AUMENTA)') : t;
+      HUD.put('tipList', Coach.tips(s, this.lake).map(([t, tone]) => `<li style="color:${COLORS[tone]}">${tip(t)}</li>`).join(''), 'innerHTML');
+    }
     if (aids) {
-      $('tipList').innerHTML = Coach.tips(s, this.lake).map(([t, tone]) => `<li style="color:${COLORS[tone]}">${t}</li>`).join('');
       const [t, tone] = Coach.telltales(s);
       const verdict = $('tellVerdict');
       verdict.textContent = t; verdict.style.color = COLORS[tone];
@@ -83,10 +102,36 @@ export class HUD {
     msg.style.color = COLORS[sim.tone];
     msg.style.opacity = clamp(4 - age, 0, 1);
     const st = $('status');
-    if (sim.replay !== null) st.textContent = `◀◀  MOVIOLA  ${(sim.historySpan[1] - sim.replay).toFixed(1)} s fa  ·  R per tornare in diretta, P pausa`;
-    else if (sim.paused) st.textContent = 'PAUSA  ·  trascina col tasto destro per girare intorno alla barca  ·  P per ripartire';
+    if (sim.replay !== null) st.textContent = `◀◀  MOVIOLA  ${(sim.historySpan[1] - sim.replay).toFixed(1)} s fa  ·  ${this.touch ? 'DIRETTA per tornare in mare' : 'R per tornare in diretta, P pausa'}`;
+    else if (sim.paused) st.textContent = this.touch ? 'PAUSA  ·  trascina col dito per girare intorno alla barca' : 'PAUSA  ·  trascina col tasto destro per girare intorno alla barca  ·  P per ripartire';
     else st.textContent = '';
-    $('footer').textContent = `Vista: ${CAMERAS[world.mode]} (C)   ·   H comandi   ·   ESC menu`;
+    if (!this.touch) $('footer').textContent = `Vista: ${CAMERAS[world.mode]} (C)   ·   H comandi   ·   ESC menu`;
+  }
+
+  /** Comandi a dito: posizione della barra, scotte, pulsanti che cambiano scritta, dati essenziali. */
+  refreshTouch(sim, s, world) {
+    const steering = sim.settings.steering;
+    // la barra vera si sposta al contrario della pala del timone
+    const f = clamp(s.rudder / Spec.rudderMax * (steering === 1 ? -1 : 1), -1, 1) * 0.5 + 0.5;
+    $('tillerKnob').style.left = `calc(26px + (100% - 52px) * ${f.toFixed(4)})`;
+    HUD.put('tillerLabel', ['BARRA: LA PRUA VA DOVE SPOSTI IL DITO', 'BARRA VERA: SPINGI E LA PRUA VA DALL\'ALTRA PARTE', 'RUOTA: COME UN VOLANTE'][steering]);
+    document.body.classList.toggle('auto-trim', sim.autoTrim);
+    if (!sim.autoTrim) {
+      const ideal = idealSheets(s), show = sim.settings.aids ? 'block' : 'none';
+      // la barra piena = scotta cazzata, come il pulsante in alto
+      $('tMainFill').style.width = `${(1 - s.mainSheet) * 100}%`;
+      $('tJibFill').style.width = `${(1 - s.jibSheet) * 100}%`;
+      Object.assign($('tMainIdeal').style, { left: `${(1 - ideal.main) * 100}%`, display: show });
+      Object.assign($('tJibIdeal').style, { left: `${(1 - ideal.jib) * 100}%`, display: show });
+    }
+    HUD.put('tTrim', sim.autoTrim ? 'VELE AUTO' : 'VELE MAN.').classList.toggle('on', !sim.autoTrim);
+    HUD.put('tPause', sim.paused ? 'RIPARTI' : 'PAUSA').classList.toggle('on', sim.paused);
+    HUD.put('tReplay', sim.replay !== null ? 'DIRETTA' : 'MOVIOLA').classList.toggle('on', sim.replay !== null);
+    const lap = sim.lapStart !== null ? `  ·  giro ${((sim.time - sim.lapStart) / 60) | 0}:${String(((sim.time - sim.lapStart) | 0) % 60).padStart(2, '0')}` : '';
+    const m = sim.marks[sim.nextMark];
+    const heel = `${Math.abs(s.heel).toFixed(0)}°`;
+    HUD.put('mini', this.phone.matches ? `Vento ${s.tws.toFixed(0)} nodi · sband. ${heel}\nBoa a ${len(sub(m, s.pos)).toFixed(0)} m${lap}` : `Sbandamento ${heel}`);
+    $('mini').style.color = Math.abs(s.heel) > 25 ? COLORS.bad : '';
   }
 
   /** Rosa del vento: la barca vista dall'alto, vento reale e apparente, angolo morto. */
@@ -238,8 +283,9 @@ export class HUD {
     const rows = this.menuRows(st);
     $('menuRows').innerHTML = rows.map(([a, b], i) =>
       `<div class="row${i === this.menuRow ? ' sel' : ''}" data-i="${i}"><span>${a}</span><span><b data-d="-1">◀</b> ${b} <b data-d="1">▶</b></span></div>`).join('');
-    for (const el of $('menuRows').querySelectorAll('b')) {
-      el.onclick = (e) => { this.menuRow = +e.target.parentNode.parentNode.dataset.i; onChange(this.menuRow, +e.target.dataset.d); };
+    // le frecce cambiano avanti o indietro; toccando il resto della riga si va avanti
+    for (const row of $('menuRows').querySelectorAll('.row')) {
+      row.onclick = (e) => { this.menuRow = +row.dataset.i; onChange(this.menuRow, +(e.target.dataset.d || 1)); };
     }
   }
 }

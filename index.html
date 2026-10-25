@@ -2,7 +2,15 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a1420">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Scuola Vela">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
 <title>Scuola di Vela · Sportaction</title>
 <meta name="description" content="Simulatore di vela della scuola Sportaction sul Lago d'Iseo: timone, scotte, vento vero, consigli dell'istruttore.">
 <link rel="stylesheet" href="css/style.css">
@@ -15,6 +23,7 @@
     <div id="spd" class="big">0.0 nodi</div>
     <div id="posail"></div>
     <div id="lines"></div>
+    <div id="mini"></div>
   </div>
   <canvas id="dial"></canvas>
   <canvas id="map"></canvas>
@@ -32,20 +41,49 @@
   <div id="footer"></div>
 </div>
 
+<!-- comandi per telefono e tablet -->
+<div id="touchUI">
+  <div id="tbar">
+    <button data-k="Escape" title="Menu">☰</button>
+    <button data-k="KeyC" id="tView">VISTA</button>
+    <button data-k="KeyT" id="tTrim">VELE AUTO</button>
+    <button data-k="KeyZ">RIDUCI</button>
+    <button data-k="KeyX">AUMENTA</button>
+    <button data-k="KeyR" id="tReplay">MOVIOLA</button>
+    <button data-k="KeyP" id="tPause">PAUSA</button>
+  </div>
+  <div id="tiller"><div class="rail"></div><div class="mid"></div><div id="tillerKnob"></div><span id="tillerLabel">BARRA</span></div>
+  <div id="sheets">
+    <div class="sheet"><button data-hold="main" data-d="1">CAZZA</button><label>RANDA</label><div class="meter"><div id="tMainFill"></div><div id="tMainIdeal" class="ideal"></div></div><button data-hold="main" data-d="-1">LASCA</button></div>
+    <div class="sheet"><button data-hold="jib" data-d="1">CAZZA</button><label>FIOCCO</label><div class="meter"><div id="tJibFill"></div><div id="tJibIdeal" class="ideal"></div></div><button data-hold="jib" data-d="-1">LASCA</button></div>
+  </div>
+</div>
+
 <div id="menu" class="overlay">
   <div class="card">
     <h1>SCUOLA DI VELA</h1>
     <p class="sub">Lago d'Iseo, base Sportaction di Castro · barca scuola di 8 metri con randa e fiocco</p>
     <div id="menuRows"></div>
-    <button id="startBtn">INVIO PER USCIRE IN MARE</button>
-    <p class="hint">↑ ↓ scegli · ← → cambia · <a href="#" id="helpBtn">H per tutti i comandi</a></p>
+    <button id="startBtn"><span class="desk">INVIO PER USCIRE IN MARE</span><span class="tch">TOCCA QUI PER USCIRE IN MARE</span></button>
+    <p class="hint"><span class="desk">↑ ↓ scegli · ← → cambia · </span><a href="#" id="helpBtn"><span class="desk">H per tutti i comandi</span><span class="tch">Come si gioca col telefono</span></a></p>
   </div>
 </div>
 
 <div id="help" class="overlay">
   <div class="card help">
     <h2>COMANDI</h2>
-    <dl>
+    <dl class="tch">
+      <dt>BARRA</dt><dd>in basso a sinistra: trascina il dito e la barra resta dove la lasci; tocca il centro per raddrizzarla</dd>
+      <dt>CAZZA / LASCA</dt><dd>in basso a destra, tienili premuti: compaiono quando le vele sono manuali</dd>
+      <dt>VELE AUTO</dt><dd>vele regolate da sole (si parte così) o manuali</dd>
+      <dt>RIDUCI / AUMENTA</dt><dd>la tela: 1 mano, 2 mani, 2 mani + tormentina</dd>
+      <dt>Scena</dt><dd>trascina con un dito per girare intorno alla barca · due dita per avvicinarti</dd>
+      <dt>VISTA</dt><dd>gommone dietro, timoniere, laterale, dall'alto</dd>
+      <dt>MOVIOLA</dt><dd>gli ultimi 20 secondi al rallentatore</dd>
+      <dt>☰</dt><dd>menu: vento fino a 30 nodi, raffiche, Ora o Sover, timone, barca, aiuti</dd>
+      <dt>Consiglio</dt><dd>dal browser scegli "Aggiungi a schermata Home": si apre a tutto schermo, come un'app</dd>
+    </dl>
+    <dl class="desk">
       <dt>← →</dt><dd>barra del timone (Shift: piano) · ↑ barra al centro</dd>
       <dt>Q / A</dt><dd>cazza / lasca la randa</dd>
       <dt>W / S</dt><dd>cazza / lasca il fiocco</dd>
@@ -62,13 +100,15 @@
       <dt>B · V</dt><dd>timone: barra semplice, barra reale o ruota · barca nera o bianca</dd>
       <dt>N · M</dt><dd>ricomincia dalla base · audio</dd>
     </dl>
-    <button id="closeHelp">CHIUDI (H)</button>
+    <button id="closeHelp">CHIUDI<span class="desk"> (H)</span></button>
   </div>
 </div>
 
 <div id="loading" class="overlay" style="display:flex">
   <div class="card"><h1>SCUOLA DI VELA</h1><p id="loadText" class="sub">Carico il lago d'Iseo…</p><div class="progress"><div id="loadBar"></div></div></div>
 </div>
+
+<div id="rotate" class="overlay"><div class="card"><div class="phone">📱</div><h2>Gira il telefono in orizzontale</h2><p class="sub">Il simulatore si usa col dispositivo in orizzontale</p></div></div>
 
 <div id="credits">Dati: © OpenStreetMap contributors (ODbL) · Sentinel-2 cloudless 2016 di EOX IT Services, s2maps.eu (CC BY 4.0, dati Copernicus) · quote Terrarium (AWS Open Data) · three.js</div>
 

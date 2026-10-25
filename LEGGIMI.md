@@ -19,6 +19,24 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
   - Con vento forte l'istruttore suggerisce la riduzione giusta.
 - **Vento fino a 30 nodi** (tasti 1–6): 6, 10, 15, 20, 25, 30 nodi.
 
+## Telefono e tablet
+Si riconoscono da soli (schermo touch) e si usano in orizzontale; in verticale compare l'invito a girare il dispositivo.
+- **Barra del timone** in basso a sinistra: si trascina il dito e la barra resta dove la si lascia; il centro la raddrizza. Con "barra reale" si spinge al contrario, come sulla barca.
+- **CAZZA / LASCA** in basso a destra, per randa e fiocco, si tengono premuti. Compaiono solo con le vele manuali; la barretta arancione mostra quanto è cazzata la scotta e la tacca verde la regolazione giusta.
+- **Pulsanti in alto:**
+  - ☰ apre il menu (vento, raffiche, Ora o Sover, timone, barca, aiuti);
+  - VISTA, VELE AUTO/MAN., RIDUCI/AUMENTA, MOVIOLA, PAUSA.
+- **Scena:** un dito gira intorno alla barca, due dita avvicinano o allontanano.
+- **Telefono:** gli strumenti sono ridotti; toccandoli si vedono tutti i dati.
+- **Tablet:** lo schermo è come sul computer.
+- **Grafica più leggera:**
+  - ombre, riflessi, acqua e alberi vicini semplificati;
+  - se i fotogrammi scendono sotto 40 al secondo, la risoluzione cala da sola, e risale quando il dispositivo ce la fa.
+- **Schermo intero:**
+  - su Android e iPad si passa a tutto schermo quando si esce in mare;
+  - sull'iPhone serve "Aggiungi a schermata Home" (icona con le vele nere), poi si apre come un'app.
+- **Per provare la versione touch sul computer:** aggiungere `?touch=1` all'indirizzo (`?touch=0` la toglie).
+
 ## Provarlo sul proprio computer
 Serve un piccolo server web, perché i browser non caricano i dati da un file aperto con doppio clic:
 ```

@@ -1,0 +1,16 @@
+{
+  "name": "Scuola di Vela · Sportaction",
+  "short_name": "Scuola Vela",
+  "description": "Simulatore di vela della scuola Sportaction sul Lago d'Iseo",
+  "lang": "it",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0a1420",
+  "theme_color": "#0a1420",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
