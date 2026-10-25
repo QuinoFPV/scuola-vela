@@ -127,16 +127,28 @@ for (let i = 0; i < 90 * 30; i++) {
   if (simG.events.some((e) => e.type === 'ground')) grounded = true;
 }
 check(grounded, 'puntando la riva la barca va in secca e si ferma');
-// giro delle boe
+// giro delle boe: la barca passa intorno a ogni boa a 15 m, in senso antiorario (o orario per sbagliare)
+const around = (sm, mark, from, to, leave = true) => {
+  for (let i = 0; i <= 60; i++) {
+    const a = (from + (to - from) * i / 60) * Math.PI / 180;
+    sm.boat.pos = { x: mark.x + 15 * Math.cos(a), y: mark.y + 15 * Math.sin(a) };
+    sm.update(1 / 10, {});
+  }
+  if (leave) { sm.boat.pos = { ...lake.center }; sm.update(1 / 10, {}); }
+};
 const simC = new Simulation(lake);
 const order = [];
 for (let k = 0; k < 4; k++) {
   order.push(simC.nextMark);
-  simC.boat.pos = add(simC.marks[COURSE[k % 3]], { x: 10, y: 0 }); simC.boat.u = 2;
-  for (let i = 0; i < 30 * 20; i++) simC.update(1 / 30, {});
-  simC.boat.pos = { ...lake.center };
+  for (let i = 0; i < 20 * 10; i++) simC.update(1 / 10, {});         // il giro dura un po'
+  around(simC, simC.marks[COURSE[k % 3]], -60, 120);
 }
-check(order.join() === '0,2,1,0' && simC.lastLap !== null, `giro delle boe in ordine (${simC.lastLap | 0} s)`);
+check(order.join() === '0,2,1,0' && simC.lastLap !== null, `giro delle boe in senso antiorario, in ordine (${simC.lastLap | 0} s)`);
+const simW = new Simulation(lake);
+around(simW, simW.marks[0], 120, -60, false);
+check(simW.nextMark === 0 && simW.wrongWay, 'girata in senso orario la boa non vale');
+const turn = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+check(turn(simW.marks[0], simW.marks[2], simW.marks[1]) > 0, 'bolina, traverso e poppa formano un triangolo antiorario');
 // tre minuti con raffiche
 const simL = new Simulation(lake);
 simL.settings.windIndex = 2; simL.reset(); simL.boat.pos = { ...lake.center }; simL.autoTrim = true;
@@ -165,6 +177,7 @@ simM.update(1 / 30, {});
 check(simM.boat.u < 1 && simM.message.includes('ORMEGGIO'), "urtando una barca all'ormeggio ci si ferma");
 // vele in bando al traverso: le scotte corrono fuori e la barca rallenta; riprese, riparte
 const simB = new Simulation(lake);
+simB.settings.gusts = false; simB.reset(); simB.wind.shifts = false;          // vento fermo: la prova non dipende dal caso
 simB.boat.pos = { ...lake.center }; simB.autoTrim = true;
 const steer = (sm) => ({ tillerTarget: clamp(norm180(twaOf(sm.boat) - 90) * 1.2 - sm.boat.r * 0.8, -25, 25) });
 for (let i = 0; i < 40 * 60; i++) simB.update(1 / 60, steer(simB));

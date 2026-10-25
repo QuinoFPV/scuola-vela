@@ -3,8 +3,8 @@
 import * as THREE from './vendor/three.module.min.js';
 import { BoatModel, foamMaterial, rod } from './boat.js';
 import { buildBase } from './base.js';
-import { WindTriangle, DirtyAir } from './overlays.js';
-import { skyTexture, skyDir } from './textures.js';
+import { WindTriangle, DirtyAir, RoundingArrows } from './overlays.js';
+import { skyTexture, skyDir, markTexture } from './textures.js';
 import { rad, clamp, dirVec, norm180, norm360, len, sub, bearing, twaOf } from './physics.js';
 import { Waves } from './sim.js';
 
@@ -213,7 +213,8 @@ export class World {
     this.rib.userData = { pos: { x: 0, y: 0 }, heading: 0, ready: false };
     this.triangle = new WindTriangle();
     this.dirtyAir = new DirtyAir();
-    this.scene.add(this.triangle.root, this.dirtyAir.root);
+    this.rounding = new RoundingArrows(3);
+    this.scene.add(this.triangle.root, this.dirtyAir.root, this.rounding.root);
 
     this.cubeTarget = new THREE.WebGLCubeRenderTarget(light ? 256 : 512, { type: THREE.HalfFloatType });
     this.cubeCam = new THREE.CubeCamera(1, 30000, this.cubeTarget);
@@ -244,7 +245,7 @@ export class World {
     const c = this.lake.center;
     this.cubeCam.position.set(c.x, 3, -c.y);
     const hide = [this.water, this.boat.root, this.wake.mesh, this.rib, this.ribWake.mesh, this.boat.sprayPoints, ...this.buoys,
-                  this.triangle.root, this.dirtyAir.root];
+                  this.triangle.root, this.dirtyAir.root, this.rounding.root];
     const vis = hide.map((o) => o.visible);
     hide.forEach((o) => { o.visible = false; });
     this.cubeCam.update(this.renderer, this.scene);
@@ -412,12 +413,16 @@ export class World {
     return new THREE.Mesh(g, m);
   }
 
+  /** Boa gonfiabile da regata: cilindro giallo di 2 m di diametro, alto 2,2 m piu' la cupola, con la fascia SPORTACTION. */
   buildBuoy() {
-    const n = new THREE.Group(), y = std(0xffc70d, 0.45);
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 1.6, 20), y); body.position.y = 0.55;
-    const top = new THREE.Mesh(new THREE.ConeGeometry(0.65, 0.5, 20), y); top.position.y = 1.6;
-    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.67, 0.67, 0.18, 20), std(0xffffff, 0.4)); band.position.y = 0.9;
-    for (const m of [body, top, band]) { m.castShadow = true; n.add(m); }
+    const n = new THREE.Group();
+    this.markMap ??= markTexture();
+    const side = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.06, 2.2, 48, 1, true),
+      new THREE.MeshStandardMaterial({ map: this.markMap, roughness: 0.5 }));
+    side.position.y = 0.85;
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(1.0, 48, 12, 0, Math.PI * 2, 0, Math.PI / 2), std(0xffd23a, 0.5));
+    dome.scale.y = 0.32; dome.position.y = 1.95;
+    for (const m of [side, dome]) { m.castShadow = true; n.add(m); }
     return n;
   }
 
@@ -471,6 +476,7 @@ export class World {
       b.position.set(p.x, smp.h - 0.15, -p.y);
       b.rotation.set(-smp.gz * 0.6, 0, smp.gx * 0.6);
     });
+    this.rounding.update(sim, waves);
     // gommone: segue la barca da dietro e sopravento (nella vista dal gommone e' la telecamera)
     const r = this.rib.userData, windSide = twaOf(s) >= 0 ? 1 : -1;
     const tf = dirVec(s.heading), ts = dirVec(s.heading + 90 * windSide);

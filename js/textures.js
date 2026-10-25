@@ -162,6 +162,38 @@ export function hullTexture(style) {
 }
 
 /** Boma bianco con la scritta SPORTACTION centrata in "center" (0...1). */
+/** Fianco della boa gonfiabile da regata (alta 2,2 m, 1 m di raggio): spicchi, fascia SPORTACTION, linea di galleggiamento. */
+export function markTexture() {
+  const W = 2048, H = 512, perM = H / 2.2;
+  const [c, g] = canvas(W, H);
+  const yPx = (y) => H * (1 - (y + 0.25) / 2.2);                       // y = metri sopra l'acqua
+  const body = g.createLinearGradient(0, 0, 0, H);
+  body.addColorStop(0, '#ffd23a'); body.addColorStop(0.75, '#ffc20e'); body.addColorStop(1, '#e9a800');
+  g.fillStyle = body; g.fillRect(0, 0, W, H);
+  // spicchi del gonfiabile
+  for (let i = 0; i < 8; i++) {
+    const x = W * i / 8;
+    const sh = g.createLinearGradient(x, 0, x + W / 8, 0);
+    sh.addColorStop(0, 'rgba(120,70,0,0.16)'); sh.addColorStop(0.18, 'rgba(255,255,255,0.05)'); sh.addColorStop(0.5, 'rgba(255,255,255,0.10)'); sh.addColorStop(1, 'rgba(120,70,0,0.10)');
+    g.fillStyle = sh; g.fillRect(x, 0, W / 8, H);
+  }
+  // fascia bianca con la scritta, ripetuta tre volte intorno
+  g.fillStyle = '#f7f7f5'; g.fillRect(0, yPx(1.45), W, yPx(1.0) - yPx(1.45));
+  const sx = (W / (2 * Math.PI * 1.0)) / perM;
+  for (let k = 0; k < 3; k++) {
+    g.save();
+    g.translate(W * (k + 0.5) / 3, yPx(1.225)); g.scale(sx, 1);
+    g.font = 'italic bold 64px "Helvetica Neue", Arial, sans-serif'; g.fillStyle = '#142a6b'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('SPORTACTION', 0, 2);
+    g.restore();
+  }
+  // piede scuro, bagnato
+  const foot = g.createLinearGradient(0, yPx(0.25), 0, H);
+  foot.addColorStop(0, 'rgba(60,45,10,0)'); foot.addColorStop(1, 'rgba(60,45,10,0.55)');
+  g.fillStyle = foot; g.fillRect(0, yPx(0.25), W, H - yPx(0.25));
+  return tex(c);
+}
+
 export function boomTexture(center) {
   const W = 1024, H = 44;
   const [c, g] = canvas(W, H);

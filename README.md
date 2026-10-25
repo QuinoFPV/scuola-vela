@@ -7,7 +7,8 @@ Simulatore di vela nel browser, per la scuola **Sportaction** sul Lago d'Iseo (b
 - Fisica a forze vere: vento apparente, vele, chiglia, timone, sbandamento, virate, strambate, prua al vento.
 - Lago d'Iseo reale: montagne, foto satellitare, boschi, paesi; base Sportaction con statale, ombrelloni, pontile e barche all'ormeggio.
 - Venti del Sebino: Ora (da sud) e Sover (da nord), da 6 a 30 nodi, con raffiche e salti.
-- Istruttore virtuale: consigli su timone e vele, filetti del fiocco, giro delle boe, moviola.
+- Istruttore virtuale: consigli su timone e vele, filetti del fiocco, moviola.
+- Giro delle boe da regata (gonfiabili gialle SPORTACTION) in senso antiorario, lasciandole a sinistra, con le frecce sull'acqua.
 - Due barche: Sportaction nera (SPORTACTION.IT sul fiocco) e bianca ITA 09.
 - Riduzione della tela: 1 mano, 2 mani di terzaroli, 2 mani + tormentina; vele in bando.
 - Da accendere nel menu: il triangolo dei venti (reale, apparente, velocità della barca) e l'aria sporca sottovento.

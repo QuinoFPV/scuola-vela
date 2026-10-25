@@ -2,6 +2,7 @@
 // velocita' della barca) e l'aria sporca che le vele lasciano sottovento.
 import * as THREE from './vendor/three.module.min.js';
 import { dirVec, KNOT } from './physics.js';
+import { MARK_NAMES } from './sim.js';
 
 const M_PER_KN = 1.2;                       // scala delle frecce: un nodo = 1,2 m sull'acqua
 const RINGS = [5, 10, 20];
@@ -42,28 +43,28 @@ function setArrow(mesh, a, b, w, head) {
 }
 
 /** Etichetta che resta della stessa grandezza sullo schermo; si ridisegna solo quando cambia il testo. */
-function label(color, height = 0.042) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 640; canvas.height = 128;
+function label(color, height = 0.042, aspect = 5) {
+  const W = 128 * aspect, canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = 128;
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, sizeAttenuation: false, depthTest: false, depthWrite: false, transparent: true, toneMapped: false }));
-  sprite.scale.set(height * 5, height, 1);
+  sprite.scale.set(height * aspect, height, 1);
   sprite.renderOrder = 22;
   let text = null;
   sprite.userData.set = (t) => {
     if (t === text) return;
     text = t;
     const g = canvas.getContext('2d');
-    g.clearRect(0, 0, 640, 128);
+    g.clearRect(0, 0, W, 128);
     g.font = 'bold 50px "Avenir Next", "Segoe UI", sans-serif';
-    const w = Math.min(620, g.measureText(t).width + 44);
+    const w = Math.min(W - 20, g.measureText(t).width + 44);
     g.fillStyle = 'rgba(8,18,31,0.72)';
     g.beginPath();
-    if (g.roundRect) g.roundRect((640 - w) / 2, 22, w, 84, 20); else g.rect((640 - w) / 2, 22, w, 84);     // Safari prima della 16
+    if (g.roundRect) g.roundRect((W - w) / 2, 22, w, 84, 20); else g.rect((W - w) / 2, 22, w, 84);     // Safari prima della 16
     g.fill();
     g.fillStyle = color; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillText(t, 320, 66);
+    g.fillText(t, W / 2, 66, W - 60);
     tex.needsUpdate = true;
   };
   return sprite;
@@ -193,5 +194,69 @@ export class DirtyAir {
     });
     this.points.geometry.attributes.position.needsUpdate = true;
     this.points.material.opacity = 0.8 * (1 - 0.6 * Math.max(s.mainLuff, s.jibLuff));
+  }
+}
+
+const ARROW_FRAG = /* glsl */`
+uniform vec3 color;
+uniform float opacity;
+varying vec2 vUv;
+void main() {
+  gl_FragColor = vec4(color, opacity * (0.12 + 0.88 * vUv.x));      // la coda sfuma, la punta e' piena
+  #include <colorspace_fragment>
+}`;
+
+/** Freccia curva piatta (raggio r, larga w) che gira in senso antiorario per span gradi, gia' distesa sull'acqua. */
+function curvedArrow(r, w, spanDeg) {
+  const n = 48, span = spanDeg * Math.PI / 180, head = 3.0 / r, body = span - head;
+  const pos = [], uv = [], idx = [];
+  for (let i = 0; i <= n; i++) {
+    const a = body * i / n;
+    for (const rr of [r - w / 2, r + w / 2]) { pos.push(rr * Math.cos(a), rr * Math.sin(a), 0); uv.push(i / n * 0.9, 0); }
+    if (i < n) { const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+  }
+  const b = pos.length / 3;
+  pos.push((r - w * 1.2) * Math.cos(body), (r - w * 1.2) * Math.sin(body), 0, (r + w * 1.2) * Math.cos(body), (r + w * 1.2) * Math.sin(body), 0,
+           r * Math.cos(span), r * Math.sin(span), 0);
+  uv.push(0.9, 0, 0.9, 0, 1, 0);
+  idx.push(b, b + 1, b + 2);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  return g.rotateX(-Math.PI / 2);                      // (est, nord) del lago -> (x, -z) della scena
+}
+
+/** Frecce sull'acqua intorno alle boe: si girano in senso antiorario, lasciandole a sinistra.
+ *  Quella della prossima boa e' accesa e gira; un cartello sopra la boa lo ricorda (con gli aiuti). */
+export class RoundingArrows {
+  constructor(count) {
+    this.root = new THREE.Group();
+    const geo = curvedArrow(8, 1.1, 250);
+    this.arrows = Array.from({ length: count }, () => {
+      const m = new THREE.Mesh(geo, new THREE.ShaderMaterial({
+        uniforms: { color: { value: new THREE.Color(0xffffff) }, opacity: { value: 0.9 } },
+        vertexShader: PLUME_VERT, fragmentShader: ARROW_FRAG, transparent: true, depthWrite: false, side: THREE.DoubleSide,
+      }));
+      m.renderOrder = 6;
+      this.root.add(m);
+      return m;
+    });
+    this.sign = label('#ffd94d', 0.04, 9);
+    this.root.add(this.sign);
+  }
+
+  update(sim, waves) {
+    const y = waves.amp + 0.08, t = sim.shown.time;
+    this.arrows.forEach((m, i) => {
+      const p = sim.marks[i], next = i === sim.nextMark;
+      m.position.set(p.x, y, -p.y);
+      m.rotation.y = next ? t * 0.9 : 0;                 // y positivo = antiorario visto dall'alto
+      m.material.uniforms.opacity.value = next ? 0.9 : 0.3;
+    });
+    const p = sim.marks[sim.nextMark];
+    this.sign.visible = sim.settings.aids;
+    this.sign.position.set(p.x, 4.4, -p.y);
+    this.sign.userData.set(`${MARK_NAMES[sim.nextMark]} · lasciala a sinistra ↺`);
   }
 }

@@ -22,6 +22,13 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
   - le scotte si liberano e randa e fiocco vanno fuori del tutto in un paio di secondi; la barca rallenta (in poppa poco);
   - di nuovo SPAZIO per riprenderle: con le vele automatiche si regolano da sole, con quelle manuali si cazza a mano;
   - con le vele manuali anche cazzare una scotta fa uscire dal bando.
+- **Boe da regata e giro antiorario:**
+  - le tre boe sono gonfiabili gialle da regata, larghe 2 m e alte poco più di 2, con la fascia SPORTACTION;
+  - si girano in senso antiorario, lasciandole a sinistra; per questo la boa di traverso sta sempre a sinistra guardando il vento, e il triangolo bolina → traverso → poppa si percorre in senso antiorario;
+  - intorno a ogni boa c'è una freccia curva sull'acqua: quella della prossima boa è accesa e gira, le altre sono tenui;
+  - sulla mappa ogni boa ha la sua freccetta e, con gli aiuti accesi, sopra la prossima boa c'è il cartello "lasciala a sinistra";
+  - a 70 m l'istruttore lo ricorda;
+  - la boa vale solo se ci si gira intorno in senso antiorario, entro 45 m; girata al contrario non vale e compare l'avviso.
 - **Triangolo dei venti** (tasto F o menu): frecce sull'acqua intorno alla barca, con gli stessi colori della rosa del vento:
   - azzurra il vento reale, gialla il vento apparente, verde la velocità della barca;
   - la linea verde chiara tra le code dei due venti è il vento creato dal moto della barca;

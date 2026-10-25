@@ -193,6 +193,13 @@ export class HUD {
     g.fillStyle = '#ff6650'; g.fillRect(bx - 3.5, by - 3.5, 7, 7);
     sim.marks.forEach((m, i) => {
       const [x, y] = P(m);
+      // freccia antioraria: la boa si lascia a sinistra
+      const a0 = 0.6, a1 = a0 - 4.6, r = 10;
+      g.strokeStyle = i === sim.nextMark ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.45)'; g.lineWidth = 1.6;
+      g.beginPath(); g.arc(x, y, r, a0, a1, true); g.stroke();
+      const hx = x + r * Math.cos(a1), hy = y + r * Math.sin(a1), tx = Math.sin(a1), ty = -Math.cos(a1);
+      g.fillStyle = g.strokeStyle;
+      g.beginPath(); g.moveTo(hx + tx * 4, hy + ty * 4); g.lineTo(hx - ty * 3 - tx * 1.5, hy + tx * 3 - ty * 1.5); g.lineTo(hx + ty * 3 - tx * 1.5, hy - tx * 3 - ty * 1.5); g.fill();
       g.fillStyle = '#ffcc1a'; g.strokeStyle = '#000'; g.lineWidth = 1;
       g.beginPath(); g.arc(x, y, 3.5, 0, 7); g.fill(); g.stroke();
       if (i === sim.nextMark) { g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 7 * (1 + 0.15 * Math.sin(time * 4)), 0, 7); g.stroke(); }

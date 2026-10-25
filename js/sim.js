@@ -1,6 +1,6 @@
 // Simulazione: barca, vento, onde, boe, moviola, messaggi e consigli dell'istruttore.
 import {
-  Wind, newBoat, copyBoat, step, idealSheets, Spec, norm180, norm360, rad, clamp, dirVec, len, sub, add, mul,
+  Wind, newBoat, copyBoat, step, idealSheets, Spec, norm180, norm360, rad, deg, clamp, dirVec, len, sub, add, mul,
   speedKn, twaOf, stormJib,
 } from './physics.js';
 
@@ -72,6 +72,7 @@ export class Simulation {
     this.history = []; this.historyTimer = 0;
     this.track = []; this.trackTimer = 0;
     this.courseStep = 0; this.lapStart = null; this.lastLap = null; this.buoyTouch = -100;
+    this.sweep = 0; this.sweepAngle = null; this.wrongWay = false; this.approachSaid = false;
     this.replay = null;
     this.time = 0;
     this.aground = false;
@@ -81,11 +82,12 @@ export class Simulation {
     this.say(`${DIRECTIONS[this.settings.windFrom][0]} ${this.windKn} NODI · SI ESCE DALLA BASE: TRAVERSO ${lee > 0 ? 'MURE A SINISTRA' : 'MURE A DRITTA'}`, 'info');
   }
 
-  /** Boe allineate al vento: bolina a 300 m sopravento del centro, poppa a 250 m sottovento, una di traverso. */
+  /** Boe allineate al vento: bolina a 300 m sopravento del centro, poppa a 250 m sottovento, una di traverso.
+   *  Le boe si lasciano a sinistra: la boa di traverso sta a sinistra guardando il vento, cosi' il triangolo
+   *  bolina -> traverso -> poppa si percorre in senso antiorario. */
   placeMarks() {
     const lake = this.lake, c = lake.center, w = dirVec(this.wind.baseDir);
-    const s1 = add(c, mul(dirVec(this.wind.baseDir + 90), 220)), s2 = add(c, mul(dirVec(this.wind.baseDir - 90), 220));
-    const side = lake.depth(s1) > lake.depth(s2) ? s1 : s2;
+    const side = add(c, mul(dirVec(this.wind.baseDir - 90), 220));
     this.marks = [add(c, mul(w, 300)), sub(c, mul(w, 250)), side].map((p) => {
       let q = p;
       while (lake.depth(q) < 15 && len(sub(q, c)) > 40) q = add(c, mul(sub(q, c), 0.9));
@@ -200,7 +202,7 @@ export class Simulation {
       this.trackTimer = 2;
     }
     for (const m of this.marks) {
-      if (len(sub(b.pos, m)) < 2.2 && this.time - this.buoyTouch > 5) {
+      if (len(sub(b.pos, m)) < 2.6 && this.time - this.buoyTouch > 5) {
         this.buoyTouch = this.time;
         b.u *= 0.4;
         b.r += b.r > 0 ? -6 : 6;
@@ -217,7 +219,22 @@ export class Simulation {
         this.events.push({ type: 'ground' });
       }
     }
-    if (len(sub(b.pos, this.marks[this.nextMark])) >= 18) return;
+    // la boa si gira in senso antiorario, lasciandola a sinistra: si somma l'angolo percorso intorno a lei
+    const rel = sub(b.pos, this.marks[this.nextMark]), dist = len(rel);
+    if (dist < 70 && !this.approachSaid) {
+      this.approachSaid = true;
+      this.say(`${MARK_NAMES[this.nextMark]}: LASCIALA A SINISTRA, GIRA IN SENSO ANTIORARIO`, 'info');
+    } else if (dist > 110) this.approachSaid = false;
+    if (dist > 45) { this.sweep = 0; this.sweepAngle = null; this.wrongWay = false; return; }
+    const a = deg(Math.atan2(rel.y, rel.x));
+    if (this.sweepAngle !== null) this.sweep += norm180(a - this.sweepAngle);
+    this.sweepAngle = a;
+    if (this.sweep < -90 && !this.wrongWay) {
+      this.wrongWay = true;
+      this.say('BOA GIRATA AL CONTRARIO! VA LASCIATA A SINISTRA: TORNA INDIETRO E GIRALA IN SENSO ANTIORARIO', 'bad');
+    }
+    if (this.sweep < 90) return;
+    this.sweep = 0; this.sweepAngle = null; this.wrongWay = false; this.approachSaid = false;
     if (this.courseStep === 0) {
       if (this.lapStart !== null) {
         this.lastLap = this.time - this.lapStart;
