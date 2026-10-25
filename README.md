@@ -11,9 +11,10 @@ Simulatore di vela nel browser, per la scuola **Sportaction** sul Lago d'Iseo (b
 - Giro delle boe da regata (gonfiabili gialle SPORTACTION) in senso antiorario, lasciandole a sinistra, con le frecce sull'acqua.
 - Due barche: Sportaction nera (SPORTACTION.IT sul fiocco) e bianca ITA 09.
 - Riduzione della tela: 1 mano, 2 mani di terzaroli, 2 mani + tormentina; vele in bando.
+- Esercizio della randa scontrata: da fermi prua al vento si spinge fuori il boma e si va in retromarcia, col timone al contrario.
 - Da accendere nel menu: il triangolo dei venti (reale, apparente, velocità della barca) e l'aria sporca sottovento.
 
-Comandi principali: ← → barra · Q/A randa · W/S fiocco · T vele automatiche · SPAZIO vele in bando ·
+Comandi principali: ← → barra · Q/A randa · W/S fiocco · T vele automatiche · SPAZIO vele in bando · K randa scontrata ·
 Z/X terzaroli e tormentina · F triangolo dei venti · O aria sporca · C vista · R moviola · P pausa · H tutti i comandi.
 
 Su telefono e tablet, in orizzontale: barra del timone in basso a sinistra, CAZZA/LASCA in basso a destra,

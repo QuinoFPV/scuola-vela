@@ -21,6 +21,12 @@ export const Spec = {
   ceHeight: 3.6, clrDepth: 0.9, mainX: -0.55, jibX: 1.5,
   mainMin: 3, mainMax: 85, jibMin: 9, jibMax: 100,
   rudderMax: 35, hullSpeed: 3.3,
+  // randa scontrata: angolo a cui l'equipaggio tiene il boma spingendolo fuori; distanza del centro velico dall'albero lungo il boma
+  backAngle: 70, mainCeAlong: 1.1,
+  // forza (N) che la randa scontrata puo' fare prima che chi tiene il boma debba cedere: con tanto vento il boma rientra
+  backHold: 800,
+  // andando indietro lo scafo (specchio di poppa avanti, chiglia e timone al contrario) frena molto di piu'
+  asternDrag: 2.6,
   // terzaroli: superficie della randa con 0, 1 o 2 mani; di quanto scende il centro di spinta per mano;
   // secondi in cui la randa sbatte mentre si riduce o si scioglie
   reefArea: [1, 0.76, 0.56], reefDrop: 0.45, reefTime: 6,
@@ -119,6 +125,7 @@ export function newBoat() {
     pos: { x: 0, y: 0 }, heading: 90, u: 2, v: 0, r: 0, heel: 0, heelRate: 0, rudder: 0,
     mainSheet: 0.4, jibSheet: 0.4, mainAngle: 30, jibAngle: 25, mainSide: 1, jibSide: 1,
     mainAlpha: 0, jibAlpha: 0, mainLuff: 0, jibLuff: 0, crew: 0, reef: 0, reefTimer: 0, jibTimer: 0, bando: false,
+    backMain: 0, mainBacked: false,
     twd: 0, tws: 10, awa: 0, aws: 10, drive: 0, time: 0,
   };
 }
@@ -183,8 +190,9 @@ export function step(s, wind, dt) {
     if (absAwa < 175 - angle * 0.15) return leeSide;
     return current;
   };
-  const newMainSide = sideFor(s.mainSide, Math.abs(s.mainAngle));
-  if (newMainSide !== s.mainSide) {
+  // randa scontrata: il boma lo tiene fuori l'equipaggio, dal lato scelto, qualunque sia il vento
+  const newMainSide = s.backMain ? s.backMain : sideFor(s.mainSide, Math.abs(s.mainAngle));
+  if (newMainSide !== s.mainSide && !s.backMain) {
     if (absAwa > 120) {
       const violent = s.mainSheet > 0.45;
       events.push({ type: 'gybe', violent });
@@ -194,6 +202,7 @@ export function step(s, wind, dt) {
     }
     s.mainSide = newMainSide;
   }
+  if (s.backMain) s.mainSide = s.backMain;
   s.jibSide = sideFor(s.jibSide, Math.abs(s.jibAngle));
 
   const heelK = Math.cos(rad(Math.min(80, Math.abs(s.heel)))) ** 2;
@@ -209,7 +218,10 @@ export function step(s, wind, dt) {
     const changing = main ? s.reefTimer > 0 : s.jibTimer > 0;
     const limit = changing ? 180 : sheetAngle(main, main ? s.mainSheet : s.jibSheet);
     const side = main ? s.mainSide : s.jibSide;
-    const target = side * (side === leeSide ? Math.min(limit, absAwa) : limit);
+    const area = main ? Spec.mainArea * Spec.reefArea[mainReefs(s)] : Spec.jibArea * (stormJib(s) ? Spec.stormJibArea : 1);
+    // randa scontrata: l'equipaggio tiene il boma fuori finche' ce la fa
+    const hold = clamp(Spec.backHold / (q * area * 1.1 + 1), 0.4, 1);
+    const target = main && s.backMain ? s.backMain * Spec.backAngle * hold : side * (side === leeSide ? Math.min(limit, absAwa) : limit);
     let ang = main ? s.mainAngle : s.jibAngle;
     ang += (target - ang) * Math.min(1, (main ? 3.5 : 6) * dt);
     const chord = 180 - ang;
@@ -217,14 +229,16 @@ export function step(s, wind, dt) {
     const alpha = Math.abs(delta);
     const { cl, cd } = coefficients(alpha);
     const sg = delta >= 0 ? 1 : -1;
-    const area = main ? Spec.mainArea * Spec.reefArea[mainReefs(s)] : Spec.jibArea * (stormJib(s) ? Spec.stormJibArea : 1);
     const fx = (-flow.y * sg * cl + flow.x * cd) * q * area;
     const fy = (flow.x * sg * cl + flow.y * cd) * q * area;
     const luff = alpha < 4 ? clamp((4 - alpha) / 4, 0, 1) : 0;
-    return { ang, alpha, fx, fy, luff };
+    // il vento spinge la vela verso l'interno (preme sulla faccia esterna): e' scontrata
+    const c = rad(chord), push = (fx * Math.sin(c) - fy * Math.cos(c)) * side;
+    return { ang, alpha, fx, fy, luff, backed: push < -1 };
   };
   const m = sail(true), j = sail(false);
   s.mainAngle = m.ang; s.mainAlpha = m.alpha; s.mainLuff = m.luff;
+  s.mainBacked = s.backMain !== 0 && m.backed;
   s.jibAngle = j.ang; s.jibAlpha = j.alpha; s.jibLuff = j.luff;
   let fx = m.fx + j.fx, fy = m.fy + j.fy, yaw = 0;
   // resistenza aerodinamica di scafo, albero ed equipaggio
@@ -234,13 +248,16 @@ export function step(s, wind, dt) {
   s.drive = fx;
   // bilanciamento: la randa fa orzare, il fiocco poggiare; sbandata: la barca orza
   yaw += Spec.mainX * m.fy + Spec.jibX * j.fy;
+  // la spinta della randa agisce sul boma, fuori dall'asse: col boma fuori bordo fa girare la barca
+  // (avanti in poppa la fa orzare; scontrata, all'indietro, la prua va dalla parte del boma)
+  yaw -= Math.sin(rad(m.ang)) * Spec.mainCeAlong * m.fx;
   yaw += -ce * Math.sin(rad(s.heel)) * fx * 0.9;
 
   // scafo e chiglia
   const u = s.u, v = s.v;
   const ratio = Math.abs(u) / Spec.hullSpeed;
   let hullX = -(27 * u * Math.abs(u) + 700 * ratio ** 10 * (u >= 0 ? 1 : -1) + 40 * u);
-  hullX *= 1 + Math.abs(s.heel) / 90;
+  hullX *= (1 + Math.abs(s.heel) / 90) * (u < 0 ? Spec.asternDrag : 1);
   const keelLift = -1900 * Math.abs(u) * v - 2200 * v * Math.abs(v) - 150 * v;
   hullX -= 0.00025 * keelLift * keelLift / Math.max(0.3, u * u);
 

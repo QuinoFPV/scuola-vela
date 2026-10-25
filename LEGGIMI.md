@@ -22,6 +22,14 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
   - le scotte si liberano e randa e fiocco vanno fuori del tutto in un paio di secondi; la barca rallenta (in poppa poco);
   - di nuovo SPAZIO per riprenderle: con le vele automatiche si regolano da sole, con quelle manuali si cazza a mano;
   - con le vele manuali anche cazzare una scotta fa uscire dal bando.
+- **Randa scontrata** (K dal lato dov'è il boma, J a sinistra, L a dritta; sul telefono SCONTRA RANDA): l'esercizio per uscire dall'angolo morto e andare in retromarcia.
+  - Il marinaio di prua si alza e spinge il boma fuori a 70°; il vento prende la randa dalla parte di fuori, la vela si gonfia al contrario e la barca va indietro.
+  - Con 10 nodi la barca va indietro a 1–1,5 nodi in pochi secondi; scadendo senza far niente farebbe 0,3–0,4 nodi.
+  - La prua cade dalla parte del boma: scontrata a dritta, la prua va a dritta e si riparte mure a sinistra, col boma già dalla parte giusta.
+  - In retromarcia il timone lavora al contrario; l'istruttore ricorda la regola giusta per il timone scelto (freccia, barra vera o ruota). Con la barra che contrasta si va indietro quasi dritti.
+  - Con vento forte chi spinge non riesce a tenere il boma tutto fuori: il boma rientra un po' e la retromarcia resta sotto i 3 nodi.
+  - Di nuovo K (o MOLLA IL BOMA) per lasciarlo: torna sottovento senza contare una virata, poi si regola la randa e si riparte.
+  - Fisica: la spinta della randa agisce sul boma, fuori dall'asse della barca, e la fa girare; andando indietro lo scafo frena di più.
 - **Boe da regata e giro antiorario:**
   - le tre boe sono gonfiabili gialle da regata, larghe 2 m e alte poco più di 2, con la fascia SPORTACTION;
   - si girano in senso antiorario, lasciandole a sinistra; per questo la boa di traverso sta sempre a sinistra guardando il vento, e il triangolo bolina → traverso → poppa si percorre in senso antiorario;

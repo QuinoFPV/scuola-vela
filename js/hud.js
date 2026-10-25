@@ -62,7 +62,7 @@ export class HUD {
       `Vento apparente  ${s.aws.toFixed(0)} nodi · ${Math.abs(s.awa).toFixed(0)}°`,
       `Prua ${String(s.heading.toFixed(0)).padStart(3, '0')}°   VMG ${Math.abs(v).toFixed(1)} nodi ${v >= 0 ? 'verso il vento' : 'sottovento'}`,
       `Scarroccio ${Math.abs(leeway(s)).toFixed(0)}°   Timone ${s.rudder.toFixed(0)}°`,
-      `Vele: ${s.bando ? 'IN BANDO' + key('SPAZIO') : (sim.autoTrim ? 'AUTOMATICHE' : 'MANUALI') + key('T')}   ·   ${SAIL_PLANS[clamp(s.reef, 0, 3)]}${key(s.reef === 0 ? 'Z' : s.reef === 3 ? 'X' : 'Z/X')}`,
+      `Vele: ${s.backMain ? `RANDA SCONTRATA A ${s.backMain > 0 ? 'DRITTA' : 'SINISTRA'}${key('K')}` : s.bando ? 'IN BANDO' + key('SPAZIO') : (sim.autoTrim ? 'AUTOMATICHE' : 'MANUALI') + key('T')}   ·   ${SAIL_PLANS[clamp(s.reef, 0, 3)]}${key(s.reef === 0 ? 'Z' : s.reef === 3 ? 'X' : 'Z/X')}`,
       `Prossima: ${MARK_NAMES[sim.nextMark].toLowerCase()}  ${len(sub(m, s.pos)).toFixed(0)} m a ${String(bearing(sub(m, s.pos)).toFixed(0)).padStart(3, '0')}°`,
       lap,
     ].map((l) => `<div>${l}</div>`).join('');
@@ -86,8 +86,7 @@ export class HUD {
     $('tell').style.display = aids ? 'block' : 'none';
     if (aids && text) {
       // sui telefoni i tasti Z e X sono i pulsanti RIDUCI e AUMENTA
-      const tip = (t) => this.touch ? t.replace(' (Z)', ' (RIDUCI)').replace(' (X)', ' (AUMENTA)').replace(' (SPAZIO)', '') : t;
-      HUD.put('tipList', Coach.tips(s, this.lake).map(([t, tone]) => `<li style="color:${COLORS[tone]}">${tip(t)}</li>`).join(''), 'innerHTML');
+      HUD.put('tipList', Coach.tips(s, this.lake).map(([t, tone]) => `<li style="color:${COLORS[tone]}">${this.keyless(t)}</li>`).join(''), 'innerHTML');
     }
     if (aids) {
       const [t, tone] = Coach.telltales(s);
@@ -98,7 +97,7 @@ export class HUD {
     // messaggi
     const age = sim.time - sim.messageTime;
     const msg = $('message');
-    msg.textContent = sim.message;
+    msg.textContent = this.keyless(sim.message);
     msg.style.color = COLORS[sim.tone];
     msg.style.opacity = clamp(4 - age, 0, 1);
     const st = $('status');
@@ -106,6 +105,12 @@ export class HUD {
     else if (sim.paused) st.textContent = this.touch ? 'PAUSA  ·  trascina col dito per girare intorno alla barca' : 'PAUSA  ·  trascina col tasto destro per girare intorno alla barca  ·  P per ripartire';
     else st.textContent = '';
     if (!this.touch) $('footer').textContent = `Vista: ${CAMERAS[world.mode]} (C)   ·   H comandi   ·   ESC menu`;
+  }
+
+  /** Sui telefoni i tasti diventano i nomi dei pulsanti. */
+  keyless(t) {
+    if (!this.touch) return t;
+    return t.replace(/ \(Z\)/i, ' (RIDUCI)').replace(/ \(X\)/i, ' (AUMENTA)').replace(/ \(SPAZIO\)/i, '').replace(/ \(K\)/i, '');
   }
 
   /** Comandi a dito: posizione della barra, scotte, pulsanti che cambiano scritta, dati essenziali. */
@@ -126,6 +131,7 @@ export class HUD {
     }
     HUD.put('tTrim', sim.autoTrim ? 'VELE AUTO' : 'VELE MAN.').classList.toggle('on', !sim.autoTrim);
     HUD.put('tBando', s.bando ? 'RIPRENDI LE SCOTTE' : 'VELE IN BANDO').classList.toggle('on', s.bando);
+    HUD.put('tBack', s.backMain ? 'MOLLA IL BOMA' : 'SCONTRA RANDA').classList.toggle('on', !!s.backMain);
     HUD.put('tPause', sim.paused ? 'RIPARTI' : 'PAUSA').classList.toggle('on', sim.paused);
     HUD.put('tReplay', sim.replay !== null ? 'DIRETTA' : 'MOVIOLA').classList.toggle('on', sim.replay !== null);
     const lap = sim.lapStart !== null ? `  ·  giro ${((sim.time - sim.lapStart) / 60) | 0}:${String(((sim.time - sim.lapStart) | 0) % 60).padStart(2, '0')}` : '';

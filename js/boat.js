@@ -438,6 +438,17 @@ export class BoatModel {
     const hike = clamp((Math.abs(s.heel) - 6) / 20, 0, 1) * Math.min(1, Math.abs(s.crew));
     this.crew.forEach((p, k) => {
       p.root.visible = !this.crewHidden;
+      if (k === 1 && s.backMain) {
+        // randa scontrata: in piedi accanto al boma, lo spinge fuori con le braccia tese
+        const L = 1.3, side = s.backMain, P = V(Math.sin(a) * L, BOOM_Y, MAST_Z + Math.cos(a) * L);
+        const nx = side * Math.cos(a), nz = -side * Math.sin(a);
+        const fx = P.x - nx * 0.5, fz = P.z - nz * 0.5, t = tAt(fz);
+        const xx = clamp(fx, -(halfBeam(t) - 0.15), halfBeam(t) - 0.15);
+        p.root.position.set(xx, deckY(t, xx) + 0.9, fz);
+        p.root.rotation.set(0, Math.atan2(-nx, -nz), 0);
+        p.stand(0.95);
+        return;
+      }
       if (k === 0 && this.wheel) {
         p.root.position.set(s.crew * 0.15, FLOOR_Y + 0.92, 3.55);
         p.root.rotation.set(0, 0, rad(s.heel) * 0.7);
@@ -462,7 +473,8 @@ export class BoatModel {
   /** Randa: dall'albero alla balumina, con grasso, svergolamento e fileggiare. */
   updateMain(s, time) {
     const { R, C } = this.main, pts = new Float32Array((R + 1) * (C + 1) * 3);
-    const side = s.mainSide, twist = 3 + 16 * s.mainSheet, fill = 1 - s.mainLuff;
+    // scontrata, il vento la gonfia dalla parte di fuori: il grasso e lo svergolamento vanno verso l'interno
+    const side = s.mainBacked ? -s.mainSide : s.mainSide, twist = 3 + 16 * s.mainSheet, fill = 1 - s.mainLuff;
     // terzaroli: la randa si abbassa di 1,35 m per mano; la parte bassa resta piegata sul boma
     const reefs = mainReefs(s), H = HEAD_Y - BOOM_Y, drop = 1.35 * reefs, Hv = H - drop;
     this.reefBundle.visible = reefs > 0;

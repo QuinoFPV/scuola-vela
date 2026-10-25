@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { Wind, newBoat, step, idealSheets, norm180, norm360, clamp, speedKn, twaOf, dirVec, len, sub, add, mul, SAIL_PLANS } from '../js/physics.js';
 import { Lake } from '../js/lake.js';
-import { Simulation, Coach, COURSE } from '../js/sim.js';
+import { Simulation, Coach, COURSE, WINDS } from '../js/sim.js';
 
 const dataDir = fileURLToPath(new URL('../data/', import.meta.url));
 let failures = 0;
@@ -178,7 +178,7 @@ check(simM.boat.u < 1 && simM.message.includes('ORMEGGIO'), "urtando una barca a
 // vele in bando al traverso: le scotte corrono fuori e la barca rallenta; riprese, riparte
 const simB = new Simulation(lake);
 simB.settings.gusts = false; simB.reset(); simB.wind.shifts = false;          // vento fermo: la prova non dipende dal caso
-simB.boat.pos = { ...lake.center }; simB.autoTrim = true;
+simB.boat.pos = add(lake.center, mul(dirVec(simB.wind.baseDir + 180), 120)); simB.autoTrim = true;     // lontano dalle boe
 const steer = (sm) => ({ tillerTarget: clamp(norm180(twaOf(sm.boat) - 90) * 1.2 - sm.boat.r * 0.8, -25, 25) });
 for (let i = 0; i < 40 * 60; i++) simB.update(1 / 60, steer(simB));
 const bandoFrom = speedKn(simB.boat);
@@ -194,6 +194,36 @@ check(!simB.boat.bando && speedKn(simB.boat) > bandoFrom * 0.85, `riprese le sco
 simB.toggleBando(); simB.autoTrim = false;
 simB.update(0.1, { main: 1 });
 check(!simB.boat.bando, 'cazzando la randa si esce dal bando');
+// randa scontrata: da fermi prua al vento, vento costante, lontano dalle boe
+{
+const irons = (kn) => {
+  const sm = new Simulation(lake);
+  sm.settings.gusts = false; sm.settings.windIndex = WINDS.findIndex((x) => x[1] === kn); sm.reset(); sm.wind.shifts = false;
+  sm.boat.pos = add(lake.center, mul(dirVec(sm.wind.baseDir + 180), 120));
+  Object.assign(sm.boat, { heading: norm360(sm.wind.baseDir + 3), u: 0, v: 0, r: 0, heel: 0, heelRate: 0, rudder: 0 });
+  sm.autoTrim = true;
+  return sm;
+};
+const secs = (sm, t, rudder = 0) => { for (let i = 0; i < t * 60; i++) sm.update(1 / 60, { tillerTarget: rudder }); };
+const turned = (sm, h0) => norm180(sm.boat.heading - h0);
+const adrift = irons(10); secs(adrift, 8);
+const back = irons(10), h0 = back.boat.heading;
+back.toggleBackMain(1); secs(back, 4);
+const backedNow = back.boat.mainBacked;
+secs(back, 4);
+check(backedNow && back.boat.u < adrift.boat.u * 2.5 && back.boat.u < -0.5 && turned(back, h0) > 20,
+  `randa scontrata a dritta: indietro a ${f1(-back.boat.u / 0.5144)} kn (scadendo ${f1(-adrift.boat.u / 0.5144)}), la prua cade a dritta di ${f0(turned(back, h0))}°`);
+const astern = irons(10), h1 = astern.boat.heading;
+astern.toggleBackMain(1); secs(astern, 16, 20);
+check(astern.boat.u < -0.5 && Math.abs(turned(astern, h1)) < 35, `col timone al contrario si va indietro quasi dritti (${f0(turned(astern, h1))}° in 16 s)`);
+while (Math.abs(twaOf(back.boat)) < 65) secs(back, 0.5);
+back.toggleBackMain(0);
+let tacked = false;
+for (let i = 0; i < 25 * 60; i++) { back.update(1 / 60, { tillerTarget: clamp(norm180(twaOf(back.boat) + 80) * 1.2 - back.boat.r * 0.8, -25, 25) }); if (back.events.some((e) => e.type === 'tack' || e.type === 'gybe')) tacked = true; }
+check(!tacked && speedKn(back.boat) > 3 && back.boat.mainSide === 1, `mollato il boma si riparte mure a sinistra (${f1(speedKn(back.boat))} kn), senza contare una virata`);
+const strong = irons(20); strong.toggleBackMain(-1); secs(strong, 3);
+check(Math.abs(strong.boat.mainAngle) < 66 && strong.boat.u > -1.8, `con 20 nodi il boma rientra (${f0(Math.abs(strong.boat.mainAngle))}°) e la retromarcia resta sotto i 3,5 nodi`);
+}
 
 console.log(failures === 0 ? 'TUTTO OK' : `${failures} ERRORI`);
 process.exit(failures === 0 ? 0 : 1);

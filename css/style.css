@@ -85,9 +85,10 @@ body.touch #touchUI { display: block; position: fixed; inset: 0; pointer-events:
 #tillerLabel { position: absolute; left: 0; right: 0; top: 5px; text-align: center; font-size: 10px; font-weight: 700; color: rgba(255, 255, 255, .65); }
 #sheets { position: absolute; right: var(--sr); bottom: var(--sb); display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
 #sheets .cols { display: flex; gap: 8px; }
-#tBando { pointer-events: auto; height: 36px; padding: 0 12px; border-radius: 9px; font-size: 11px; font-weight: 700; letter-spacing: .3px;
-  background: rgba(8, 18, 31, .72); border: 1px solid rgba(255, 255, 255, .22); }
-#tBando.on { background: rgba(242, 140, 26, .95); }
+#sheets .acts { display: flex; gap: 6px; }
+#sheets .acts button { flex: 1; pointer-events: auto; height: 36px; padding: 0 10px; border-radius: 9px; font-size: 11px; font-weight: 700; letter-spacing: .3px;
+  line-height: 1.05; background: rgba(8, 18, 31, .72); border: 1px solid rgba(255, 255, 255, .22); }
+#sheets .acts button.on { background: rgba(242, 140, 26, .95); }
 .sheet { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 90px; padding: 6px;
   background: rgba(8, 18, 31, .62); border: 1px solid rgba(255, 255, 255, .14); border-radius: 12px; }
 .sheet button { pointer-events: auto; width: 100%; height: 42px; border-radius: 9px; font-size: 12px; font-weight: 700;
@@ -132,7 +133,7 @@ body.touch #status { top: calc(var(--st) + 112px); left: 316px; right: 240px; }
   #tiller { height: 70px; }
   .sheet { width: 80px; padding: 5px; gap: 3px; }
   .sheet button { height: 34px; font-size: 11px; }
-  #tBando { height: 28px; font-size: 10px; }
+  #sheets .acts button { height: 30px; padding: 0 6px; font-size: 10px; }
 
   .card h1 { font-size: 30px; }
   .card .sub { font-size: 12px; margin: 2px 0 8px; }

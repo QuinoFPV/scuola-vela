@@ -150,6 +150,24 @@ export class Simulation {
     else this.say(this.autoTrim ? 'SI RIPRENDONO LE SCOTTE: LE VELE SI REGOLANO DA SOLE' : 'SCOTTE IN MANO: ORA CAZZA RANDA E FIOCCO', 'info');
   }
 
+  /** Randa scontrata: chi e' a prua spinge fuori il boma dal lato scelto (+1 dritta, -1 sinistra, 0 dove si trova),
+   *  il vento la prende al contrario e la barca va indietro; di nuovo per mollarlo. */
+  toggleBackMain(side = 0) {
+    const b = this.boat;
+    if (b.backMain && (side === 0 || side === b.backMain)) {
+      // il boma torna libero sottovento: non e' una virata
+      b.backMain = 0;
+      b.mainSide = b.awa >= 0 ? -1 : 1;
+      this.say('BOMA MOLLATO: REGOLA LA RANDA E RIPARTI', 'info');
+      return;
+    }
+    const want = side || b.mainSide || 1;
+    b.backMain = want; b.mainSide = want;
+    const rule = ['LA FRECCIA INDICA DOVE VA LA POPPA', 'LA POPPA VA DALLA PARTE OPPOSTA ALLA BARRA',
+                  'GIRA LA RUOTA DALLA PARTE DOVE VUOI CHE VADA LA POPPA'][this.settings.steering];
+    this.say(`RANDA SCONTRATA ${want > 0 ? 'A DRITTA' : 'A SINISTRA'}: SI VA INDIETRO · IN RETROMARCIA ${rule}`, 'info');
+  }
+
   startReplay() {
     if (this.history.length < 30) return;
     this.replay = Math.max(this.historySpan[0], this.time - 20);
@@ -188,7 +206,7 @@ export class Simulation {
     }
     if (Math.abs(twaOf(this.boat)) < 30 && Math.abs(speedKn(this.boat)) < 0.4) {
       this.ironsTimer += dt;
-      if (this.ironsTimer > 4 && this.time - this.messageTime > 6) this.say('FERMI PRUA AL VENTO: BARRA DA UN LATO E ASPETTA CHE LA PRUA CADA', 'warn');
+      if (this.ironsTimer > 4 && this.time - this.messageTime > 6) this.say('FERMI PRUA AL VENTO: SCONTRA LA RANDA (K) O METTI LA BARRA DA UN LATO E ASPETTA CHE LA PRUA CADA', 'warn');
     } else this.ironsTimer = 0;
   }
 
@@ -311,16 +329,24 @@ export const Coach = {
   tips(s, lake) {
     const out = [];
     const twa = Math.abs(twaOf(s)), ideal = idealSheets(s), kn = speedKn(s);
-    if (twa < 36) out.push(Math.abs(kn) < 0.6
-      ? ["Sei fermo nell'angolo morto: metti la barra e lascia cadere la prua", 'bad']
+    if (s.backMain) {
+      // esercizio della randa scontrata: retromarcia e prua che cade dal lato del boma
+      const side = s.backMain > 0 ? 'dritta' : 'sinistra';
+      if (twa > 65 && !s.mainBacked) out.push([`La prua è caduta: molla il boma (K) e cazza la randa per ripartire`, 'good']);
+      else if (s.u < -0.15) out.push([`Randa scontrata a ${side}: vai indietro e la prua cade a ${side}. Il timone lavora al contrario: correzioni dolci`, 'info']);
+      else out.push([`Randa scontrata a ${side}: tieni il boma fuori finché la barca prende abbrivio all'indietro`, 'info']);
+    }
+    if (twa < 36 && !s.backMain) out.push(Math.abs(kn) < 0.6
+      ? ["Sei fermo nell'angolo morto: scontra la randa (K) o metti la barra e lascia cadere la prua", 'bad']
       : ['Troppo all\'orza: le vele non portano, poggia di qualche grado', 'bad']);
     if (s.bando) out.push(['Vele in bando: senza scotte la barca rallenta (in poppa poco). Per ripartire riprendi le scotte (SPAZIO)', 'info']);
+    else if (s.backMain) { /* il boma lo tiene l'equipaggio: niente consigli sulla scotta della randa */ }
     else if (s.reefTimer > 0) { /* durante i terzaroli la randa sbatte apposta */ }
     else if (s.mainLuff > 0.35 && twa >= 36 && Math.abs(s.heel) > 20) out.push(['La randa fileggia per scaricare: con questo vento va bene così', 'info']);
     else if (s.mainLuff > 0.35 && twa >= 36) out.push(['La randa fileggia (sbatte): cazzala', 'bad']);
     else if (s.mainSheet - ideal.main > 0.09 && twa < 160) out.push(["Randa troppo lascata: cazzala finché smette di fileggiare", 'warn']);
     else if (ideal.main - s.mainSheet > 0.09 && twa > 45) out.push(["Randa troppo cazzata: lasca finché non fileggia, poi riprendi un po'", 'warn']);
-    if (s.jibTimer > 0 || s.bando) { /* il fiocco sbatte apposta: cambio in corso o scotte libere */ }
+    if (s.jibTimer > 0 || s.bando || s.backMain) { /* il fiocco sbatte apposta: cambio, scotte libere o randa scontrata */ }
     else if (s.jibLuff > 0.35 && twa >= 36) out.push(['Il fiocco sbatte: cazza la scotta del fiocco', 'bad']);
     else if (s.jibSheet - ideal.jib > 0.1 && twa < 150) out.push(['Fiocco troppo lascato: cazzalo', 'warn']);
     else if (ideal.jib - s.jibSheet > 0.1 && twa > 45) out.push(["Fiocco troppo cazzato: lascalo un po'", 'warn']);
