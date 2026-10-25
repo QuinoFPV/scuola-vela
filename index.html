@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scuola di Vela · Sportaction</title>
+<meta name="description" content="Simulatore di vela della scuola Sportaction sul Lago d'Iseo: timone, scotte, vento vero, consigli dell'istruttore.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="view"></canvas>
+
+<div id="hud">
+  <div id="instruments" class="panel">
+    <div id="spd" class="big">0.0 nodi</div>
+    <div id="posail"></div>
+    <div id="lines"></div>
+  </div>
+  <canvas id="dial"></canvas>
+  <canvas id="map"></canvas>
+  <div id="tips" class="panel"><h4>L'ISTRUTTORE DICE</h4><ul id="tipList"></ul></div>
+  <div id="controls" class="panel">
+    <div class="bars">
+      <div class="bar"><label>RANDA</label><div class="track"><span class="ends"><i>CAZZATA</i><i>LASCATA</i></span><div id="mainFill" class="fill"></div><div id="mainIdeal" class="ideal"></div></div><em id="mainVal"></em></div>
+      <div class="bar"><label>FIOCCO</label><div class="track"><span class="ends"><i>CAZZATA</i><i>LASCATA</i></span><div id="jibFill" class="fill"></div><div id="jibIdeal" class="ideal"></div></div><em id="jibVal"></em></div>
+    </div>
+    <canvas id="helmCanvas"></canvas>
+  </div>
+  <div id="tell" class="panel"><h4>FILETTI DEL FIOCCO</h4><canvas id="tellCanvas"></canvas><div id="tellVerdict"></div></div>
+  <div id="message"></div>
+  <div id="status"></div>
+  <div id="footer"></div>
+</div>
+
+<div id="menu" class="overlay">
+  <div class="card">
+    <h1>SCUOLA DI VELA</h1>
+    <p class="sub">Lago d'Iseo, base Sportaction di Castro · barca scuola di 8 metri con randa e fiocco</p>
+    <div id="menuRows"></div>
+    <button id="startBtn">INVIO PER USCIRE IN MARE</button>
+    <p class="hint">↑ ↓ scegli · ← → cambia · <a href="#" id="helpBtn">H per tutti i comandi</a></p>
+  </div>
+</div>
+
+<div id="help" class="overlay">
+  <div class="card help">
+    <h2>COMANDI</h2>
+    <dl>
+      <dt>← →</dt><dd>barra del timone (Shift: piano) · ↑ barra al centro</dd>
+      <dt>Q / A</dt><dd>cazza / lasca la randa</dd>
+      <dt>W / S</dt><dd>cazza / lasca il fiocco</dd>
+      <dt>T</dt><dd>vele automatiche o manuali (si parte in automatico)</dd>
+      <dt>Z / X</dt><dd>riduci / aumenta la tela: 1 mano, 2 mani, 2 mani + tormentina</dd>
+      <dt>Mouse</dt><dd>trascina a destra/sinistra: barra · tasto destro: gira la vista · rotella: zoom</dd>
+      <dt>Gamepad</dt><dd>levetta sinistra: barra · grilletti: randa · dorsali: fiocco</dd>
+      <dt>C</dt><dd>vista: gommone dietro, timoniere, laterale, dall'alto</dd>
+      <dt>P</dt><dd>pausa (la vista si può girare per spiegare)</dd>
+      <dt>R</dt><dd>moviola: gli ultimi 20 secondi al rallentatore</dd>
+      <dt>I</dt><dd>aiuti istruttore: consigli, filetti, regolazione ideale</dd>
+      <dt>1 … 6</dt><dd>vento 6, 10, 15, 20, 25, 30 nodi · G raffiche</dd>
+      <dt>D</dt><dd>Ora (da sud) o Sover (da nord)</dd>
+      <dt>B · V</dt><dd>timone: barra semplice, barra reale o ruota · barca nera o bianca</dd>
+      <dt>N · M</dt><dd>ricomincia dalla base · audio</dd>
+    </dl>
+    <button id="closeHelp">CHIUDI (H)</button>
+  </div>
+</div>
+
+<div id="loading" class="overlay" style="display:flex">
+  <div class="card"><h1>SCUOLA DI VELA</h1><p id="loadText" class="sub">Carico il lago d'Iseo…</p><div class="progress"><div id="loadBar"></div></div></div>
+</div>
+
+<div id="credits">Dati: © OpenStreetMap contributors (ODbL) · Sentinel-2 cloudless 2016 di EOX IT Services, s2maps.eu (CC BY 4.0, dati Copernicus) · quote Terrarium (AWS Open Data) · three.js</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
