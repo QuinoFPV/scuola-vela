@@ -168,6 +168,19 @@ export class Simulation {
     this.say(`RANDA SCONTRATA ${want > 0 ? 'A DRITTA' : 'A SINISTRA'}: SI VA INDIETRO · IN RETROMARCIA ${rule}`, 'info');
   }
 
+  /** Andatura a farfalla: in poppa il fiocco va dalla parte opposta alla randa, sul tangone; di nuovo per riportarlo. */
+  toggleFarfalla() {
+    const b = this.boat;
+    if (b.farfalla) {
+      b.farfalla = false; b.jibSide = b.mainSide;
+      this.say('FIOCCO RIPORTATO DALLA PARTE DELLA RANDA', 'info');
+      return;
+    }
+    if (Math.abs(twaOf(b)) < 150) { this.say('LA FARFALLA SI FA IN POPPA: POGGIA FINO A 165-180° DAL VENTO', 'warn'); return; }
+    b.farfalla = true; b.jibSide = -b.mainSide;
+    this.say("ANDATURA A FARFALLA: RANDA DA UNA PARTE, FIOCCO DALL'ALTRA SUL TANGONE", 'good');
+  }
+
   startReplay() {
     if (this.history.length < 30) return;
     this.replay = Math.max(this.historySpan[0], this.time - 20);
@@ -194,6 +207,7 @@ export class Simulation {
     this.waves.time = this.time;
     this.checkGround();
     for (const e of this.events) {
+      if (e.type === 'wingEnd') this.say("TROPPO ALL'ORZA PER LA FARFALLA: IL FIOCCO SI CHIUDE E TORNA SOTTOVENTO", 'warn');
       if (e.type === 'gybe') this.say(e.violent ? 'STRAMBATA INVOLONTARIA! IL BOMA HA ATTRAVERSATO DI COLPO' : 'STRAMBATA', e.violent ? 'bad' : 'good');
       if (e.type === 'tack') this.say(twaOf(this.boat) > 0 ? 'VIRATA: ORA MURE A DRITTA' : 'VIRATA: ORA MURE A SINISTRA', 'good');
     }
@@ -347,6 +361,8 @@ export const Coach = {
     else if (s.mainSheet - ideal.main > 0.09 && twa < 160) out.push(["Randa troppo lascata: cazzala finché smette di fileggiare", 'warn']);
     else if (ideal.main - s.mainSheet > 0.09 && twa > 45) out.push(["Randa troppo cazzata: lasca finché non fileggia, poi riprendi un po'", 'warn']);
     if (s.jibTimer > 0 || s.bando || s.backMain) { /* il fiocco sbatte apposta: cambio, scotte libere o randa scontrata */ }
+    else if (s.farfalla) out.push([twa < 155 ? "A farfalla stai orzando troppo: poggia, sotto i 140° il fiocco si chiude" : 'A farfalla: tieni la poppa piena, randa e fiocco prendono tutti e due vento pulito', twa < 155 ? 'warn' : 'good']);
+    else if (s.jibBlanket > 0.5) out.push(['In poppa il fiocco è coperto dalla randa e sbatte: prova la farfalla (Y)', 'info']);
     else if (s.jibLuff > 0.35 && twa >= 36) out.push(['Il fiocco sbatte: cazza la scotta del fiocco', 'bad']);
     else if (s.jibSheet - ideal.jib > 0.1 && twa < 150) out.push(['Fiocco troppo lascato: cazzalo', 'warn']);
     else if (ideal.jib - s.jibSheet > 0.1 && twa > 45) out.push(["Fiocco troppo cazzato: lascalo un po'", 'warn']);

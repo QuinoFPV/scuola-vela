@@ -224,6 +224,26 @@ check(!tacked && speedKn(back.boat) > 3 && back.boat.mainSide === 1, `mollato il
 const strong = irons(20); strong.toggleBackMain(-1); secs(strong, 3);
 check(Math.abs(strong.boat.mainAngle) < 66 && strong.boat.u > -1.8, `con 20 nodi il boma rientra (${f0(Math.abs(strong.boat.mainAngle))}°) e la retromarcia resta sotto i 3,5 nodi`);
 }
+// andatura a farfalla: in poppa piena il fiocco coperto dalla randa rende poco, a farfalla prende vento pulito
+{
+  const runAt = (twa, wing) => {
+    const w = steady(10), b = newBoat(); b.heading = norm360(-twa); b.farfalla = wing;
+    let acc = 0, n = 0;
+    run(b, w, 70, true, (x) => hold(x, twa));
+    run(b, w, 20, true, (x) => { hold(x, twa); acc += speedKn(x); n++; });
+    return { kn: acc / n, b };
+  };
+  const dead = runAt(178, false), wing = runAt(178, true), broad = runAt(150, false), broadWing = runAt(150, true);
+  check(dead.b.jibBlanket > 0.8 && wing.b.jibSide === -wing.b.mainSide && wing.kn > dead.kn * 1.08,
+    `in poppa piena a farfalla si va più forte (${f1(dead.kn)} → ${f1(wing.kn)} kn), il fiocco non è più coperto`);
+  check(broad.kn > broadWing.kn, `al gran lasco conviene il fiocco dalla parte della randa (${f1(broad.kn)} contro ${f1(broadWing.kn)} kn)`);
+  const sm = new Simulation(lake);
+  sm.toggleFarfalla();
+  check(!sm.boat.farfalla && sm.message.includes('POPPA'), 'al traverso la farfalla non si può fare');
+  const b = wing.b, w = steady(10);
+  const ev = run(b, w, 25, true, (x) => hold(x, 115));
+  check(!b.farfalla && ev.some((e) => e.type === 'wingEnd') && b.jibSide === b.mainSide, 'orzando oltre i 140° il fiocco si chiude e torna sottovento');
+}
 
 console.log(failures === 0 ? 'TUTTO OK' : `${failures} ERRORI`);
 process.exit(failures === 0 ? 0 : 1);

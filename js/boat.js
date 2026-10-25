@@ -343,6 +343,10 @@ export class BoatModel {
     this.mainSheetLine = mesh(new THREE.CylinderGeometry(0.012, 0.012, 1, 6), this.lineMat);
     this.jibSheetLine = mesh(new THREE.CylinderGeometry(0.012, 0.012, 1, 6), this.lineMat);
     this.tilt.add(this.mainSheetLine, this.jibSheetLine);
+    // tangone: tiene fuori il fiocco quando si va a farfalla
+    this.pole = mesh(new THREE.CylinderGeometry(0.028, 0.028, 1, 8), std(0xc8ccd0, 0.3, 0.8));
+    this.pole.visible = false;
+    this.tilt.add(this.pole);
   }
 
   buildCrew() {
@@ -432,6 +436,8 @@ export class BoatModel {
     this.setLine(this.mainSheetLine, V(Math.sin(a) * 2.7, BOOM_Y - 0.1, MAST_Z + Math.cos(a) * 2.7), V(0, 0.55, 1.95));
     const tl = tAt(1.0);
     this.setLine(this.jibSheetLine, clew, V(s.jibSide * (halfBeam(tl) - 0.15), sheer(tl) + 0.05, 1.0));
+    this.pole.visible = s.farfalla;
+    if (s.farfalla) this.setLine(this.pole, V(0, 1.35, MAST_Z - 0.08), clew);
 
     // equipaggio sopravento, sporto fuori quando la barca sbanda
     const sideK = clamp(s.crew * 1.6, -1, 1);

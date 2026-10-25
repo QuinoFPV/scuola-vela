@@ -22,6 +22,12 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
   - le scotte si liberano e randa e fiocco vanno fuori del tutto in un paio di secondi; la barca rallenta (in poppa poco);
   - di nuovo SPAZIO per riprenderle: con le vele automatiche si regolano da sole, con quelle manuali si cazza a mano;
   - con le vele manuali anche cazzare una scotta fa uscire dal bando.
+- **Andatura a farfalla** (Y; sul telefono il pulsante FARFALLA, che compare solo in poppa):
+  - in poppa il fiocco dalla stessa parte della randa è coperto: prende poco vento e sbatte; l'istruttore suggerisce la farfalla;
+  - a farfalla il fiocco va dall'altra parte, tenuto fuori dal tangone, e prende vento pulito;
+  - con 10 nodi in poppa piena si passa da 3,5 a 4,0 nodi, con 15 nodi da 5,1 a 5,6;
+  - al gran lasco (150°) conviene invece il fiocco dalla parte della randa: a farfalla si va più piano;
+  - si fa solo oltre i 150° dal vento; se si orza sotto i 140° il fiocco si chiude e torna sottovento.
 - **Randa scontrata** (K dal lato dov'è il boma, J a sinistra, L a dritta; sul telefono SCONTRA RANDA): l'esercizio per uscire dall'angolo morto e andare in retromarcia.
   - Il marinaio di prua si alza e spinge il boma fuori a 70°; il vento prende la randa dalla parte di fuori, la vela si gonfia al contrario e la barca va indietro.
   - Con 10 nodi la barca va indietro a 1–1,5 nodi in pochi secondi; scadendo senza far niente farebbe 0,3–0,4 nodi.

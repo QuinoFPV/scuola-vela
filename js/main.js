@@ -109,6 +109,7 @@ async function main() {
       case 'KeyH': sim.paused = true; helpReturn = ''; show('help'); break;
       case 'Space': sim.toggleBando(); break;          // vele in bando: scotte libere, di nuovo per riprenderle
       case 'KeyK': sim.toggleBackMain(0); break;       // randa scontrata dal lato dov'e' il boma, di nuovo per mollarla
+      case 'KeyY': sim.toggleFarfalla(); break;        // andatura a farfalla, di nuovo per riportare il fiocco
       case 'KeyJ': sim.toggleBackMain(-1); break;      // ... a sinistra
       case 'KeyL': sim.toggleBackMain(1); break;       // ... a dritta
       case 'KeyF': st.triangle = !st.triangle; sim.say(st.triangle ? 'TRIANGOLO DEI VENTI: REALE, APPARENTE E VELOCITÀ DELLA BARCA' : 'TRIANGOLO DEI VENTI NASCOSTO', 'info'); break;
@@ -234,7 +235,7 @@ async function main() {
     b.addEventListener('lostpointercapture', off);
   }
   // la barra dei pulsanti fa le veci dei tasti; toccando gli strumenti si vedono tutti i dati
-  for (const b of document.querySelectorAll('#tbar button, #tBando, #tBack')) b.addEventListener('click', () => command(b.dataset.k));
+  for (const b of document.querySelectorAll('#tbar button, #sheets .acts button')) b.addEventListener('click', () => command(b.dataset.k));
   $('instruments').addEventListener('click', () => { if (TOUCH) $('instruments').classList.toggle('open'); });
   document.addEventListener('visibilitychange', () => {
     if (!audio.ctx) return;

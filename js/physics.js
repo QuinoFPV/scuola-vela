@@ -125,7 +125,7 @@ export function newBoat() {
     pos: { x: 0, y: 0 }, heading: 90, u: 2, v: 0, r: 0, heel: 0, heelRate: 0, rudder: 0,
     mainSheet: 0.4, jibSheet: 0.4, mainAngle: 30, jibAngle: 25, mainSide: 1, jibSide: 1,
     mainAlpha: 0, jibAlpha: 0, mainLuff: 0, jibLuff: 0, crew: 0, reef: 0, reefTimer: 0, jibTimer: 0, bando: false,
-    backMain: 0, mainBacked: false,
+    backMain: 0, mainBacked: false, farfalla: false, jibBlanket: 0,
     twd: 0, tws: 10, awa: 0, aws: 10, drive: 0, time: 0,
   };
 }
@@ -203,7 +203,9 @@ export function step(s, wind, dt) {
     s.mainSide = newMainSide;
   }
   if (s.backMain) s.mainSide = s.backMain;
-  s.jibSide = sideFor(s.jibSide, Math.abs(s.jibAngle));
+  // a farfalla il fiocco sta dalla parte opposta alla randa, tenuto fuori dal tangone; se si orza troppo si chiude
+  if (s.farfalla && Math.abs(twaOf(s)) < 140) { s.farfalla = false; events.push({ type: 'wingEnd' }); }
+  s.jibSide = s.farfalla ? -s.mainSide : sideFor(s.jibSide, Math.abs(s.jibAngle));
 
   const heelK = Math.cos(rad(Math.min(80, Math.abs(s.heel)))) ** 2;
   const q = 0.5 * RHO_AIR * (s.aws * KNOT) ** 2 * heelK;
@@ -229,17 +231,20 @@ export function step(s, wind, dt) {
     const alpha = Math.abs(delta);
     const { cl, cd } = coefficients(alpha);
     const sg = delta >= 0 ? 1 : -1;
-    const fx = (-flow.y * sg * cl + flow.x * cd) * q * area;
-    const fy = (flow.x * sg * cl + flow.y * cd) * q * area;
-    const luff = alpha < 4 ? clamp((4 - alpha) / 4, 0, 1) : 0;
+    // in poppa la randa copre il fiocco che sta dalla sua stessa parte: prende poco vento e si affloscia
+    const blanket = !main && side === s.mainSide ? clamp((absAwa - 135) / 35, 0, 1) : 0;
+    const qs = q * (1 - 0.85 * blanket);
+    const fx = (-flow.y * sg * cl + flow.x * cd) * qs * area;
+    const fy = (flow.x * sg * cl + flow.y * cd) * qs * area;
+    const luff = Math.max(alpha < 4 ? clamp((4 - alpha) / 4, 0, 1) : 0, blanket * 0.7);
     // il vento spinge la vela verso l'interno (preme sulla faccia esterna): e' scontrata
     const c = rad(chord), push = (fx * Math.sin(c) - fy * Math.cos(c)) * side;
-    return { ang, alpha, fx, fy, luff, backed: push < -1 };
+    return { ang, alpha, fx, fy, luff, blanket, backed: push < -1 };
   };
   const m = sail(true), j = sail(false);
   s.mainAngle = m.ang; s.mainAlpha = m.alpha; s.mainLuff = m.luff;
   s.mainBacked = s.backMain !== 0 && m.backed;
-  s.jibAngle = j.ang; s.jibAlpha = j.alpha; s.jibLuff = j.luff;
+  s.jibAngle = j.ang; s.jibAlpha = j.alpha; s.jibLuff = j.luff; s.jibBlanket = j.blanket;
   let fx = m.fx + j.fx, fy = m.fy + j.fy, yaw = 0;
   // resistenza aerodinamica di scafo, albero ed equipaggio
   const wk = q / heelK * 1.2;
