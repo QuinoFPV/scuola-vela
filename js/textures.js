@@ -77,9 +77,10 @@ export function sailTexture(style, main) {
     for (const f of [0.25, 0.42, 0.6, 0.78, 0.9]) g.fillRect(W - 40, yOf(f), 36, 5);
     g.fillStyle = black ? '#2b2c30' : '#e2e2de';
     for (const f of [0.22, 0.42, 0.62, 0.82]) g.fillRect(W * 0.62, yOf(f) - 6, W * 0.36, 12);
-    if (black && sailLogo) {
-      // logo vicino alla penna, alto 0,6 m: la tela segue la corda, quindi lo si allarga per restare proporzionato
-      const f = 0.8, hM = 0.6, wM = hM * sailLogo.width / sailLogo.height;
+    if (sailLogo) {
+      // logo vicino alla penna (sulla bianca sopra il logo a bandiera, piu' piccolo perche' la vela li' e' stretta);
+      // la tela segue la corda, quindi lo si allarga per restare proporzionato
+      const f = black ? 0.8 : 0.865, hM = black ? 0.6 : 0.45, wM = hM * sailLogo.width / sailLogo.height;
       const pxW = W / mainChord(f), pxH = H / 8.5;
       g.drawImage(sailLogo, W * 0.44 - wM * pxW / 2, yOf(f) - hM * pxH / 2, wM * pxW, hM * pxH);
     }
