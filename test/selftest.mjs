@@ -2,7 +2,7 @@
 // Uso: node test/selftest.mjs
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { Wind, newBoat, step, idealSheets, norm180, norm360, clamp, speedKn, twaOf, dirVec, len, sub, add, mul, SAIL_PLANS } from '../js/physics.js';
+import { Wind, newBoat, step, idealSheets, norm180, norm360, clamp, speedKn, twaOf, dirVec, len, sub, add, mul, SAIL_PLANS, byLee } from '../js/physics.js';
 import { Lake } from '../js/lake.js';
 import { Simulation, Coach, COURSE, WINDS } from '../js/sim.js';
 
@@ -270,6 +270,19 @@ check(held < 40 && fastest > -1.8, `con 20 nodi chi spinge il boma cede (tenuto 
   const b = wing.b, w = steady(10);
   const ev = run(b, w, 25, true, (x) => hold(x, 115));
   check(!b.farfalla && ev.some((e) => e.type === 'wingEnd') && b.jibSide === b.mainSide, 'orzando oltre i 140° il fiocco si chiude e torna sottovento');
+}
+// false mure: in poppa con la randa dalla parte del vento; poggiando ancora il boma passa da solo
+{
+  const w = steady(10), b = newBoat();
+  b.heading = norm360(-172);
+  run(b, w, 40, true, (x) => hold(x, 172));
+  check(byLee(b) === 0 && !Coach.tips(b, lake).some(([t]) => t.includes('False mure')), `in poppa con la randa sottovento le mure sono giuste (${f0(twaOf(b))}°)`);
+  const side = b.mainSide;
+  run(b, w, 12, true, (x) => hold(x, -174));
+  check(b.mainSide === side && byLee(b) > 2 && Coach.tips(b, lake).some(([t]) => t.includes('False mure')),
+    `passato il vento in poppa, randa ancora dalla stessa parte: false mure di ${f0(byLee(b))}° e l'istruttore lo dice`);
+  const ev = run(b, w, 12, true, (x) => hold(x, -150));
+  check(ev.some((e) => e.type === 'gybe') && byLee(b) === 0, 'poggiando ancora il boma passa da solo (strambata involontaria) e le mure tornano giuste');
 }
 // spinnaker: issata e ammainata, fiocco avvolto, si chiude orzando, strambata col tangone, straorzata
 {

@@ -1,7 +1,7 @@
 // Simulazione: barca, vento, onde, boe, moviola, messaggi e consigli dell'istruttore.
 import {
   Wind, newBoat, copyBoat, step, idealSheets, Spec, norm180, norm360, rad, deg, clamp, dirVec, len, sub, add, mul,
-  speedKn, twaOf, stormJib, KNOT,
+  speedKn, twaOf, stormJib, byLee, KNOT,
 } from './physics.js';
 
 /** Le onde del lago (le stesse dello shader dell'acqua, per far galleggiare barca e boe). */
@@ -35,6 +35,9 @@ export const DIRECTIONS = [['ORA', 'da sud, pomeriggio', 180], ['SOVER', 'da nor
 export const STEERING = ['BARRA SEMPLICE (freccia = verso)', 'BARRA REALE (spingi a sinistra, vai a dritta)', 'RUOTA'];
 export const COURSE = [0, 2, 1];
 export const MARK_NAMES = ['BOA DI BOLINA', 'BOA DI POPPA', 'BOA DI TRAVERSO'];
+/** Da MARK_FAR metri si avvisa di lasciare la boa a sinistra; sotto MARK_NEAR la freccia antioraria ha preso il posto
+ *  del freccione giallo che da lontano indica dov'e' la boa. */
+export const MARK_NEAR = 50, MARK_FAR = 70;
 
 export class Simulation {
   constructor(lake) {
@@ -282,7 +285,7 @@ export class Simulation {
     }
     // la boa si gira in senso antiorario, lasciandola a sinistra: si somma l'angolo percorso intorno a lei
     const rel = sub(b.pos, this.marks[this.nextMark]), dist = len(rel);
-    if (dist < 70 && !this.approachSaid) {
+    if (dist < MARK_FAR && !this.approachSaid) {
       this.approachSaid = true;
       // dopo la boa di poppa si risale di bolina: lo spi va ammainato prima
       const douse = this.boat.spi && this.nextMark === 1 ? ' · AMMAINA LO SPI PRIMA (E)' : '';
@@ -422,7 +425,7 @@ export const Coach = {
     if (s.bando) { /* niente consigli sulle scotte: sono libere apposta */ }
     else if (Math.abs(s.heel) > 26) out.push(['Troppo sbandata: lasca la randa per scaricare', 'bad']);
     else if (Math.abs(s.rudder) > 9 && Math.abs(s.r) < 2 && Math.abs(s.heel) > 15) out.push(["Barca ardente (tira all'orza): lasca un po' di randa", 'warn']);
-    if (twa > 168 && s.mainSide * (twaOf(s) > 0 ? 1 : -1) > 0) out.push(['Sei al LEE: rischio di strambata involontaria, orza un poco', 'bad']);
+    if (byLee(s) > 1) out.unshift(['False mure: la randa è dalla parte del vento, rischio di strambata involontaria. Orza un poco o stramba', 'bad']);
     if (Math.abs(s.rudder) > 22 && Math.abs(kn) > 1) out.push(['Tanto timone frena la barca: correzioni più dolci', 'info']);
     if (lake.depth(add(s.pos, mul(dirVec(s.heading), 25))) < 2.5 && s.u > 0.5) out.unshift(['Attenzione, bassofondale davanti: vira o poggia subito', 'bad']);
     else if (lake.depth(s.pos) < 2.2) out.unshift(["In secca: barra al centro, lasca le vele e fatti scadere all'indietro", 'bad']);

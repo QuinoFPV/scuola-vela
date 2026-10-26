@@ -153,6 +153,12 @@ export const speedKn = (s) => Math.hypot(s.u, s.v) / KNOT * (s.u < 0 ? -1 : 1);
 export const twaOf = (s) => norm180(s.twd - s.heading);
 export const leeway = (s) => Math.abs(s.u) < 0.2 ? 0 : deg(Math.atan2(s.v, Math.abs(s.u)));
 export const vmg = (s) => s.u / KNOT * Math.cos(rad(twaOf(s)));
+/** Gradi "al lee" (false mure): in poppa con la randa dalla stessa parte da cui arriva il vento; 0 se e' sottovento.
+ *  La randa scontrata la tiene fuori l'equipaggio apposta, quindi non conta. */
+export const byLee = (s) => {
+  const twa = twaOf(s);
+  return !s.backMain && Math.abs(twa) > 120 && s.mainSide * twa > 0 ? 180 - Math.abs(twa) : 0;
+};
 
 const RHO_AIR = 1.225, RHO_WATER = 1025;
 

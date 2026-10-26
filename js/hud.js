@@ -1,6 +1,7 @@
 // Strumenti e indicazioni sopra la scena: pannelli HTML e piccoli disegni su canvas.
-import { rad, clamp, len, sub, bearing, idealSheets, speedKn, twaOf, leeway, vmg, SAIL_PLANS, Spec } from './physics.js';
-import { Coach, WINDS, DIRECTIONS, STEERING, MARK_NAMES } from './sim.js';
+import { Vector3 } from './vendor/three.module.min.js';
+import { rad, clamp, len, sub, bearing, idealSheets, speedKn, twaOf, leeway, vmg, byLee, norm180, SAIL_PLANS, Spec } from './physics.js';
+import { Coach, WINDS, DIRECTIONS, STEERING, MARK_NAMES, MARK_NEAR, MARK_FAR } from './sim.js';
 import { CAMERAS } from './world.js';
 import { BOATS } from './textures.js';
 
@@ -28,6 +29,9 @@ export class HUD {
     this.menuRow = 0;
     this.textTime = -1;
     this.phone = matchMedia('(max-height: 520px)');       // telefono in orizzontale: strumenti ridotti
+    this.ptr = { el: $('markPtr'), tag: $('markTag'), v: new Vector3(), shown: false, size: 0, text: null, b: null, t: 0, side: 1 };
+    addEventListener('resize', () => { this.ptr.size = 0; this.ptr.text = null; });
+    this.falseTack = false;
   }
 
   /** Scrive solo se cambia: sui telefoni ogni ritocco della pagina costa. */
@@ -44,11 +48,14 @@ export class HUD {
     const text = !this.touch || time - this.textTime > 0.1 || time < this.textTime;
     if (text) this.textTime = time;
     const key = (k) => this.touch ? '' : ` (${k})`;
+    // false mure: in poppa con la randa dalla parte del vento (un po' di isteresi, se no in poppa piena lampeggia a caso)
+    this.falseTack = byLee(s) > (this.falseTack ? 0.5 : 2);
+    $('alarm').classList.toggle('on', this.falseTack);
     // strumenti
-    const tack = Coach.tack(twa);
+    const tack = this.falseTack ? 'FALSE MURE' : Coach.tack(twa);
     HUD.put('spd', `${speedKn(s).toFixed(1)} nodi`);
     const pos = HUD.put('posail', Coach.pointOfSail(twa) + (tack ? '  ·  ' + tack : ''));
-    pos.style.color = Math.abs(twa) < 34 ? COLORS.bad : '#99d9ff';
+    pos.style.color = Math.abs(twa) < 34 || this.falseTack ? COLORS.bad : '#99d9ff';
     const v = vmg(s);
     const m = sim.marks[sim.nextMark];
     let lap = 'Giro delle boe: parte alla boa di bolina';
@@ -69,6 +76,7 @@ export class HUD {
 
     this.drawDial(s, aids);
     this.drawMap(sim, s, time);
+    this.drawPointer(sim, s, world, time);
     // scotte
     const ideal = idealSheets(s);
     for (const [id, val, idl, luff, ang] of [['main', s.mainSheet, ideal.main, s.mainLuff, s.mainAngle], ['jib', s.jibSheet, ideal.jib, s.jibLuff, s.jibAngle]]) {
@@ -105,6 +113,57 @@ export class HUD {
     else if (sim.paused) st.textContent = this.touch ? 'PAUSA  ·  trascina col dito per girare intorno alla barca' : 'PAUSA  ·  trascina col tasto destro per girare intorno alla barca  ·  P per ripartire';
     else st.textContent = '';
     if (!this.touch) $('footer').textContent = `Vista: ${CAMERAS[world.mode]} (C)   ·   H comandi   ·   ESC menu`;
+  }
+
+  /** Freccione giallo verso la prossima boa (con gli aiuti). Da lontano sta sopra la boa e la indica; se la boa e'
+   *  fuori dallo schermo scivola su un ovale intorno al centro e punta verso di lei. Avvicinandosi sfuma e lascia
+   *  il posto alla freccia antioraria sull'acqua. */
+  drawPointer(sim, s, world, time) {
+    const P = this.ptr, m = sim.marks[sim.nextMark], dist = len(sub(m, s.pos));
+    const k = sim.settings.aids ? clamp((dist - MARK_NEAR) / (MARK_FAR - MARK_NEAR), 0, 1) : 0;
+    if ((k > 0) !== P.shown) {
+      P.shown = k > 0;
+      P.el.style.display = P.tag.style.display = P.shown ? 'block' : 'none';
+      P.b = null;
+    }
+    if (!P.shown) return;
+    const dt = clamp(time - P.t, 0, 0.1);
+    P.t = time;
+    if (!P.size) P.size = P.el.offsetWidth;
+    const text = `${MARK_NAMES[sim.nextMark]}|${dist < 1000 ? `${Math.round(dist / 5) * 5} m` : `${(dist / 1000).toFixed(1)} km`}`;
+    if (text !== P.text) {
+      const [name, d] = text.split('|');
+      $('markName').textContent = name;
+      $('markDist').textContent = d;
+      P.lw = P.tag.offsetWidth; P.lh = P.tag.offsetHeight;
+      P.text = P.lw ? text : null;                         // nascosto non si misura: si riprova
+    }
+    const W = innerWidth, H = innerHeight, A = P.size || 50;
+    // la cima della boa sullo schermo; se e' dietro la telecamera la proiezione si capovolge
+    const v = P.v.set(m.x, 2.4, -m.y).project(world.camera), behind = v.z > 1;
+    const sx = (1 + (behind ? -v.x : v.x)) / 2 * W, sy = (1 - (behind ? -v.y : v.y)) / 2 * H;
+    const inside = !behind && sx > W * 0.05 && sx < W * 0.95 && sy > A * 2.2 && sy < H * 0.95;
+    // sopra la boa (b = 0) o sul bordo (b = 1): si passa dall'uno all'altro in un quarto di secondo
+    P.b = P.b === null ? +!inside : clamp(P.b + (inside ? -dt : dt) * 4, 0, 1);
+    let dx = sx - W / 2, dy = sy - H / 2;
+    const L = Math.hypot(dx, dy);
+    if (L < 1) { dx = 0; dy = 1; } else { dx /= L; dy /= L; }
+    const r = 1 / Math.hypot(dx / (W * 0.4), dy / (H * (this.touch ? 0.32 : 0.36)));     // sui telefoni sopra c'e' la fila di pulsanti
+    const ex = W / 2 + dx * r, ey = H / 2 + dy * r, ea = Math.atan2(dy, dx) * 180 / Math.PI;
+    const bx = clamp(sx, 0, W), by = clamp(sy, 0, H) - A * 0.61 - 4;
+    const b = P.b * P.b * (3 - 2 * P.b);
+    const x = bx + (ex - bx) * b, y = by + (ey - by) * b, a = 90 + norm180(ea - 90) * b;
+    // la freccia avanza e torna indietro nella direzione in cui punta
+    const c = Math.cos(rad(a)), sn = Math.sin(rad(a)), nudge = A * 0.07 * (1 + Math.sin(time * 3.4));
+    P.el.style.transform = `translate(${(x + c * nudge - A / 2).toFixed(1)}px, ${(y + sn * nudge - A / 2).toFixed(1)}px) rotate(${a.toFixed(1)}deg)`;
+    // la targhetta: accanto alla freccia sopra la boa (dalla parte dove c'e' posto), dietro la coda sul bordo
+    if (sx > W * 0.75) P.side = -1; else if (sx < W * 0.65) P.side = 1;
+    const lw = P.lw || 120, lh = P.lh || 40, back = A * 0.45 + Math.abs(c) * lw / 2 + Math.abs(sn) * lh / 2 + 4;
+    const nx = x + P.side * (A * 0.42 + lw / 2 + 8), tx = x - c * back, ty = y - sn * back;
+    const lx = clamp(nx + (tx - nx) * b, lw / 2 + 4, W - lw / 2 - 4), ly = clamp(y + (ty - y) * b, lh / 2 + 4, H - lh / 2 - 4);
+    P.tag.style.transform = `translate(${(lx - lw / 2).toFixed(1)}px, ${(ly - lh / 2).toFixed(1)}px)`;
+    const op = k.toFixed(2);
+    if (P.el.style.opacity !== op) P.el.style.opacity = P.tag.style.opacity = op;
   }
 
   /** Sui telefoni i tasti diventano i nomi dei pulsanti. */

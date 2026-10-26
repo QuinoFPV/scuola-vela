@@ -1,8 +1,8 @@
 // Aiuti disegnati sull'acqua, da accendere nel menu: il triangolo dei venti (vento reale, vento apparente,
 // velocita' della barca) e l'aria sporca che le vele lasciano sottovento.
 import * as THREE from './vendor/three.module.min.js';
-import { dirVec, KNOT } from './physics.js';
-import { MARK_NAMES } from './sim.js';
+import { dirVec, KNOT, clamp, len, sub } from './physics.js';
+import { MARK_NAMES, MARK_NEAR, MARK_FAR } from './sim.js';
 
 const M_PER_KN = 1.2;                       // scala delle frecce: un nodo = 1,2 m sull'acqua
 const RINGS = [5, 10, 20];
@@ -301,7 +301,8 @@ function curvedArrow(r, w, spanDeg) {
 }
 
 /** Frecce sull'acqua intorno alle boe: si girano in senso antiorario, lasciandole a sinistra.
- *  Quella della prossima boa e' accesa e gira; un cartello sopra la boa lo ricorda (con gli aiuti). */
+ *  Compaiono solo da vicino (da lontano la boa la indica il freccione giallo): quella della prossima boa
+ *  e' accesa e gira, e un cartello sopra la boa lo ricorda (con gli aiuti). */
 export class RoundingArrows {
   constructor(count) {
     this.root = new THREE.Group();
@@ -320,15 +321,18 @@ export class RoundingArrows {
   }
 
   update(sim, waves) {
-    const y = waves.amp + 0.08, t = sim.shown.time;
+    const s = sim.shown, y = waves.amp + 0.08, t = s.time;
+    const near = (p) => clamp((MARK_FAR - len(sub(p, s.pos))) / (MARK_FAR - MARK_NEAR), 0, 1);
     this.arrows.forEach((m, i) => {
-      const p = sim.marks[i], next = i === sim.nextMark;
+      const p = sim.marks[i], next = i === sim.nextMark, k = near(p);
+      m.visible = k > 0;
       m.position.set(p.x, y, -p.y);
       m.rotation.y = next ? t * 0.9 : 0;                 // y positivo = antiorario visto dall'alto
-      m.material.uniforms.opacity.value = next ? 0.9 : 0.3;
+      m.material.uniforms.opacity.value = (next ? 0.9 : 0.3) * k;
     });
-    const p = sim.marks[sim.nextMark];
-    this.sign.visible = sim.settings.aids;
+    const p = sim.marks[sim.nextMark], k = near(p);
+    this.sign.visible = sim.settings.aids && k > 0;
+    this.sign.material.opacity = k;
     this.sign.position.set(p.x, 4.4, -p.y);
     this.sign.userData.set(`${MARK_NAMES[sim.nextMark]} · lasciala a sinistra ↺`);
   }

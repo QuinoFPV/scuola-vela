@@ -39,10 +39,20 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
 - **Boe da regata e giro antiorario:**
   - le tre boe sono gonfiabili gialle da regata, larghe 2 m e alte poco più di 2, con la fascia SPORTACTION;
   - si girano in senso antiorario, lasciandole a sinistra; per questo la boa di traverso sta sempre a sinistra guardando il vento, e il triangolo bolina → traverso → poppa si percorre in senso antiorario;
-  - intorno a ogni boa c'è una freccia curva sull'acqua: quella della prossima boa è accesa e gira, le altre sono tenui;
-  - sulla mappa ogni boa ha la sua freccetta e, con gli aiuti accesi, sopra la prossima boa c'è il cartello "lasciala a sinistra";
-  - a 70 m l'istruttore lo ricorda;
+  - da lontano, con gli aiuti accesi, un freccione giallo indica la prossima boa:
+    - sta sopra la boa e la indica, con accanto la targhetta col nome e la distanza;
+    - se la boa è fuori dallo schermo (di lato o alle spalle) il freccione si sposta verso il bordo e punta dalla sua parte;
+  - da vicino il freccione sfuma, fra 70 e 50 m, e compare la freccia curva sull'acqua intorno alla boa:
+    - quella della prossima boa è accesa e gira, quelle delle altre boe sono tenui e anche loro si vedono solo da vicino;
+    - con gli aiuti accesi, sopra la boa c'è il cartello "lasciala a sinistra";
+  - sulla mappa ogni boa ha la sua freccetta;
+  - a 70 m l'istruttore ricorda di lasciarla a sinistra;
   - la boa vale solo se ci si gira intorno in senso antiorario, entro 45 m; girata al contrario non vale e compare l'avviso.
+- **False mure** (in poppa con la randa dalla parte da cui arriva il vento):
+  - compare la scritta rossa lampeggiante FALSE MURE, con sotto il rischio di strambata involontaria;
+  - negli strumenti, al posto delle mure, c'è "FALSE MURE" in rosso, e l'istruttore dice di orzare un poco o strambare;
+  - la scritta si accende da 2° oltre la poppa piena e si spegne sotto mezzo grado, così in poppa piena non lampeggia a caso;
+  - poggiando ancora il boma passa da solo dall'altra parte: è la strambata involontaria.
 - **Triangolo dei venti** (tasto F o menu): frecce sull'acqua intorno alla barca, con gli stessi colori della rosa del vento:
   - azzurra il vento reale, gialla il vento apparente, verde la velocità della barca;
   - la linea verde tratteggiata tra le code dei due venti è il vento creato dal moto della barca;

@@ -28,6 +28,22 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0a1420; col
 #tellVerdict { font-size: 11px; font-weight: 600; margin-top: 2px; }
 #message { position: absolute; top: 56px; left: 0; right: 0; text-align: center; font-size: 24px; font-weight: 700; text-shadow: 0 2px 8px rgba(0, 0, 0, .6); }
 #status { position: absolute; top: 94px; left: 0; right: 0; text-align: center; font-size: 16px; font-weight: 700; color: #ffd94d; }
+/* false mure: scritta rossa lampeggiante */
+#alarm { position: absolute; top: 124px; left: 0; right: 0; text-align: center; display: none; text-shadow: 0 2px 10px rgba(0, 0, 0, .75); }
+#alarm.on { display: block; }
+#alarm > div { display: inline-block; padding: 4px 22px 8px; border-radius: 14px; background: rgba(30, 6, 6, .6); border: 1px solid rgba(255, 59, 48, .5); }
+#alarm b { display: block; font-size: 38px; font-weight: 800; letter-spacing: 4px; color: #ff3b30; animation: blink .8s steps(1, end) infinite; }
+#alarm span { font-size: 14px; font-weight: 600; color: #ffd6d2; }
+@keyframes blink { 50% { opacity: .12; } }
+/* freccione giallo verso la prossima boa e la sua targhetta */
+#markPtr, #markTag { position: absolute; left: 0; top: 0; display: none; will-change: transform; }
+#markPtr { width: 68px; height: 68px; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .55)); }
+#markPtr svg { display: block; width: 100%; height: 100%; overflow: visible; }
+#markPtr path { fill: #ffd23f; stroke: rgba(9, 16, 27, .9); stroke-width: 2.6; stroke-linejoin: round; }
+#markTag { padding: 4px 12px 5px; background: rgba(9, 16, 27, .84); border: 2px solid rgba(255, 210, 63, .85); border-radius: 12px;
+  text-align: center; white-space: nowrap; line-height: 1.15; box-shadow: 0 3px 10px rgba(0, 0, 0, .35); }
+#markTag b { display: block; font-size: 10px; font-weight: 600; letter-spacing: 2px; color: #ffd23f; }
+#markTag span { font-size: 18px; font-weight: 700; color: #fff; }
 #footer { position: absolute; bottom: 18px; left: 560px; right: 290px; text-align: center; font-size: 12px; color: rgba(255, 255, 255, .6); }
 
 .overlay { position: fixed; inset: 0; display: none; touch-action: none; align-items: center; justify-content: center; background: rgba(3, 10, 20, .55); }
@@ -109,6 +125,9 @@ body.touch #instruments { left: var(--sl); top: var(--st); width: 292px; font-si
 body.touch #dial { right: var(--sr); top: var(--st); }
 body.touch #message { top: calc(var(--st) + 46px); left: 316px; right: 240px; font-size: 20px; }
 body.touch #status { top: calc(var(--st) + 112px); left: 316px; right: 240px; }
+body.touch #alarm { top: calc(var(--st) + 138px); left: 316px; right: 240px; }
+body.touch #alarm b { font-size: 32px; }
+body.touch #markPtr { width: 58px; height: 58px; }
 #tbar { left: calc(var(--sl) + 300px); right: calc(var(--sr) + 226px); transform: none; flex-wrap: wrap; justify-content: center; }
 
 /* telefono in orizzontale: tutto più piccolo */
@@ -128,6 +147,14 @@ body.touch #status { top: calc(var(--st) + 112px); left: 316px; right: 240px; }
   body.touch #tips li:nth-child(n+3) { display: none; }
   body.touch #message { top: calc(var(--st) + 44px); left: 250px; right: 150px; font-size: 15px; }
   body.touch #status { top: calc(var(--st) + 86px); left: 250px; right: 150px; font-size: 12px; }
+  body.touch #alarm { top: calc(var(--st) + 104px); left: 250px; right: 150px; }
+  body.touch #alarm b { font-size: 22px; letter-spacing: 2px; }
+  body.touch #alarm span { font-size: 10px; }
+  body.touch #markPtr { width: 44px; height: 44px; }
+  body.touch #alarm > div { padding: 2px 12px 5px; border-radius: 10px; }
+  body.touch #markTag { padding: 2px 8px 3px; border-radius: 9px; }
+  body.touch #markTag b { font-size: 8px; letter-spacing: 1.2px; }
+  body.touch #markTag span { font-size: 13px; }
   #tbar { left: calc(var(--sl) + 230px); right: calc(var(--sr) + 128px); gap: 5px; }
   #tbar button { height: 32px; padding: 0 7px; font-size: 10px; }
   #tiller { height: 70px; }
@@ -149,6 +176,7 @@ body.touch #status { top: calc(var(--st) + 112px); left: 316px; right: 240px; }
 @media (max-height: 520px) and (max-width: 700px) {
   body.touch #message, body.touch #status { top: calc(var(--st) + 80px); }
   body.touch #status { top: calc(var(--st) + 118px); }
+  body.touch #alarm { top: calc(var(--st) + 136px); }
 }
 
 /* in verticale si chiede di girare il dispositivo */

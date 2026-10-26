@@ -13,12 +13,14 @@
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <title>Scuola di Vela · Sportaction</title>
 <meta name="description" content="Simulatore di vela della scuola Sportaction sul Lago d'Iseo: timone, scotte, vento vero, consigli dell'istruttore.">
-<link rel="stylesheet" href="css/style.css?v=67bdc9f0">
+<link rel="stylesheet" href="css/style.css?v=e02f4cf8">
 </head>
 <body>
 <canvas id="view"></canvas>
 
 <div id="hud">
+  <div id="markPtr"><svg viewBox="-32 -32 64 64"><path d="M-27 -9 H3 V-22 L29 0 L3 22 V9 H-27 Z"/></svg></div>
+  <div id="markTag"><b id="markName"></b><span id="markDist"></span></div>
   <div id="instruments" class="panel">
     <div id="spd" class="big">0.0 nodi</div>
     <div id="posail"></div>
@@ -38,6 +40,7 @@
   <div id="tell" class="panel"><h4>FILETTI DEL FIOCCO</h4><canvas id="tellCanvas"></canvas><div id="tellVerdict"></div></div>
   <div id="message"></div>
   <div id="status"></div>
+  <div id="alarm"><div><b>FALSE MURE</b><span>la randa è dalla parte del vento: rischio di strambata involontaria</span></div></div>
   <div id="footer"></div>
 </div>
 
@@ -129,21 +132,21 @@
 <script type="importmap">
 {
   "imports": {
-    "./js/audio.js": "./js/audio.js?v=67bdc9f0",
-    "./js/base.js": "./js/base.js?v=67bdc9f0",
-    "./js/boat.js": "./js/boat.js?v=67bdc9f0",
-    "./js/hud.js": "./js/hud.js?v=67bdc9f0",
-    "./js/lake.js": "./js/lake.js?v=67bdc9f0",
-    "./js/main.js": "./js/main.js?v=67bdc9f0",
-    "./js/overlays.js": "./js/overlays.js?v=67bdc9f0",
-    "./js/physics.js": "./js/physics.js?v=67bdc9f0",
-    "./js/sim.js": "./js/sim.js?v=67bdc9f0",
-    "./js/textures.js": "./js/textures.js?v=67bdc9f0",
-    "./js/vendor/three.module.min.js": "./js/vendor/three.module.min.js?v=67bdc9f0",
-    "./js/world.js": "./js/world.js?v=67bdc9f0"
+    "./js/audio.js": "./js/audio.js?v=e02f4cf8",
+    "./js/base.js": "./js/base.js?v=e02f4cf8",
+    "./js/boat.js": "./js/boat.js?v=e02f4cf8",
+    "./js/hud.js": "./js/hud.js?v=e02f4cf8",
+    "./js/lake.js": "./js/lake.js?v=e02f4cf8",
+    "./js/main.js": "./js/main.js?v=e02f4cf8",
+    "./js/overlays.js": "./js/overlays.js?v=e02f4cf8",
+    "./js/physics.js": "./js/physics.js?v=e02f4cf8",
+    "./js/sim.js": "./js/sim.js?v=e02f4cf8",
+    "./js/textures.js": "./js/textures.js?v=e02f4cf8",
+    "./js/vendor/three.module.min.js": "./js/vendor/three.module.min.js?v=e02f4cf8",
+    "./js/world.js": "./js/world.js?v=e02f4cf8"
   }
 }
 </script>
-<script type="module" src="js/main.js?v=67bdc9f0"></script>
+<script type="module" src="js/main.js?v=e02f4cf8"></script>
 </body>
 </html>
