@@ -45,12 +45,12 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
   - la boa vale solo se ci si gira intorno in senso antiorario, entro 45 m; girata al contrario non vale e compare l'avviso.
 - **Triangolo dei venti** (tasto F o menu): frecce sull'acqua intorno alla barca, con gli stessi colori della rosa del vento:
   - azzurra il vento reale, gialla il vento apparente, verde la velocità della barca;
-  - la linea verde chiara tra le code dei due venti è il vento creato dal moto della barca;
+  - la linea verde tratteggiata tra le code dei due venti è il vento creato dal moto della barca;
   - cerchi a 5, 10 e 20 nodi (1 nodo = 1,2 m);
-  - si legge meglio dall'alto (tasto C fino a "dall'alto").
+  - targhette con nome e valore; per l'apparente anche l'angolo dalla prua;
+  - si legge meglio dall'alto (tasto C fino a "dall'alto"): la vista parte a 34 m e, col triangolo acceso, si sposta un po' sopravento per inquadrarlo tutto.
 - **Aria sporca** (tasto O o menu):
   - la scia viola parte dalle vele lungo il vento apparente, per circa 90 m, e si allarga;
-  - le particelle scorrono col vento;
   - quando le vele sbattono la scia quasi sparisce.
 
 ## La barca: Protagonist 7.50 con le polari ORC

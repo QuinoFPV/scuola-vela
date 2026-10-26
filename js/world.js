@@ -497,6 +497,11 @@ export class World {
     }
     // aiuti sull'acqua, se accesi nel menu
     this.triangle.update(s, sim.settings.triangle, waves, this.camera);
+    // dall'alto, col triangolo acceso, si guarda un po' sopravento per vedere tutte le frecce (spostamento morbido)
+    const want = sim.settings.triangle ? this.triangle.focus(s) : { x: 0, z: 0 };
+    this.topFocus ??= { x: 0, z: 0 };
+    const kf = Math.min(1, dt * 2);
+    this.topFocus.x += (want.x - this.topFocus.x) * kf; this.topFocus.z += (want.z - this.topFocus.z) * kf;
     this.dirtyAir.update(s, sim.settings.dirtyAir, waves);
     // base: barche all'ormeggio che si girano col vento, manica a vento
     const wb = sim.wind.at({ x: 0, y: 0 });
@@ -535,9 +540,10 @@ export class World {
       cam.up.set(0, 1, 0);
       cam.lookAt(x, 3.8, z);
     } else {
-      cam.position.set(x, 70 * this.zoom, z + 0.01);
+      const fx = x + this.topFocus.x, fz = z + this.topFocus.z;
+      cam.position.set(fx, 34 * this.zoom, fz + 0.01);       // abbastanza vicino da vedere bene barca e frecce
       cam.up.set(0, 0, -1);
-      cam.lookAt(x, 0, z);
+      cam.lookAt(fx, 0, fz);
     }
   }
 }

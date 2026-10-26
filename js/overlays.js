@@ -26,13 +26,13 @@ function arrowMesh(color, opacity, order) {
   return m;
 }
 
-/** Freccia da a a b (coordinate locali x, z), larga w, con punta lunga head (0 = solo asta). */
-function setArrow(mesh, a, b, w, head) {
+/** Freccia da a a b (coordinate locali x, z): asta larga w, punta lunga head e larga 2 * headW (head 0 = solo asta). */
+function setArrow(mesh, a, b, w, head, headW) {
   const dx = b.x - a.x, dz = b.z - a.z, L = Math.hypot(dx, dz);
   mesh.visible = L > 0.05;
   if (!mesh.visible) return;
   const ux = dx / L, uz = dz / L, nx = -uz, nz = ux;
-  const hl = Math.min(head, L * 0.6), hw = head > 0 ? Math.max(w * 1.6, hl * 0.6) : 0;
+  const hl = Math.min(head, L * 0.5), hw = head > 0 ? headW * hl / head : 0;
   const cx = b.x - ux * hl, cz = b.z - uz * hl;
   const p = mesh.geometry.attributes.position.array;
   const put = (i, x, z) => { p[i * 3] = x; p[i * 3 + 1] = 0; p[i * 3 + 2] = z; };
@@ -42,33 +42,115 @@ function setArrow(mesh, a, b, w, head) {
   mesh.geometry.attributes.position.needsUpdate = true;
 }
 
-/** Etichetta che resta della stessa grandezza sullo schermo; si ridisegna solo quando cambia il testo. */
-function label(color, height = 0.042, aspect = 5) {
-  const W = 128 * aspect, canvas = document.createElement('canvas');
-  canvas.width = W; canvas.height = 128;
+/** Linea tratteggiata sull'acqua (fino a 40 trattini), ridisegnata a ogni fotogramma. */
+function dashMesh(color, opacity, order) {
+  const n = 40, g = new THREE.BufferGeometry(), idx = [];
+  for (let i = 0; i < n; i++) { const k = i * 4; idx.push(k, k + 1, k + 2, k, k + 2, k + 3); }
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 4 * 3), 3));
+  g.setIndex(idx);
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthTest: false, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
+  m.renderOrder = order; m.frustumCulled = false; m.userData.n = n;
+  return m;
+}
+function setDash(mesh, a, b, w, dash = 0.55, gap = 0.4) {
+  const dx = b.x - a.x, dz = b.z - a.z, L = Math.hypot(dx, dz), p = mesh.geometry.attributes.position.array;
+  p.fill(0);
+  mesh.visible = L > 0.3;
+  if (!mesh.visible) { mesh.geometry.attributes.position.needsUpdate = true; return; }
+  const ux = dx / L, uz = dz / L, nx = -uz * w / 2, nz = ux * w / 2;
+  for (let i = 0, t = 0; i < mesh.userData.n && t < L; i++, t += dash + gap) {
+    const t1 = Math.min(L, t + dash), x0 = a.x + ux * t, z0 = a.z + uz * t, x1 = a.x + ux * t1, z1 = a.z + uz * t1;
+    p.set([x0 + nx, 0, z0 + nz, x0 - nx, 0, z0 - nz, x1 - nx, 0, z1 - nz, x1 + nx, 0, z1 + nz], i * 12);
+  }
+  mesh.geometry.attributes.position.needsUpdate = true;
+}
+
+const FONT = '"Avenir Next", "SF Pro Display", "Segoe UI", system-ui, sans-serif';
+function sprite(W, H, height) {
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, sizeAttenuation: false, depthTest: false, depthWrite: false, transparent: true, toneMapped: false }));
-  sprite.scale.set(height * aspect, height, 1);
-  sprite.renderOrder = 22;
+  tex.anisotropy = 4;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, sizeAttenuation: false, depthTest: false, depthWrite: false, transparent: true, toneMapped: false }));
+  sp.scale.set(height * W / H, height, 1);
+  sp.renderOrder = 22;
+  return { sp, g: canvas.getContext('2d'), tex };
+}
+const rounded = (g, x, y, w, h, r) => {
+  g.beginPath();
+  if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h);         // Safari prima della 16
+};
+
+/** Targhetta a due righe: il nome piccolo nel colore della freccia, il valore grande in bianco. Costante sullo schermo. */
+function badge(color, title, height = 0.066) {
+  const W = 760, H = 230, { sp, g, tex } = sprite(W, H, height);
   let text = null;
-  sprite.userData.set = (t) => {
+  sp.userData.set = (value) => {
+    if (value === text) return;
+    text = value;
+    g.clearRect(0, 0, W, H);
+    g.font = `600 40px ${FONT}`;
+    if ('letterSpacing' in g) g.letterSpacing = '5px';
+    const tw = g.measureText(title).width;
+    if ('letterSpacing' in g) g.letterSpacing = '0px';
+    g.font = `700 76px ${FONT}`;
+    const vw = g.measureText(value).width;
+    const bw = Math.min(W - 24, Math.max(tw, vw) + 112), bh = 176, x0 = (W - bw) / 2, y0 = (H - bh) / 2;
+    // fondo scuro con ombra morbida e bordo del colore della freccia
+    g.save();
+    g.shadowColor = 'rgba(0,0,0,0.45)'; g.shadowBlur = 22; g.shadowOffsetY = 6;
+    g.fillStyle = 'rgba(9,16,27,0.84)';
+    rounded(g, x0, y0, bw, bh, 34); g.fill();
+    g.restore();
+    g.strokeStyle = color; g.lineWidth = 4; g.globalAlpha = 0.85;
+    rounded(g, x0 + 2, y0 + 2, bw - 4, bh - 4, 32); g.stroke();
+    g.globalAlpha = 1;
+    // barretta colorata a sinistra
+    g.fillStyle = color;
+    rounded(g, x0 + 26, y0 + 34, 9, bh - 68, 4.5); g.fill();
+    g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+    g.font = `600 40px ${FONT}`; if ('letterSpacing' in g) g.letterSpacing = '5px';
+    g.fillStyle = color; g.fillText(title, x0 + 60, y0 + 66);
+    if ('letterSpacing' in g) g.letterSpacing = '0px';
+    g.font = `700 76px ${FONT}`; g.fillStyle = '#ffffff';
+    g.fillText(value, x0 + 58, y0 + 146);
+    tex.needsUpdate = true;
+  };
+  return sp;
+}
+
+/** Scritta piccola senza fondo (i numeri dei cerchi), con un'ombra per staccarla dall'acqua. */
+function tag(text, height = 0.03) {
+  const W = 300, H = 110, { sp, g, tex } = sprite(W, H, height);
+  g.font = `600 58px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.shadowColor = 'rgba(0,0,0,0.7)'; g.shadowBlur = 10;
+  g.fillStyle = 'rgba(255,255,255,0.9)'; g.fillText(text, W / 2, H / 2);
+  tex.needsUpdate = true;
+  return sp;
+}
+
+/** Etichetta semplice a una riga (il cartello sopra la boa). */
+function label(color, height = 0.042, aspect = 5) {
+  const W = 128 * aspect, { sp, g, tex } = sprite(W, 128, height);
+  let text = null;
+  sp.userData.set = (t) => {
     if (t === text) return;
     text = t;
-    const g = canvas.getContext('2d');
     g.clearRect(0, 0, W, 128);
-    g.font = 'bold 50px "Avenir Next", "Segoe UI", sans-serif';
+    g.font = `bold 50px ${FONT}`;
     const w = Math.min(W - 20, g.measureText(t).width + 44);
     g.fillStyle = 'rgba(8,18,31,0.72)';
-    g.beginPath();
-    if (g.roundRect) g.roundRect((W - w) / 2, 22, w, 84, 20); else g.rect((W - w) / 2, 22, w, 84);     // Safari prima della 16
-    g.fill();
+    rounded(g, (W - w) / 2, 22, w, 84, 20); g.fill();
     g.fillStyle = color; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillText(t, W / 2, 66, W - 60);
     tex.needsUpdate = true;
   };
-  return sprite;
+  return sp;
 }
+
+const COLORS = { true: '#4fb0ff', app: '#ffd23f', boat: '#5ef08a' };
+const TITLES = { true: 'VENTO REALE', app: 'VENTO APPARENTE', boat: 'VELOCITÀ BARCA' };
 
 /** Il triangolo dei venti intorno alla barca, come visto dall'alto. */
 export class WindTriangle {
@@ -76,23 +158,29 @@ export class WindTriangle {
     this.root = new THREE.Group();
     this.root.visible = false;
     for (const kn of RINGS) {
-      const ring = new THREE.Mesh(new THREE.RingGeometry(kn * M_PER_KN - 0.07, kn * M_PER_KN + 0.07, 96).rotateX(-Math.PI / 2),
-        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, depthTest: false, depthWrite: false, toneMapped: false }));
+      const ring = new THREE.Mesh(new THREE.RingGeometry(kn * M_PER_KN - 0.035, kn * M_PER_KN + 0.035, 128).rotateX(-Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.28, depthTest: false, depthWrite: false, toneMapped: false }));
       ring.renderOrder = 18;
       this.root.add(ring);
     }
-    this.ringLabels = RINGS.map((kn) => { const l = label('rgba(255,255,255,0.8)', 0.028); l.userData.set(kn === 20 ? '20 nodi' : `${kn}`); this.root.add(l); return l; });
-    const css = { true: '#59b3ff', app: '#ffd933', boat: '#6dff7a' };
+    this.ringLabels = RINGS.map((kn) => { const l = tag(kn === 20 ? '20 nodi' : `${kn}`); this.root.add(l); return l; });
     this.arrows = {}; this.shadows = {}; this.labels = {};
     for (const k of ['true', 'app', 'boat']) {
-      this.shadows[k] = arrowMesh(0x000000, 0.35, 19);
-      this.arrows[k] = arrowMesh(new THREE.Color(css[k]), 0.95, 20);
-      this.labels[k] = label(css[k]);
+      this.shadows[k] = arrowMesh(0x05080d, 0.45, 19);
+      this.arrows[k] = arrowMesh(new THREE.Color(COLORS[k]), 1, 20);
+      this.labels[k] = badge(COLORS[k], TITLES[k]);
       this.root.add(this.shadows[k], this.arrows[k], this.labels[k]);
     }
-    // il lato che chiude il triangolo: il vento creato dal moto della barca
-    this.motion = arrowMesh(new THREE.Color(css.boat), 0.45, 20);
+    // il lato che chiude il triangolo, tratteggiato: il vento creato dal moto della barca
+    this.motion = dashMesh(new THREE.Color(COLORS.boat), 0.55, 20);
     this.root.add(this.motion);
+  }
+
+  /** Centro del triangolo rispetto alla barca (metri della scena): la vista dall'alto lo inquadra tutto. */
+  focus(s) {
+    const v = windVectors(s), k = M_PER_KN;
+    const tx = -(v.true.x + v.app.x) / 2 * k, tz = (v.true.y + v.app.y) / 2 * k;
+    return { x: tx * 0.55 + v.boat.x * k * 0.1, z: tz * 0.55 - v.boat.y * k * 0.1 };
   }
 
   update(s, on, waves, camera) {
@@ -102,27 +190,28 @@ export class WindTriangle {
     const v = windVectors(s), k = M_PER_KN;
     const L = (p) => ({ x: p.x * k, z: -p.y * k });                       // nodi -> metri locali della scena
     const O = { x: 0, z: 0 }, tT = L({ x: -v.true.x, y: -v.true.y }), tA = L({ x: -v.app.x, y: -v.app.y }), tip = L(v.boat);
-    const draw = (key, a, b) => { setArrow(this.shadows[key], a, b, 0.95, 2.6); setArrow(this.arrows[key], a, b, 0.65, 2.3); };
+    // frecce sottili con punta slanciata e un filo di contorno scuro per staccarle dall'acqua
+    const draw = (key, a, b) => { setArrow(this.shadows[key], a, b, 0.34, 1.5, 0.5); setArrow(this.arrows[key], a, b, 0.17, 1.3, 0.36); };
     draw('true', tT, O);
     draw('app', tA, O);
     draw('boat', O, tip);
-    setArrow(this.motion, tT, tA, 0.22, 0);
+    setDash(this.motion, tT, tA, 0.1);
     const kn = Math.hypot(v.boat.x, v.boat.y);
     this.arrows.boat.visible = this.shadows.boat.visible = this.labels.boat.visible = kn > 0.3;
     // etichette appena oltre la coda dei venti e la punta della barca
     const beyond = (p, d) => { const l = Math.hypot(p.x, p.z) || 1; return { x: p.x * (1 + d / l), z: p.z * (1 + d / l) }; };
-    const place = (key, p, text) => { const q = beyond(p, 2.2); this.labels[key].position.set(q.x, 0, q.z); this.labels[key].userData.set(text); };
-    place('true', tT, `VENTO REALE ${s.tws.toFixed(0)} nodi`);
-    place('app', tA, `APPARENTE ${s.aws.toFixed(0)} nodi`);
-    // le code dei due venti sono vicine: le etichette si scostano ognuna dal suo lato sullo schermo
+    const place = (key, p, text) => { const q = beyond(p, 1.6); this.labels[key].position.set(q.x, 0, q.z); this.labels[key].userData.set(text); };
+    place('true', tT, `${s.tws.toFixed(1)} nodi`);
+    place('app', tA, `${s.aws.toFixed(1)} nodi · ${Math.abs(s.awa).toFixed(0)}°`);
+    // le code dei due venti sono vicine: le targhette si scostano ognuna dal suo lato sullo schermo
     const sx = (p) => new THREE.Vector3(p.x, 0, p.z).add(this.root.position).project(camera).x;
     const appRight = sx(tA) > sx(tT);
-    this.labels.true.center.set(appRight ? 0.95 : 0.05, 0.5);
-    this.labels.app.center.set(appRight ? 0.05 : 0.95, 0.5);
-    place('boat', tip, `BARCA ${kn.toFixed(1)} nodi`);
+    this.labels.true.center.set(appRight ? 0.92 : 0.08, 0.5);
+    this.labels.app.center.set(appRight ? 0.08 : 0.92, 0.5);
+    place('boat', tip, `${kn.toFixed(1)} nodi`);
     // i numeri dei cerchi a poppa, dove non ci sono frecce
     const back = dirVec(s.heading + 180);
-    this.ringLabels.forEach((l, i) => l.position.set(back.x * RINGS[i] * k, 0, -back.y * RINGS[i] * k));
+    this.ringLabels.forEach((l, i) => l.position.set(back.x * (RINGS[i] * k + 0.6), 0, -back.y * (RINGS[i] * k + 0.6)));
   }
 }
 
@@ -157,16 +246,8 @@ export class DirtyAir {
     this.mesh = new THREE.Mesh(g, this.mat);
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = 4;
-    // particelle d'aria che scorrono via dalle vele col vento apparente
-    const count = 70;
-    this.seeds = Array.from({ length: count }, (_, i) => ({ s: i / count, side: Math.sin(i * 12.9898) * 0.8 }));
-    const pg = new THREE.BufferGeometry();
-    pg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
-    this.points = new THREE.Points(pg, new THREE.PointsMaterial({ color: 0x4a1d63, size: 4, sizeAttenuation: false, transparent: true, opacity: 0.8, depthWrite: false }));
-    this.points.frustumCulled = false;
-    this.points.renderOrder = 5;
     this.root = new THREE.Group();
-    this.root.add(this.mesh, this.points);
+    this.root.add(this.mesh);
     this.root.visible = false;
   }
 
@@ -186,14 +267,6 @@ export class DirtyAir {
     this.mesh.geometry.attributes.position.needsUpdate = true;
     // con le vele che sbattono l'aria sporca quasi sparisce
     this.mat.uniforms.opacity.value = 0.6 * (1 - 0.75 * Math.max(s.mainLuff, s.jibLuff));
-    const q = this.points.geometry.attributes.position.array, speed = aws * KNOT;
-    this.seeds.forEach((sd, i) => {
-      const f = (sd.s + s.time * speed / L) % 1, dist = f * L;
-      const pt = at(dist, sd.side * width(dist) / 2);
-      q[i * 3] = pt.x; q[i * 3 + 1] = y + 0.02; q[i * 3 + 2] = pt.z;
-    });
-    this.points.geometry.attributes.position.needsUpdate = true;
-    this.points.material.opacity = 0.8 * (1 - 0.6 * Math.max(s.mainLuff, s.jibLuff));
   }
 }
 
