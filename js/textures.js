@@ -78,9 +78,8 @@ export function sailTexture(style, main) {
     g.fillStyle = black ? '#2b2c30' : '#e2e2de';
     for (const f of [0.22, 0.42, 0.62, 0.82]) g.fillRect(W * 0.62, yOf(f) - 6, W * 0.36, 12);
     if (sailLogo) {
-      // logo vicino alla penna (sulla bianca sopra il logo a bandiera, piu' piccolo perche' la vela li' e' stretta);
-      // la tela segue la corda, quindi lo si allarga per restare proporzionato
-      const f = black ? 0.8 : 0.865, hM = black ? 0.6 : 0.45, wM = hM * sailLogo.width / sailLogo.height;
+      // logo vicino alla penna, alto 0,6 m: la tela segue la corda, quindi lo si allarga per restare proporzionato
+      const f = 0.8, hM = 0.6, wM = hM * sailLogo.width / sailLogo.height;
       const pxW = W / mainChord(f), pxH = H / 8.5;
       g.drawImage(sailLogo, W * 0.44 - wM * pxW / 2, yOf(f) - hM * pxH / 2, wM * pxW, hM * pxH);
     }
@@ -96,15 +95,6 @@ export function sailTexture(style, main) {
         g.fillText(text, 0, 0);
         g.restore();
       };
-      // logo a bandiera (rosso e blu) vicino alla penna
-      g.save();
-      const fy = yOf(0.78), sx = (W / mainChord(0.78)) / (H / 8.5);
-      g.translate(W * 0.42, fy); g.scale(sx, 1);
-      for (const [dy, col, wdt] of [[-14, '#1f3f9c', 9], [0, '#c8302c', 7], [14, '#1f3f9c', 9]]) {
-        g.strokeStyle = col; g.lineWidth = wdt;
-        g.beginPath(); g.moveTo(-38, dy - 10); g.quadraticCurveTo(0, dy + 14, 40, dy + 4); g.stroke();
-      }
-      g.restore();
       write('ITA 09', 0.53, 64, '#141414', '600 "Helvetica Neue", Arial, sans-serif', 0.52);
       write('target', 0.24, 52, '#3a3a3a', '500 "Avenir Next", "Helvetica Neue", Arial, sans-serif', 0.6);
       g.fillStyle = '#c9d82b';

@@ -5,7 +5,7 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
 ## Novità rispetto al Mac
 - **Due barche**, da scegliere nel menu o col tasto V:
   - Sportaction nera, con SPORTACTION.IT sul fiocco e il logo della scuola in alto sulla randa (`img/logo-randa.png`);
-  - Sportaction bianca ITA 09, con il logo della scuola in cima alla randa, poi il logo a bandiera e "target"; "pegaso" sullo scafo.
+  - Sportaction bianca ITA 09, con il logo della scuola in cima alla randa e "target"; "pegaso" sullo scafo.
 - **Base di Castro come nelle foto aeree:**
   - la statale SS469 lungo la riva;
   - il prato con le file di ombrelloni e il punto ristoro;
