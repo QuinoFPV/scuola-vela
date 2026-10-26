@@ -5,7 +5,7 @@ import { Simulation, WINDS } from './sim.js';
 import { World } from './world.js';
 import { HUD } from './hud.js';
 import { Audio } from './audio.js';
-import { BOATS } from './textures.js';
+import { BOATS, loadSailLogo } from './textures.js';
 import { clamp, norm180, twaOf, speedKn, Spec } from './physics.js';
 
 const $ = (id) => document.getElementById(id);
@@ -19,13 +19,13 @@ async function loadData() {
   const files = ['terrain.bin', 'lake.bin', 'info.json', 'trees.bin', 'houses.bin'];
   let done = 0;
   const cache = {};
-  await Promise.all(files.map(async (f) => {
+  await Promise.all([loadSailLogo(), ...files.map(async (f) => {
     const r = await fetch('data/' + f);
     if (!r.ok) throw new Error('manca data/' + f);
     cache[f] = await r.arrayBuffer();
     done++;
     $('loadBar').style.width = `${done / files.length * 70}%`;
-  }));
+  })]);
   return Lake.load(async (name) => cache[name]);
 }
 

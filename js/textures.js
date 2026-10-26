@@ -23,6 +23,17 @@ export const BOATS = [
 const JIB_FOOT = 3.25, LUFF = 7.6;
 const mainChord = (f) => 3.05 * Math.pow(1 - f, 0.85) + 0.3 * f;
 
+/** Logo della scuola in alto sulla randa nera: si carica all'avvio, prima di disegnare le vele. */
+let sailLogo = null;
+export function loadSailLogo(url = 'img/logo-randa.png') {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => { sailLogo = img; resolve(); };
+    img.onerror = () => resolve();                     // senza logo la randa resta nera
+    img.src = url;
+  });
+}
+
 /** Tela delle vele: ferzi, strisce, scritte. main = randa, altrimenti fiocco. */
 export function sailTexture(style, main) {
   const W = 512, H = 1024;
@@ -66,6 +77,12 @@ export function sailTexture(style, main) {
     for (const f of [0.25, 0.42, 0.6, 0.78, 0.9]) g.fillRect(W - 40, yOf(f), 36, 5);
     g.fillStyle = black ? '#2b2c30' : '#e2e2de';
     for (const f of [0.22, 0.42, 0.62, 0.82]) g.fillRect(W * 0.62, yOf(f) - 6, W * 0.36, 12);
+    if (black && sailLogo) {
+      // logo vicino alla penna, alto 0,6 m: la tela segue la corda, quindi lo si allarga per restare proporzionato
+      const f = 0.8, hM = 0.6, wM = hM * sailLogo.width / sailLogo.height;
+      const pxW = W / mainChord(f), pxH = H / 8.5;
+      g.drawImage(sailLogo, W * 0.44 - wM * pxW / 2, yOf(f) - hM * pxH / 2, wM * pxW, hM * pxH);
+    }
     if (!black) {
       // la tela segue la corda, che si stringe salendo: le scritte si allargano per restare proporzionate
       const write = (text, f, size, color, font, x = 0.5) => {

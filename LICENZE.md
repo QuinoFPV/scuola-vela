@@ -23,4 +23,4 @@ I file in `data/` sono ricavati da queste fonti:
 I crediti compaiono anche in basso a destra nella pagina del simulatore.
 
 ## Marchi
-"Sportaction" e i loghi e nomi presenti sulle barche ("target", "pegaso") appartengono ai rispettivi titolari e sono usati per rappresentare le barche della scuola.
+"Sportaction", il logo sulla randa (`img/logo-randa.png`) e i loghi e nomi presenti sulle barche ("target", "pegaso") appartengono ai rispettivi titolari e sono usati per rappresentare le barche della scuola.
