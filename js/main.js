@@ -110,6 +110,7 @@ async function main() {
       case 'Space': sim.toggleBando(); break;          // vele in bando: scotte libere, di nuovo per riprenderle
       case 'KeyK': sim.toggleBackMain(0); break;       // randa scontrata dal lato dov'e' il boma, di nuovo per mollarla
       case 'KeyY': sim.toggleFarfalla(); break;        // andatura a farfalla, di nuovo per riportare il fiocco
+      case 'KeyE': sim.toggleSpi(); break;             // spinnaker: issa / ammaina
       case 'KeyJ': sim.toggleBackMain(-1); break;      // ... a sinistra
       case 'KeyL': sim.toggleBackMain(1); break;       // ... a dritta
       case 'KeyF': st.triangle = !st.triangle; sim.say(st.triangle ? 'TRIANGOLO DEI VENTI: REALE, APPARENTE E VELOCITÀ DELLA BARCA' : 'TRIANGOLO DEI VENTI NASCOSTO', 'info'); break;
@@ -287,7 +288,7 @@ async function main() {
     world.update(sim, dt, now / 1000);
     for (const e of sim.events) if (e.type === 'gybe' || e.type === 'tack') audio.boom(e.type === 'gybe' && e.violent);
     const s = sim.shown, quiet = sim.paused || sim.replay !== null;
-    audio.set({ aws: quiet ? 0 : s.aws, speed: quiet ? 0 : speedKn(s), luff: quiet ? 0 : Math.max(s.mainLuff, s.jibLuff), winching: (c.main || 0) > 0 || (c.jib || 0) > 0 }, dt);
+    audio.set({ aws: quiet ? 0 : s.aws, speed: quiet ? 0 : speedKn(s), luff: quiet ? 0 : Math.max(s.mainLuff, s.jibLuff * (1 - s.jibFurl), s.spiLuff * s.spiUp), winching: (c.main || 0) > 0 || (c.jib || 0) > 0 }, dt);
     hud.refresh(sim, world, now / 1000);
     renderer.render(world.scene, world.camera);
     frames++; fpsT += Math.max(0, raw);

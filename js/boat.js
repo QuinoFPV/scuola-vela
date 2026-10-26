@@ -2,7 +2,7 @@
 // Y in alto, linea di galleggiamento a y = 0 (come nella versione Mac).
 import * as THREE from './vendor/three.module.min.js';
 import { rad, clamp, dirVec, mainReefs, stormJib } from './physics.js';
-import { sailTexture, hullTexture, boomTexture, foamTexture, dropTexture, stormTexture } from './textures.js';
+import { sailTexture, hullTexture, boomTexture, foamTexture, dropTexture, stormTexture, spiTexture } from './textures.js';
 
 export const MAST_Z = -0.6, BOOM_Y = 1.8, HEAD_Y = 10.3;
 const TACK = new THREE.Vector3(0, 0.95, -3.7);
@@ -145,6 +145,7 @@ export class BoatModel {
     this.mainMat = sailMaterial(null, this.sunDirView);
     this.jibMat = sailMaterial(null, this.sunDirView);
     this.stormMat = sailMaterial(stormTexture(), this.sunDirView);
+    this.spiMat = sailMaterial(spiTexture(), this.sunDirView);
     this.buildHull();
     this.buildDeck();
     this.buildRig();
@@ -378,6 +379,14 @@ export class BoatModel {
     };
     this.main = make(14, 10, this.mainMat);
     this.jib = make(12, 8, this.jibMat);
+    this.spiSail = make(14, 12, this.spiMat);
+    // tangone, braccio e scotta dello spi; fiocco avvolto sullo strallo
+    this.spiPole = mesh(new THREE.CylinderGeometry(0.03, 0.03, 1, 8), std(0xc8ccd0, 0.3, 0.8));
+    this.spiGuy = mesh(new THREE.CylinderGeometry(0.01, 0.01, 1, 6), this.lineMat);
+    this.spiSheet = mesh(new THREE.CylinderGeometry(0.01, 0.01, 1, 6), this.lineMat);
+    this.furled = mesh(new THREE.CylinderGeometry(0.05, 0.035, 1, 8), std(0x2a2b2e, 0.7));
+    this.tilt.add(this.spiPole, this.spiGuy, this.spiSheet, this.furled);
+    this.setLine(this.furled, STAY0.clone().lerp(STAY1, 0.03), STAY0.clone().lerp(STAY1, 0.86));
   }
 
   /** Scrive i punti di una vela (gia' calcolati per la faccia davanti) e fa la faccia dietro. */
@@ -432,6 +441,10 @@ export class BoatModel {
 
     this.updateMain(s, time);
     const clew = this.updateJib(s, time);
+    this.updateSpi(s, time);
+    // con lo spi su il fiocco e' avvolto sullo strallo
+    this.jib.mesh.visible = this.jibSheetLine.visible = s.jibFurl < 0.5;
+    this.furled.visible = s.jibFurl >= 0.5;
     const a = rad(s.mainAngle);
     this.setLine(this.mainSheetLine, V(Math.sin(a) * 2.7, BOOM_Y - 0.1, MAST_Z + Math.cos(a) * 2.7), V(0, 0.55, 1.95));
     const tl = tAt(1.0);
@@ -510,6 +523,50 @@ export class BoatModel {
       }
     }
     this.writeSail(this.main, pts);
+  }
+
+  /** Spinnaker: dal tangone sopravento alla scotta sottovento, gonfio verso dove va il vento; sale lungo l'albero quando si issa. */
+  updateSpi(s, time) {
+    const up = s.spiUp, on = up > 0.01;
+    for (const o of [this.spiSail.mesh, this.spiPole, this.spiSheet, this.spiGuy]) o.visible = on;
+    if (!on) return;
+    const { R, C } = this.spiSail, pts = new Float32Array((R + 1) * (C + 1) * 3);
+    const ws = s.spiSide, awa = rad(s.awa), absA = Math.abs(s.awa);
+    // tangone: avanti sui laschi stretti, quasi al traverso in poppa
+    const phi = rad(clamp(20 + (absA - 60) * 0.55, 20, 85));
+    const mast = V(0, 1.3, MAST_Z);
+    const tack = V(ws * Math.sin(phi) * 2.9, 1.25, MAST_Z - Math.cos(phi) * 2.9);
+    // vento apparente nella barca (x dritta, z poppa); la base della vela gli sta di traverso, verso sottovento e indietro
+    const flow = V(-Math.sin(awa), 0, Math.cos(awa));
+    const foot = V(Math.cos(awa), 0, Math.sin(awa));
+    if (Math.sign(foot.x) === ws) foot.negate();
+    foot.x -= ws * 0.6; foot.normalize();
+    const clew = tack.clone().addScaledVector(foot, 5.0 * (0.35 + 0.65 * up));
+    clew.y = 1.7;
+    const headY = 1.6 + up * (9.3 - 1.6), head = V(0, headY, MAST_Z - 1.0);
+    const luff = s.spiLuff, depth = 2.7 * (1 - 0.65 * luff) * up;
+    let i = 0;
+    for (let r = 0; r <= R; r++) {
+      const f = r / R, sh = f * f;                        // larga fin quasi in cima, come le spalle di uno spi
+      const y = tack.y + (headY - tack.y) * f;
+      const girth = 1 + 0.3 * Math.sin(Math.PI * Math.min(1, f * 1.2));   // a meta' altezza piu' larga della base
+      const L = tack.clone().lerp(head, sh), T = clew.clone().lerp(head, sh);
+      const cen = L.clone().lerp(T, 0.5), half = T.clone().sub(L).multiplyScalar(0.5 * girth);
+      L.copy(cen).sub(half); T.copy(cen).add(half);
+      const ahead = 1.1 * Math.sin(Math.PI * Math.min(1, f * 1.1)) * up;   // il pallone sta davanti alla prua
+      for (let c = 0; c <= C; c++) {
+        const u = c / C, p = L.clone().lerp(T, u);
+        const belly = depth * Math.sin(Math.PI * u) * Math.pow(Math.sin(Math.PI * Math.min(1, f * 1.05 + 0.03)), 0.7);
+        const flap = luff * 0.35 * Math.sin(time * 9 + u * 6 + f * 4) * Math.sin(Math.PI * u);
+        pts[i++] = p.x + flow.x * (belly + flap);
+        pts[i++] = y + belly * 0.12;
+        pts[i++] = p.z + flow.z * (belly + flap) - ahead * Math.sin(Math.PI * u * 0.8 + 0.3);
+      }
+    }
+    this.writeSail(this.spiSail, pts);
+    this.setLine(this.spiPole, mast, tack);
+    this.setLine(this.spiGuy, tack, V(ws * 1.15, 0.75, 3.3));
+    this.setLine(this.spiSheet, clew, V(-ws * 1.15, 0.75, 3.3));
   }
 
   /** Fiocco; restituisce il punto di scotta. */

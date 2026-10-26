@@ -126,6 +126,33 @@ export function sailTexture(style, main) {
   return tex(c);
 }
 
+/** Spinnaker della scuola: giallo con la fascia blu, la scritta SPORTACTION.IT e il logo (u = dall'inferitura alla balumina, v = dalla base alla penna). */
+export function spiTexture() {
+  const W = 1024, H = 1024;
+  const [c, g] = canvas(W, H);
+  g.fillStyle = '#ffc20e'; g.fillRect(0, 0, W, H);
+  // ferzi a raggiera dalla penna
+  g.strokeStyle = 'rgba(150,100,0,0.22)'; g.lineWidth = 3;
+  for (let k = 1; k < 10; k++) { g.beginPath(); g.moveTo(W / 2, 0); g.lineTo(W * k / 10, H); g.stroke(); }
+  for (let k = 1; k < 6; k++) { g.beginPath(); g.moveTo(0, H * k / 6); g.lineTo(W, H * k / 6); g.stroke(); }
+  // fascia blu curva, come nel logo
+  g.fillStyle = '#0b63a8';
+  g.beginPath(); g.moveTo(0, H * 0.78); g.quadraticCurveTo(W * 0.5, H * 0.5, W, H * 0.66);
+  g.lineTo(W, H * 0.8); g.quadraticCurveTo(W * 0.5, H * 0.66, 0, H * 0.92); g.closePath(); g.fill();
+  g.font = 'bold 74px "Helvetica Neue", Arial, sans-serif'; g.fillStyle = '#ffffff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.save(); g.translate(W * 0.5, H * 0.715); g.rotate(-0.05); g.fillText('SPORTACTION.IT', 0, 0); g.restore();
+  if (sailLogo) {
+    // la A e' gialla come la vela: le si mette dietro un disco bianco
+    const h = H * 0.22, w = h * sailLogo.width / sailLogo.height;
+    g.fillStyle = '#ffffff';
+    g.beginPath(); g.arc(W * 0.5, H * 0.3, h * 0.78, 0, Math.PI * 2); g.fill();
+    g.drawImage(sailLogo, W * 0.5 - w / 2, H * 0.3 - h / 2, w, h);
+  }
+  // nastri sui bordi
+  g.fillStyle = 'rgba(11,99,168,0.9)'; g.fillRect(0, 0, 12, H); g.fillRect(W - 12, 0, 12, H); g.fillRect(0, H - 16, W, 16);
+  return tex(c);
+}
+
 /** Tormentina: tela pesante arancione (si vede bene col brutto tempo), con cuciture e nastri. */
 export function stormTexture() {
   const W = 512, H = 1024;

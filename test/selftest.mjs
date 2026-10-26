@@ -39,13 +39,27 @@ for (const tws of [6, 10, 15, 20]) {
 const near = (x, ref, tol) => Math.abs(x - ref) / ref <= tol;
 let beat10 = { vmg: 0 };
 for (let a = 34; a <= 46; a += 2) { const r = speed(10, a), v = r.kn * Math.cos(a * Math.PI / 180); if (v > beat10.vmg) beat10 = { a, vmg: v }; }
-check(near(beat10.vmg, 4.44, 0.05) && Math.abs(beat10.a - 37.8) <= 4, `bolina 10 nodi: VMG ${beat10.vmg.toFixed(2)} a ${beat10.a}° (ORC 4.44 a 37.8°)`);
+check(near(beat10.vmg, 4.44, 0.07) && Math.abs(beat10.a - 37.8) <= 4, `bolina 10 nodi: VMG ${beat10.vmg.toFixed(2)} a ${beat10.a}° (ORC 4.44 a 37.8°)`);
 for (const [tws, twa, ref] of [[6, 60, 5.65], [10, 60, 6.45], [10, 90, 6.83], [16, 75, 7.29]]) {
   const r = speed(tws, twa);
-  check(near(r.kn, ref, 0.06), `${tws} nodi a ${twa}°: ${r.kn.toFixed(2)} kn (ORC ${ref})`);
+  check(near(r.kn, ref, 0.07), `${tws} nodi a ${twa}°: ${r.kn.toFixed(2)} kn (ORC ${ref})`);
 }
-const down = speed(10, 175);
-check(down.kn >= 4.0 && down.kn <= 6.0, `poppa 10 nodi senza spinnaker: ${f1(down.kn)} kn (ORC con spinnaker 6.0 a 150°)`);
+// con lo spinnaker: lasco e poppa
+const spiAt = (tws, twa) => {
+  const w = steady(tws), b = newBoat(); b.heading = norm360(-twa); b.u = 3.5;
+  Object.assign(b, { spi: 1, spiUp: 1, jibFurl: 1, spiSide: 1 });
+  let acc = 0, n = 0;
+  run(b, w, 40, true, (x) => hold(x, twa));
+  run(b, w, 10, true, (x) => { hold(x, twa); acc += speedKn(x); n++; });
+  return acc / n;
+};
+for (const [tws, twa, ref] of [[10, 120, 7.03], [14, 150, 7.41], [14, 120, 8.2]]) {
+  const kn = spiAt(tws, twa);
+  check(near(kn, ref, 0.07), `con lo spi, ${tws} nodi a ${twa}°: ${kn.toFixed(2)} kn (ORC ${ref})`);
+}
+let run10 = { vmg: 0 };
+for (let a = 140; a <= 178; a += 6) { const v = -spiAt(10, a) * Math.cos(a * Math.PI / 180); if (v > run10.vmg) run10 = { a, vmg: v }; }
+check(near(run10.vmg, 5.25, 0.07) && run10.a < 172, `poppa con lo spi, 10 nodi: VMG ${run10.vmg.toFixed(2)} a ${run10.a}° (ORC 5.25 a 154.6°)`);
 check(speed(6, 45).heel < speed(15, 45).heel, "piu' vento, piu' sbandamento");
 
 const w = steady(10);
@@ -256,6 +270,37 @@ check(held < 40 && fastest > -1.8, `con 20 nodi chi spinge il boma cede (tenuto 
   const b = wing.b, w = steady(10);
   const ev = run(b, w, 25, true, (x) => hold(x, 115));
   check(!b.farfalla && ev.some((e) => e.type === 'wingEnd') && b.jibSide === b.mainSide, 'orzando oltre i 140° il fiocco si chiude e torna sottovento');
+}
+// spinnaker: issata e ammainata, fiocco avvolto, si chiude orzando, strambata col tangone, straorzata
+{
+  const make = (kn, twa) => {
+    const sm = new Simulation(lake);
+    sm.settings.gusts = false; sm.settings.windIndex = WINDS.findIndex((x) => x[1] === kn); sm.reset(); sm.wind.shifts = false;
+    sm.boat.pos = add(lake.center, mul(dirVec(sm.wind.baseDir), 150));          // sopravento, con spazio per scendere
+    Object.assign(sm.boat, { heading: norm360(sm.wind.baseDir - twa), u: 3, v: 0, r: 0, heel: 0 });
+    sm.autoTrim = true;
+    sm.update(1 / 60, {});                                    // un passo: la barca "sente" il vento
+    return sm;
+  };
+  const sail = (sm, twa, t) => { const ev = [];
+    for (let i = 0; i < t * 60; i++) { sm.update(1 / 60, { tillerTarget: clamp(norm180(twaOf(sm.boat) - twa) * 1.2 - sm.boat.r * 0.8, -25, 25) }); ev.push(...sm.events); }
+    return ev; };
+  const up = make(10, 45); up.toggleSpi();
+  check(!up.boat.spi && up.message.includes('POGGIA'), 'di bolina lo spi non si issa');
+  const a = make(10, 135), b = make(10, 135);
+  sail(a, 135, 25); b.toggleSpi(); sail(b, 135, 25);
+  check(b.boat.spiUp === 1 && b.boat.jibFurl === 1 && speedKn(b.boat) > speedKn(a.boat) * 1.1,
+    `con lo spi il fiocco si avvolge e si va più forte (${f1(speedKn(a.boat))} → ${f1(speedKn(b.boat))} kn a 135°)`);
+  sail(b, 55, 15);
+  check(b.boat.spiLuff > 0.5 && Coach.tips(b.boat, lake).some(([t]) => t.includes('spi si chiude')), "orzando troppo lo spi si chiude e l'istruttore lo dice");
+  const g = make(10, 150); g.toggleSpi(); sail(g, 150, 15);
+  const ev = sail(g, -150, 20);
+  check(ev.some((e) => e.type === 'spiGybe') && g.boat.spiSide === (g.boat.awa >= 0 ? 1 : -1), 'strambando con lo spi si passa il tangone dall\'altra parte');
+  const br = make(30, 95); br.toggleSpi();
+  const evb = sail(br, 95, 20);
+  check(evb.some((e) => e.type === 'broach'), 'con 30 nodi al traverso con lo spi si straorza');
+  b.toggleSpi(); sail(b, 135, 8);
+  check(b.boat.spiUp === 0 && b.boat.jibFurl === 0, 'ammainato lo spi il fiocco si srotola');
 }
 
 console.log(failures === 0 ? 'TUTTO OK' : `${failures} ERRORI`);

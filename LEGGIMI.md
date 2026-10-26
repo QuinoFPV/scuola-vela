@@ -56,24 +56,64 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
 ## La barca: Protagonist 7.50 con le polari ORC
 La fisica è tarata sulla Protagonist 7.50:
 - lunghezza 7,50 m, 850 kg più l'equipaggio (in tutto 1090 kg);
-- randa 18,8 m², fiocco (genoa) 15,9 m².
+- randa 18,8 m², fiocco (genoa) 15,9 m², spinnaker simmetrico 47,1 m².
 
 La polare di riferimento è la mediana di 16 certificati ORC della classe, pubblicata su https://windregatta.com/it/modelo/protagonist-750.
 
-- **Cosa si è tarato.** Resistenza dello scafo, deriva e stabilità sono stati cercati automaticamente perché il simulatore riproduca la bolina (angolo e VMG) e le velocità a 52°, 60°, 75° e 90°. Lo sbandamento è tenuto realistico per una barca sportiva con l'equipaggio fuori bordo (circa 8° con 6 nodi, 14° con 10, 24° con 20).
-- **Spinnaker.** Dai 110° in giù i numeri ORC sono con lo spinnaker da 47 m², che qui non c'è: al lasco e in poppa il simulatore va più piano.
+- **Cosa si è tarato.** Un'ottimizzazione automatica ha cercato insieme, su tutta la polare (dalla bolina alla poppa, da 6 a 24 nodi):
+  - resistenza dello scafo, con la gobba della velocità critica e la planata;
+  - deriva e stabilità;
+  - efficacia dello spi;
+  - smagrimento delle vele col vento forte.
+
+  I venti della scuola (10-14 nodi) contano di più.
+- **Fisica aggiunta per lo spinnaker:**
+  - in poppa piena la randa copre lo spi;
+  - con pochissimo vento apparente lo spi si regge a fatica;
+  - oltre i 15-16 nodi spruzzi e scafo fuori dall'acqua limitano la planata.
+- **Risultato.**
+  - Con 6-16 nodi le velocità stanno quasi tutte entro il 6%.
+  - La bolina resta 5-6% sotto con 6 e 10 nodi: lo stesso scafo deve andare bene sia di bolina sia in planata.
+  - Con 20-24 nodi in poppa larga si resta sotto: 150° con 24 nodi fa 10,7 nodi contro 13,8.
 - **Angolo morto.** Va sotto i 34° dal vento reale; la barca risale al meglio a 38-42°.
+- **Sbandamento.** Da barca sportiva con l'equipaggio fuori bordo: circa 8° con 6 nodi, 14° con 10, 24° con 20.
 
 Simulatore e, tra parentesi, ORC (nodi):
 
-| Vento | Bolina: angolo · VMG | 52° | 60° | 75° | 90° | 120° | 150° |
-|---|---|---|---|---|---|---|---|
-| 6 nodi | 42° · 3.65 (41.5° · 3.64) | 5.4 (5.4) | 5.6 (5.7) | 5.8 (5.8) | 5.9 (5.7) | 5.6 (5.5) | 4.4 (4.1) |
-| 10 nodi | 39° · 4.36 (37.8° · 4.44) | 6.2 (6.2) | 6.4 (6.5) | 6.6 (6.7) | 6.6 (6.8) | 6.4 (7.0) | 5.7 (6.0) |
-| 14 nodi | 38° · 4.67 (37.5° · 4.56) | 6.6 (6.4) | 6.8 (6.7) | 7.0 (7.1) | 7.1 (7.6) | 7.0 (8.2) | 6.4 (7.4) |
-| 20 nodi | 39° · 4.81 (38.4° · 4.58) | 6.9 (6.5) | 7.1 (6.9) | 7.4 (7.5) | 7.6 (8.3) | 7.6 (9.6) | 7.1 (10.7) |
+| Vento | Bolina: angolo · VMG | 60° | 90° | 120° (spi) | 150° (spi) | Poppa con spi: angolo · VMG |
+|---|---|---|---|---|---|---|
+| 6 nodi | 41° · 3.43 (41.5° · 3.64) | 5.3 (5.7) | 5.6 (5.7) | 5.5 (5.5) | 4.4 (4.1) | 142° · 3.82 (137.7° · 3.53) |
+| 10 nodi | 39° · 4.16 (37.8° · 4.44) | 6.2 (6.5) | 6.6 (6.8) | 7.2 (7.0) | 6.1 (6.0) | 166° · 5.49 (154.6° · 5.25) |
+| 14 nodi | 39° · 4.54 (37.5° · 4.56) | 6.8 (6.7) | 7.4 (7.6) | 8.1 (8.2) | 7.3 (7.4) | 166° · 6.84 (157.7° · 6.46) |
+| 20 nodi | 39° · 4.74 (38.4° · 4.58) | 7.3 (6.9) | 8.3 (8.3) | 9.7 (9.6) | 8.9 (10.7) | 166° · 8.47 (145.3° · 9.27) |
+| 24 nodi | 40° · 4.73 (40.1° · 4.45) | 7.4 (6.8) | 8.9 (8.6) | 10.7 (10.7) | 10.7 (13.8) | 166° · 10.05 (149.9° · 11.92) |
 
-Il test automatico confronta bolina, 60°, 75° e 90° con questi numeri ORC.
+Il test automatico confronta con la polare ORC:
+- di bolina: VMG con 10 nodi;
+- col fiocco: 60°, 75° e 90°;
+- con lo spi: 120°, 150° e il VMG di poppa.
+
+## Spinnaker
+- **Comandi:** E sul computer, ISSA SPI / AMMAINA SPI sul telefono (il pulsante compare dal traverso in giù).
+- **Issata e ammainata:**
+  - si issa solo oltre gli 80° dal vento: in 8 secondi lo spi sale lungo l'albero, il tangone va sopravento e il fiocco si avvolge sullo strallo;
+  - ammainandolo (6 secondi) il fiocco si srotola.
+- **Regolazione:**
+  - lo regola l'equipaggio: con la randa automatica o manuale si pensa solo al timone e alla randa;
+  - quando la barca sbanda, chi è alla scotta lo lascia per scaricarlo, ma solo fino a un certo punto.
+- **Si chiude e sbatte:**
+  - se si orza troppo (sotto circa 60° di vento apparente): l'istruttore dice di poggiare o ammainare;
+  - con le vele in bando.
+- **Strambata:** il tangone passa dall'altra parte e per 4 secondi lo spi lavora male.
+- **Straorzata:**
+  - con troppo vento al lasco la barca sbanda oltre i 40°, il timone non tiene e la barca va all'orza da sola;
+  - con 20 nodi o più al lasco l'istruttore avvisa del rischio.
+- **Istruttore:**
+  - in poppa suggerisce di issare lo spi;
+  - prima della boa di poppa ricorda di ammainarlo, perché poi si risale di bolina.
+- **Disegno:**
+  - spi giallo con la fascia blu, SPORTACTION.IT e il logo su un disco bianco;
+  - nella rosa del vento è un arco giallo davanti alla prua.
 
 ## Telefono e tablet
 Si riconoscono da soli (schermo touch) e si usano in orizzontale; in verticale compare l'invito a girare il dispositivo.

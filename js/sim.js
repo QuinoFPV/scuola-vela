@@ -169,9 +169,19 @@ export class Simulation {
     this.say(`RANDA SCONTRATA ${want > 0 ? 'A DRITTA' : 'A SINISTRA'}: SI VA INDIETRO · IN RETROMARCIA ${rule}`, 'info');
   }
 
+  /** Spinnaker: si issa dal traverso in giu' (il fiocco si avvolge, il tangone va sopravento) o si ammaina. */
+  toggleSpi() {
+    const b = this.boat;
+    if (b.spi) { b.spi = 0; this.say('SI AMMAINA LO SPI E SI SROTOLA IL FIOCCO', 'info'); return; }
+    if (Math.abs(twaOf(b)) < 80) { this.say('LO SPI SI ISSA DAL TRAVERSO IN GIÙ: PRIMA POGGIA', 'warn'); return; }
+    b.spi = 1; b.spiSide = b.awa >= 0 ? 1 : -1; b.farfalla = false;
+    this.say('SI ISSA LO SPI: TANGONE SOPRAVENTO, IL FIOCCO SI AVVOLGE', 'good');
+  }
+
   /** Andatura a farfalla: in poppa il fiocco va dalla parte opposta alla randa, sul tangone; di nuovo per riportarlo. */
   toggleFarfalla() {
     const b = this.boat;
+    if (b.spi) { this.say('CON LO SPI ISSATO LA FARFALLA NON SERVE', 'info'); return; }
     if (b.farfalla) {
       b.farfalla = false; b.jibSide = b.mainSide;
       this.say('FIOCCO RIPORTATO DALLA PARTE DELLA RANDA', 'info');
@@ -208,6 +218,8 @@ export class Simulation {
     this.waves.time = this.time;
     this.checkGround();
     for (const e of this.events) {
+      if (e.type === 'spiGybe') this.say("STRAMBATA CON LO SPI: SI PASSA IL TANGONE DALL'ALTRA PARTE", 'info');
+      if (e.type === 'broach') this.say('STRAORZATA! TROPPO VENTO PER LO SPI: POGGIA, LASCA LA RANDA O AMMAINA (E)', 'bad');
       if (e.type === 'wingEnd') this.say("TROPPO ALL'ORZA PER LA FARFALLA: IL FIOCCO SI CHIUDE E TORNA SOTTOVENTO", 'warn');
       if (e.type === 'gybe') this.say(e.violent ? 'STRAMBATA INVOLONTARIA! IL BOMA HA ATTRAVERSATO DI COLPO' : 'STRAMBATA', e.violent ? 'bad' : 'good');
       if (e.type === 'tack') this.say(twaOf(this.boat) > 0 ? 'VIRATA: ORA MURE A DRITTA' : 'VIRATA: ORA MURE A SINISTRA', 'good');
@@ -256,7 +268,9 @@ export class Simulation {
     const rel = sub(b.pos, this.marks[this.nextMark]), dist = len(rel);
     if (dist < 70 && !this.approachSaid) {
       this.approachSaid = true;
-      this.say(`${MARK_NAMES[this.nextMark]}: LASCIALA A SINISTRA, GIRA IN SENSO ANTIORARIO`, 'info');
+      // dopo la boa di poppa si risale di bolina: lo spi va ammainato prima
+      const douse = this.boat.spi && this.nextMark === 1 ? ' · AMMAINA LO SPI PRIMA (E)' : '';
+      this.say(`${MARK_NAMES[this.nextMark]}: LASCIALA A SINISTRA, GIRA IN SENSO ANTIORARIO${douse}`, 'info');
     } else if (dist > 110) this.approachSaid = false;
     if (dist > 45) { this.sweep = 0; this.sweepAngle = null; this.wrongWay = false; return; }
     const a = deg(Math.atan2(rel.y, rel.x));
@@ -333,6 +347,7 @@ export const Coach = {
   },
   tack(twa) { return Math.abs(twa) > 177 ? '' : (twa > 0 ? 'MURE A DRITTA' : 'MURE A SINISTRA'); },
   telltales(s) {
+    if (s.jibFurl > 0.5) return ['Fiocco avvolto: con lo spi i filetti non servono', 'info'];
     if (s.bando) return ['Vele in bando: i filetti non lavorano', 'info'];
     if (s.jibTimer > 0) return ['Cambio del fiocco in corso', 'info'];
     if (Math.abs(s.awa) > 120) return ['In poppa i filetti non lavorano: guarda il fiocco', 'info'];
@@ -361,7 +376,7 @@ export const Coach = {
     else if (s.mainLuff > 0.35 && twa >= 33) out.push(['La randa fileggia (sbatte): cazzala', 'bad']);
     else if (s.mainSheet - ideal.main > 0.09 && twa < 160) out.push(["Randa troppo lascata: cazzala finché smette di fileggiare", 'warn']);
     else if (ideal.main - s.mainSheet > 0.09 && twa > 45) out.push(["Randa troppo cazzata: lasca finché non fileggia, poi riprendi un po'", 'warn']);
-    if (s.jibTimer > 0 || s.bando || s.backMain) { /* il fiocco sbatte apposta: cambio, scotte libere o randa scontrata */ }
+    if (s.jibTimer > 0 || s.bando || s.backMain || s.jibFurl > 0.5) { /* il fiocco sbatte o e' avvolto apposta */ }
     else if (s.farfalla) out.push([twa < 155 ? "A farfalla stai orzando troppo: poggia, sotto i 140° il fiocco si chiude" : 'A farfalla: tieni la poppa piena, randa e fiocco prendono tutti e due vento pulito', twa < 155 ? 'warn' : 'good']);
     else if (s.jibBlanket > 0.5) out.push(['In poppa il fiocco è coperto dalla randa e sbatte: prova la farfalla (Y)', 'info']);
     else if (s.jibLuff > 0.35 && twa >= 33) out.push(['Il fiocco sbatte: cazza la scotta del fiocco', 'bad']);
@@ -374,6 +389,10 @@ export const Coach = {
       out.push([s.reef < 2 ? 'Vento forte: prendi una mano di terzaroli (Z)' : 'Ancora troppo vento: metti la tormentina al posto del fiocco (Z)', 'warn']);
     } else if (stormJib(s) && s.tws < 16 && !busy) out.push(['Il vento è calato: togli la tormentina e rimetti il fiocco (X)', 'info']);
     else if (s.reef > 0 && s.reef < 3 && s.tws < 9 && !busy) out.push(['Poco vento: sciogli i terzaroli per avere più tela (X)', 'info']);
+    // spinnaker: quando issarlo, quando si chiude, quando e' troppo
+    if (s.spi && s.spiUp > 0.8 && s.spiLuff > 0.5 && !s.bando) out.unshift(["Lo spi si chiude: sei troppo all'orza, poggia o ammainalo (E)", 'bad']);
+    else if (s.spi && s.tws > 21 && twa < 125) out.push(['Vento forte al lasco con lo spi: rischio di straorzata, poggia o ammaina (E)', 'warn']);
+    else if (!s.spi && twa > 105 && s.tws < 21 && !s.bando && !s.backMain) out.push(['Andatura portante: issa lo spi (E)', 'info']);
     if (s.bando) { /* niente consigli sulle scotte: sono libere apposta */ }
     else if (Math.abs(s.heel) > 26) out.push(['Troppo sbandata: lasca la randa per scaricare', 'bad']);
     else if (Math.abs(s.rudder) > 9 && Math.abs(s.r) < 2 && Math.abs(s.heel) > 15) out.push(["Barca ardente (tira all'orza): lasca un po' di randa", 'warn']);

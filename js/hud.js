@@ -62,7 +62,7 @@ export class HUD {
       `Vento apparente  ${s.aws.toFixed(0)} nodi · ${Math.abs(s.awa).toFixed(0)}°`,
       `Prua ${String(s.heading.toFixed(0)).padStart(3, '0')}°   VMG ${Math.abs(v).toFixed(1)} nodi ${v >= 0 ? 'verso il vento' : 'sottovento'}`,
       `Scarroccio ${Math.abs(leeway(s)).toFixed(0)}°   Timone ${s.rudder.toFixed(0)}°`,
-      `Vele: ${s.backMain ? `RANDA SCONTRATA A ${s.backMain > 0 ? 'DRITTA' : 'SINISTRA'}${key('K')}` : s.bando ? 'IN BANDO' + key('SPAZIO') : (sim.autoTrim ? 'AUTOMATICHE' : 'MANUALI') + key('T')}${s.farfalla ? '   ·   A FARFALLA' + key('Y') : ''}   ·   ${SAIL_PLANS[clamp(s.reef, 0, 3)]}${key(s.reef === 0 ? 'Z' : s.reef === 3 ? 'X' : 'Z/X')}`,
+      `Vele: ${s.backMain ? `RANDA SCONTRATA A ${s.backMain > 0 ? 'DRITTA' : 'SINISTRA'}${key('K')}` : s.bando ? 'IN BANDO' + key('SPAZIO') : (sim.autoTrim ? 'AUTOMATICHE' : 'MANUALI') + key('T')}${s.farfalla ? '   ·   A FARFALLA' + key('Y') : ''}${s.spi ? (s.spiUp < 1 ? '   ·   SPI IN ISSATA' : '   ·   SPI') + key('E') : s.spiUp > 0 ? '   ·   SPI IN AMMAINATA' : ''}   ·   ${SAIL_PLANS[clamp(s.reef, 0, 3)]}${key(s.reef === 0 ? 'Z' : s.reef === 3 ? 'X' : 'Z/X')}`,
       `Prossima: ${MARK_NAMES[sim.nextMark].toLowerCase()}  ${len(sub(m, s.pos)).toFixed(0)} m a ${String(bearing(sub(m, s.pos)).toFixed(0)).padStart(3, '0')}°`,
       lap,
     ].map((l) => `<div>${l}</div>`).join('');
@@ -110,7 +110,7 @@ export class HUD {
   /** Sui telefoni i tasti diventano i nomi dei pulsanti. */
   keyless(t) {
     if (!this.touch) return t;
-    return t.replace(/ \(Z\)/i, ' (RIDUCI)').replace(/ \(X\)/i, ' (AUMENTA)').replace(/ \(SPAZIO\)/i, '').replace(/ \(K\)/i, '').replace(/ \(Y\)/i, '');
+    return t.replace(/ \(Z\)/i, ' (RIDUCI)').replace(/ \(X\)/i, ' (AUMENTA)').replace(/ \(SPAZIO\)/i, '').replace(/ \(K\)/i, '').replace(/ \(Y\)/i, '').replace(/ \(E\)/i, '');
   }
 
   /** Comandi a dito: posizione della barra, scotte, pulsanti che cambiano scritta, dati essenziali. */
@@ -132,10 +132,15 @@ export class HUD {
     HUD.put('tTrim', sim.autoTrim ? 'VELE AUTO' : 'VELE MAN.').classList.toggle('on', !sim.autoTrim);
     HUD.put('tBando', s.bando ? 'RIPRENDI LE SCOTTE' : 'VELE IN BANDO').classList.toggle('on', s.bando);
     HUD.put('tBack', s.backMain ? 'MOLLA IL BOMA' : 'SCONTRA RANDA').classList.toggle('on', !!s.backMain);
-    // la farfalla compare solo in poppa (o quando e' gia' a farfalla)
+    // pulsanti che servono solo in certe andature: spi dal traverso in giu', farfalla in poppa, randa scontrata da fermi
+    const twa = Math.abs(twaOf(s));
+    const spiB = HUD.put('tSpi', s.spi ? 'AMMAINA SPI' : 'ISSA SPI');
+    spiB.classList.toggle('on', !!s.spi);
+    spiB.style.display = s.spi || twa > 75 ? '' : 'none';
     const wing = HUD.put('tWing', s.farfalla ? 'TOGLI FARFALLA' : 'FARFALLA');
     wing.classList.toggle('on', s.farfalla);
-    wing.style.display = s.farfalla || Math.abs(twaOf(s)) > 145 ? '' : 'none';
+    wing.style.display = s.farfalla || (twa > 145 && !s.spi) ? '' : 'none';
+    $('tBack').style.display = s.backMain || twa < 75 ? '' : 'none';
     HUD.put('tPause', sim.paused ? 'RIPARTI' : 'PAUSA').classList.toggle('on', sim.paused);
     HUD.put('tReplay', sim.replay !== null ? 'DIRETTA' : 'MOVIOLA').classList.toggle('on', sim.replay !== null);
     const lap = sim.lapStart !== null ? `  ·  giro ${((sim.time - sim.lapStart) / 60) | 0}:${String(((sim.time - sim.lapStart) | 0) % 60).padStart(2, '0')}` : '';
@@ -164,7 +169,13 @@ export class HUD {
       g.strokeStyle = '#f28c1a'; g.lineWidth = w; g.lineCap = 'round';
       g.beginPath(); g.moveTo(px, py); g.lineTo(px + Math.sin(rad(a)) * l, py + Math.cos(rad(a)) * l); g.stroke();
     };
-    boom(0, -8, s.mainAngle, 38, 4); boom(0, -42, s.jibAngle, 32, 3);
+    boom(0, -8, s.mainAngle, 38, 4);
+    if (s.jibFurl < 0.5) boom(0, -42, s.jibAngle, 32, 3);
+    if (s.spiUp > 0.2) {
+      // lo spi: una vela gialla gonfia davanti alla prua
+      g.strokeStyle = s.spiLuff > 0.5 ? 'rgba(255,194,14,0.5)' : '#ffc20e'; g.lineWidth = 6; g.lineCap = 'round';
+      g.beginPath(); g.arc(0, -50, 26 * s.spiUp, Math.PI * 1.08, Math.PI * 1.92); g.stroke();
+    }
     for (const [a, color, label] of [[twaOf(s), '#59b3ff', 'REALE'], [s.awa, '#ffd933', 'APPARENTE']]) {
       g.save(); g.rotate(rad(a));
       g.strokeStyle = color; g.lineWidth = 4; g.lineCap = 'round';
