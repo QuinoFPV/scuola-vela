@@ -111,6 +111,7 @@ async function main() {
       case 'KeyK': sim.toggleBackMain(0); break;       // randa scontrata dal lato dov'e' il boma, di nuovo per mollarla
       case 'KeyY': sim.toggleFarfalla(); break;        // andatura a farfalla, di nuovo per riportare il fiocco
       case 'KeyE': sim.toggleSpi(); break;             // spinnaker: issa / ammaina
+      case 'KeyU': sim.toggleCappa(); break;           // fiocco in cappa / libero
       case 'KeyJ': sim.toggleBackMain(-1); break;      // ... a sinistra
       case 'KeyL': sim.toggleBackMain(1); break;       // ... a dritta
       case 'KeyF': st.triangle = !st.triangle; sim.say(st.triangle ? 'TRIANGOLO DEI VENTI: REALE, APPARENTE E VELOCITÀ DELLA BARCA' : 'TRIANGOLO DEI VENTI NASCOSTO', 'info'); break;

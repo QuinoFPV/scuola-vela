@@ -595,7 +595,8 @@ export class BoatModel {
     const head = STAY0.clone().lerp(STAY1, storm ? 0.58 : 0.86);
     const a = rad(s.jibAngle), foot = storm ? 1.8 : JIB_FOOT;
     const clew = V(tack.x + Math.sin(a) * foot, tack.y + (storm ? 0.25 : 0.2), tack.z + Math.cos(a) * foot);
-    const side = s.jibSide, fill = 1 - s.jibLuff;
+    // in cappa il vento prende il fiocco dalla parte di fuori: il grasso va verso l'interno
+    const side = s.jibBacked ? -s.jibSide : s.jibSide, fill = 1 - s.jibLuff;
     const luff = new THREE.Vector3(), leech = new THREE.Vector3(), ch = new THREE.Vector3();
     let i = 0;
     for (let r = 0; r <= R; r++) {

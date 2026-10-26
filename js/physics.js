@@ -144,7 +144,7 @@ export function newBoat() {
     mainSheet: 0.4, jibSheet: 0.4, mainAngle: 30, jibAngle: 25, mainSide: 1, jibSide: 1,
     mainAlpha: 0, jibAlpha: 0, mainLuff: 0, jibLuff: 0, crew: 0, reef: 0, reefTimer: 0, jibTimer: 0, bando: false,
     backMain: 0, mainBacked: false, backAng: 0, mainPush: 0, farfalla: false, jibBlanket: 0,
-    spi: 0, spiUp: 0, spiSide: 1, spiGybe: 0, spiLuff: 0, jibFurl: 0, broaching: false,
+    spi: 0, spiUp: 0, spiSide: 1, spiGybe: 0, spiLuff: 0, jibFurl: 0, broaching: false, cappa: 0, jibBacked: false,
     twd: 0, tws: 10, awa: 0, aws: 10, drive: 0, time: 0,
   };
 }
@@ -248,7 +248,9 @@ export function step(s, wind, dt) {
   if (s.backMain) s.mainSide = s.backMain;
   // a farfalla il fiocco sta dalla parte opposta alla randa, tenuto fuori dal tangone; se si orza troppo si chiude
   if (s.farfalla && Math.abs(twaOf(s)) < 140) { s.farfalla = false; events.push({ type: 'wingEnd' }); }
-  s.jibSide = s.farfalla ? -s.mainSide : sideFor(s.jibSide, Math.abs(s.jibAngle));
+  // fiocco in cappa: cazzato sopravento dal lato dove lo si e' messo; se la barca vira finisce sottovento e la cappa e' finita
+  if (s.cappa && windSide !== s.cappa && absAwa > 25) { s.cappa = 0; events.push({ type: 'cappaEnd' }); }
+  s.jibSide = s.cappa ? s.cappa : s.farfalla ? -s.mainSide : sideFor(s.jibSide, Math.abs(s.jibAngle));
 
   const heelK = Math.cos(rad(Math.min(80, Math.abs(s.heel)))) ** 2;
   const q = 0.5 * RHO_AIR * (s.aws * KNOT) ** 2 * heelK;
@@ -263,7 +265,8 @@ export function step(s, wind, dt) {
   const sail = (main) => {
     // mentre si prende una mano (o si cambia il fiocco) la drizza e' lasca: la vela sbandiera
     const changing = main ? s.reefTimer > 0 : s.jibTimer > 0;
-    const limit = changing ? 180 : sheetAngle(main, main ? s.mainSheet : s.jibSheet);
+    // in cappa la scotta sopravento del fiocco e' cazzata e strozzata
+    const limit = changing ? 180 : !main && s.cappa ? Spec.jibMin + 4 : sheetAngle(main, main ? s.mainSheet : s.jibSheet);
     const side = main ? s.mainSide : s.jibSide;
     const area = main ? Spec.mainArea * Spec.reefArea[mainReefs(s)] : Spec.jibArea * (stormJib(s) ? Spec.stormJibArea : 1);
     const target = main && s.backMain ? s.backMain * s.backAng : side * (side === leeSide ? Math.min(limit, absAwa) : limit);
@@ -304,6 +307,7 @@ export function step(s, wind, dt) {
   s.mainBacked = s.backMain !== 0 && m.backed;
   s.mainPush = m.push;
   s.jibAngle = j.ang; s.jibAlpha = j.alpha; s.jibLuff = j.luff; s.jibBlanket = j.blanket;
+  s.jibBacked = !!s.cappa && j.backed;
   let fx = m.fx + j.fx + spi.fx, fy = m.fy + j.fy + spi.fy, yaw = 0;
   // resistenza aerodinamica di scafo, albero ed equipaggio
   const wk = q / heelK * 1.2;
@@ -334,7 +338,9 @@ export function step(s, wind, dt) {
   hullX *= 1 + Math.abs(s.heel) / 90;
   const [k1, k2, k3] = Spec.keelLift;
   const keelLift = -k1 * Math.abs(u) * v - k2 * v * Math.abs(v) - k3 * v;
-  hullX -= Spec.keelInduced * keelLift * keelLift / Math.max(0.3, u * u);
+  // resistenza indotta: si oppone al moto (anche all'indietro) e da quasi fermi non puo' crescere senza limite
+  const induced = Math.min(Spec.keelInduced * keelLift * keelLift / Math.max(0.3, u * u), 0.3 * Math.abs(keelLift));
+  hullX -= u >= 0 ? induced : -induced;
 
   // timone
   const flowR = Math.abs(u) + 0.15;
@@ -346,7 +352,7 @@ export function step(s, wind, dt) {
   const rq = 0.5 * RHO_WATER * 0.45 * u * Math.abs(u) * grip;
   const rudderLift = rcl * rq;
   yaw += rudderLift * 3.4;
-  hullX -= Math.abs(rcl) * 0.08 * Math.abs(rq);
+  hullX -= Math.abs(rcl) * 0.08 * rq;                    // rq ha il segno della velocita': frena sempre il moto
   const rr = rad(s.r);
   yaw -= 3800 * Math.abs(u) * rr + 4000 * rr * Math.abs(rr) + 900 * rr;
 

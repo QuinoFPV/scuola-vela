@@ -1,7 +1,7 @@
 // Simulazione: barca, vento, onde, boe, moviola, messaggi e consigli dell'istruttore.
 import {
   Wind, newBoat, copyBoat, step, idealSheets, Spec, norm180, norm360, rad, deg, clamp, dirVec, len, sub, add, mul,
-  speedKn, twaOf, stormJib,
+  speedKn, twaOf, stormJib, KNOT,
 } from './physics.js';
 
 /** Le onde del lago (le stesse dello shader dell'acqua, per far galleggiare barca e boe). */
@@ -169,6 +169,21 @@ export class Simulation {
     this.say(`RANDA SCONTRATA ${want > 0 ? 'A DRITTA' : 'A SINISTRA'}: SI VA INDIETRO · IN RETROMARCIA ${rule}`, 'info');
   }
 
+  /** Fiocco in cappa: cazzato sopravento sul lato dove si trova il vento; randa e timone li regola l'allievo.
+   *  Di nuovo per liberarlo e ripartire. */
+  toggleCappa() {
+    const b = this.boat;
+    if (b.cappa) {
+      b.cappa = 0; b.jibSide = b.awa >= 0 ? -1 : 1;
+      this.say('FIOCCO LIBERATO DALLA CAPPA: CAZZA LA RANDA E RIPARTI', 'info');
+      return;
+    }
+    if (b.spiUp > 0) { this.say('PRIMA AMMAINA LO SPI (E)', 'warn'); return; }
+    if (Math.abs(twaOf(b)) > 130) { this.say('LA CAPPA SI FA DI BOLINA O AL TRAVERSO: PRIMA ORZA', 'warn'); return; }
+    b.cappa = b.awa >= 0 ? 1 : -1; b.farfalla = false;
+    this.say(this.autoTrim ? "FIOCCO IN CAPPA. ORA VELE MANUALI (T), LASCA LA RANDA E TIMONE ALL'ORZA" : "FIOCCO IN CAPPA. ORA LASCA LA RANDA E METTI IL TIMONE ALL'ORZA", 'info');
+  }
+
   /** Spinnaker: si issa dal traverso in giu' (il fiocco si avvolge, il tangone va sopravento) o si ammaina. */
   toggleSpi() {
     const b = this.boat;
@@ -218,6 +233,7 @@ export class Simulation {
     this.waves.time = this.time;
     this.checkGround();
     for (const e of this.events) {
+      if (e.type === 'cappaEnd') this.say('LA BARCA HA VIRATO: IL FIOCCO NON È PIÙ IN CAPPA', 'info');
       if (e.type === 'spiGybe') this.say("STRAMBATA CON LO SPI: SI PASSA IL TANGONE DALL'ALTRA PARTE", 'info');
       if (e.type === 'broach') this.say('STRAORZATA! TROPPO VENTO PER LO SPI: POGGIA, LASCA LA RANDA O AMMAINA (E)', 'bad');
       if (e.type === 'wingEnd') this.say("TROPPO ALL'ORZA PER LA FARFALLA: IL FIOCCO SI CHIUDE E TORNA SOTTOVENTO", 'warn');
@@ -347,6 +363,7 @@ export const Coach = {
   },
   tack(twa) { return Math.abs(twa) > 177 ? '' : (twa > 0 ? 'MURE A DRITTA' : 'MURE A SINISTRA'); },
   telltales(s) {
+    if (s.cappa) return ['Fiocco in cappa: preso dal vento dalla parte di fuori', 'info'];
     if (s.jibFurl > 0.5) return ['Fiocco avvolto: con lo spi i filetti non servono', 'info'];
     if (s.bando) return ['Vele in bando: i filetti non lavorano', 'info'];
     if (s.jibTimer > 0) return ['Cambio del fiocco in corso', 'info'];
@@ -369,14 +386,23 @@ export const Coach = {
     if (twa < 33 && !s.backMain) out.push(Math.abs(kn) < 0.6
       ? ["Sei fermo nell'angolo morto: scontra la randa (K) o metti la barra e lascia cadere la prua", 'bad']
       : ['Troppo all\'orza: le vele non portano, poggia di qualche grado', 'bad']);
+    if (s.cappa) {
+      // in cappa: randa lasca e timone all'orza li deve mettere l'allievo
+      const eased = s.mainLuff > 0.3 || s.mainSheet > 0.45, helm = s.rudder * (s.awa >= 0 ? 1 : -1) > 6;
+      const drift = Math.abs(s.v) / KNOT, fwd = s.u / KNOT;
+      if (!eased) out.push(['In cappa la randa va lascata, altrimenti la barca riparte', 'warn']);
+      else if (!helm) out.push(["In cappa il timone va all'orza e tenuto lì: il fiocco spinge la prua sottovento", 'warn']);
+      else if (fwd < 2) out.push([`Barca in cappa: avanza a ${fwd.toFixed(1)} nodi e scarroccia di ${drift.toFixed(1)}. Per ripartire libera il fiocco (U)`, 'good']);
+      else out.push(['In cappa la barca va ancora: lasca di più la randa', 'info']);
+    }
     if (s.bando) out.push(['Vele in bando: senza scotte la barca rallenta (in poppa poco). Per ripartire riprendi le scotte (SPAZIO)', 'info']);
-    else if (s.backMain) { /* il boma lo tiene l'equipaggio: niente consigli sulla scotta della randa */ }
+    else if (s.backMain || s.cappa) { /* il boma lo tiene l'equipaggio: niente consigli sulla scotta della randa */ }
     else if (s.reefTimer > 0) { /* durante i terzaroli la randa sbatte apposta */ }
     else if (s.mainLuff > 0.35 && twa >= 33 && Math.abs(s.heel) > 20) out.push(['La randa fileggia per scaricare: con questo vento va bene così', 'info']);
     else if (s.mainLuff > 0.35 && twa >= 33) out.push(['La randa fileggia (sbatte): cazzala', 'bad']);
     else if (s.mainSheet - ideal.main > 0.09 && twa < 160) out.push(["Randa troppo lascata: cazzala finché smette di fileggiare", 'warn']);
     else if (ideal.main - s.mainSheet > 0.09 && twa > 45) out.push(["Randa troppo cazzata: lasca finché non fileggia, poi riprendi un po'", 'warn']);
-    if (s.jibTimer > 0 || s.bando || s.backMain || s.jibFurl > 0.5) { /* il fiocco sbatte o e' avvolto apposta */ }
+    if (s.jibTimer > 0 || s.bando || s.backMain || s.jibFurl > 0.5 || s.cappa) { /* il fiocco sbatte, e' avvolto o e' in cappa apposta */ }
     else if (s.farfalla) out.push([twa < 155 ? "A farfalla stai orzando troppo: poggia, sotto i 140° il fiocco si chiude" : 'A farfalla: tieni la poppa piena, randa e fiocco prendono tutti e due vento pulito', twa < 155 ? 'warn' : 'good']);
     else if (s.jibBlanket > 0.5) out.push(['In poppa il fiocco è coperto dalla randa e sbatte: prova la farfalla (Y)', 'info']);
     else if (s.jibLuff > 0.35 && twa >= 33) out.push(['Il fiocco sbatte: cazza la scotta del fiocco', 'bad']);

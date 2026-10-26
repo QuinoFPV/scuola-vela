@@ -93,6 +93,23 @@ Il test automatico confronta con la polare ORC:
 - col fiocco: 60°, 75° e 90°;
 - con lo spi: 120°, 150° e il VMG di poppa.
 
+## Fiocco in cappa
+- **Comandi:**
+  - U sul computer, FIOCCO IN CAPPA sul telefono (di bolina e al traverso, non con lo spi su);
+  - di nuovo per liberarlo (LIBERA FIOCCO).
+- **Cosa fa il tasto:** solo il fiocco. Viene cazzato e strozzato sopravento, il vento lo prende dalla parte di fuori e spinge la prua sottovento.
+- **Cosa fa l'allievo:**
+  - passa alle vele manuali (T) e lasca la randa;
+  - mette il timone all'orza.
+
+  L'istruttore lo guida passo passo.
+- **Il risultato:**
+  - con la randa a metà e il timone all'orza di 10-15° la barca si ferma a circa 60° dal vento;
+  - con 10 nodi avanza a circa 1 nodo e scarroccia di 0,4; con 20 nodi avanza a 1,5 e scarroccia di circa 1;
+  - con troppo timone, quando la barca ha ancora abbrivio, vira: prima di mettersi in cappa bisogna rallentare;
+  - col fiocco a collo la barca fatica a passare il vento; se vira, la cappa finisce.
+- **Correzione di fisica fatta insieme alla cappa.** La resistenza indotta della chiglia spingeva sempre indietro e a bassa velocità cresceva senza limite: da fermi o andando indietro la barca rinculava troppo. Ora si oppone sempre al moto e ha un limite. Alle velocità normali non cambia niente; la retromarcia con la randa scontrata ora è di 1-1,3 nodi.
+
 ## Spinnaker
 - **Comandi:** E sul computer, ISSA SPI / AMMAINA SPI sul telefono (il pulsante compare dal traverso in giù).
 - **Issata e ammainata:**

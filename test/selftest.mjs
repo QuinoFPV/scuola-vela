@@ -235,7 +235,7 @@ secs(back, 2);
 check(backedNow && back.boat.u < adrift.boat.u * 2 && back.boat.u < -0.5 && turned(back, h0) > 20,
   `randa scontrata a dritta: indietro a ${f1(-back.boat.u / 0.5144)} kn (scadendo ${f1(-adrift.boat.u / 0.5144)}), la prua cade a dritta di ${f0(turned(back, h0))}°`);
 const astern = irons(10), h1 = astern.boat.heading;
-astern.toggleBackMain(1); secs(astern, 16, 20);
+astern.toggleBackMain(1); secs(astern, 16, 30);
 check(astern.boat.u < -0.5 && Math.abs(turned(astern, h1)) < 35, `col timone al contrario si va indietro quasi dritti (${f0(turned(astern, h1))}° in 16 s)`);
 while (Math.abs(twaOf(back.boat)) < 65) secs(back, 0.5);
 back.toggleBackMain(0);
@@ -301,6 +301,44 @@ check(held < 40 && fastest > -1.8, `con 20 nodi chi spinge il boma cede (tenuto 
   check(evb.some((e) => e.type === 'broach'), 'con 30 nodi al traverso con lo spi si straorza');
   b.toggleSpi(); sail(b, 135, 8);
   check(b.boat.spiUp === 0 && b.boat.jibFurl === 0, 'ammainato lo spi il fiocco si srotola');
+}
+// fiocco in cappa: l'allievo lasca la randa e mette il timone all'orza, la barca si ferma e scarroccia
+{
+  const make = (kn, twa) => {
+    const sm = new Simulation(lake);
+    sm.settings.gusts = false; sm.settings.windIndex = WINDS.findIndex((x) => x[1] === kn); sm.reset(); sm.wind.shifts = false;
+    sm.boat.pos = add(lake.center, mul(dirVec(sm.wind.baseDir + 180), 150));
+    Object.assign(sm.boat, { heading: norm360(sm.wind.baseDir - twa), u: 2.5, v: 0, r: 0, heel: 0 });
+    sm.autoTrim = true;
+    for (let i = 0; i < 15 * 60; i++) sm.update(1 / 60, { tillerTarget: clamp(norm180(twaOf(sm.boat) - twa) * 1.2 - sm.boat.r * 0.8, -25, 25) });
+    return sm;
+  };
+  const run = make(10, 150); run.toggleCappa();
+  check(!run.boat.cappa && run.message.includes('ORZA'), 'in poppa la cappa non si fa');
+  for (const kn of [10, 20]) {
+    const h = make(kn, 55); h.toggleCappa();
+    const ws = h.boat.cappa;
+    h.autoTrim = false; h.boat.mainSheet = 0.55;                       // l'allievo lasca la randa...
+    let ev = [];
+    for (let i = 0; i < 60 * 60; i++) { h.update(1 / 60, { tillerTarget: 12 * ws }); ev.push(...h.events); }   // ...e mette il timone all'orza
+    const b = h.boat, fwd = b.u / 0.5144, drift = Math.abs(b.v) / 0.5144;
+    check(b.cappa === ws && b.jibBacked && fwd > 0.2 && fwd < 2 && drift > 0.2 && Math.abs(twaOf(b)) > 45 && Math.abs(twaOf(b)) < 80
+      && Coach.tips(b, lake).some(([t]) => t.includes('Barca in cappa')),
+      `${kn} nodi in cappa: avanza a ${f1(fwd)} kn, scarroccia di ${f1(drift)}, a ${f0(Math.abs(twaOf(b)))}° dal vento`);
+  }
+  const auto = make(10, 55); auto.toggleCappa(); auto.update(1 / 60, {});
+  check(auto.message.includes('VELE MANUALI') && Coach.tips(auto.boat, lake).some(([t]) => t.includes('randa va lascata')), "con le vele automatiche l'istruttore dice di lascare la randa");
+  // col fiocco a collo la barca fatica a passare il vento; se ci riesce (qui la si mette sull'altro bordo) la cappa e' finita
+  const tk = make(10, 55); tk.toggleCappa();
+  tk.boat.heading = norm360(2 * tk.boat.twd - tk.boat.heading);
+  let ended = false;
+  for (let i = 0; i < 60; i++) { tk.update(1 / 60, {}); if (tk.events.some((e) => e.type === 'cappaEnd')) ended = true; }
+  check(ended && !tk.boat.cappa && tk.message.includes('VIRATO'), 'se la barca vira il fiocco non è più in cappa');
+  const go = make(10, 55); go.toggleCappa(); go.autoTrim = false; go.boat.mainSheet = 0.55;
+  for (let i = 0; i < 30 * 60; i++) go.update(1 / 60, { tillerTarget: 12 * go.boat.cappa });
+  go.toggleCappa(); go.autoTrim = true;
+  for (let i = 0; i < 30 * 60; i++) go.update(1 / 60, { tillerTarget: clamp(norm180(twaOf(go.boat) - 60 * Math.sign(twaOf(go.boat))) * 1.2 - go.boat.r * 0.8, -25, 25) });
+  check(!go.boat.cappa && speedKn(go.boat) > 4, `liberato il fiocco si riparte (${f1(speedKn(go.boat))} kn)`);
 }
 
 console.log(failures === 0 ? 'TUTTO OK' : `${failures} ERRORI`);
