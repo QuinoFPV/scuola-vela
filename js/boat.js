@@ -543,8 +543,21 @@ export class BoatModel {
     foot.x -= ws * 0.6; foot.normalize();
     const clew = tack.clone().addScaledVector(foot, 5.0 * (0.35 + 0.65 * up));
     clew.y = 1.7;
+    // in poppa la randa e' aperta quasi di traverso: lo spi, bugna compresa, deve stare tutto davanti a lei
+    const run = clamp((absA - 115) / 45, 0, 1);
+    clew.z = Math.min(clew.z, MAST_Z - 2.2 * run + 3 * (1 - run));
+    tack.z = Math.min(tack.z, MAST_Z - 1.2 * run + 3 * (1 - run));
     const headY = 1.6 + up * (9.3 - 1.6), head = V(0, headY, MAST_Z - 1.0);
     const luff = s.spiLuff, depth = 2.7 * (1 - 0.65 * luff) * up;
+    // piano della randa (boma dall'albero): nessun punto dello spi deve finirle dietro o troppo vicino
+    const ma = rad(s.mainAngle), bx = Math.sin(ma), bz = Math.cos(ma), msd = Math.sign(s.mainAngle) || 1;
+    const nx = msd * bz, nz = -msd * bx;                  // normale verso prua della randa
+    const clearOfMain = (px, y, pz) => {
+      const fo = clamp((y - BOOM_Y) / (HEAD_Y - BOOM_Y), 0, 1), chord = 3.05 * Math.pow(1 - fo, 0.85) + 0.3 * fo + 0.4;
+      const dx = px, dz = pz - MAST_Z, along = dx * bx + dz * bz, ahead = dx * nx + dz * nz;
+      const need = 0.7 - ahead;
+      return along > -0.2 && along < chord && need > 0 ? need : 0;
+    };
     let i = 0;
     for (let r = 0; r <= R; r++) {
       const f = r / R, sh = f * f;                        // larga fin quasi in cima, come le spalle di uno spi
@@ -553,14 +566,17 @@ export class BoatModel {
       const L = tack.clone().lerp(head, sh), T = clew.clone().lerp(head, sh);
       const cen = L.clone().lerp(T, 0.5), half = T.clone().sub(L).multiplyScalar(0.5 * girth);
       L.copy(cen).sub(half); T.copy(cen).add(half);
-      const ahead = 1.1 * Math.sin(Math.PI * Math.min(1, f * 1.1)) * up;   // il pallone sta davanti alla prua
+      const ahead = (1.1 + 0.6 * run) * Math.sin(Math.PI * Math.min(1, f * 1.1)) * up;   // il pallone sta davanti alla prua
       for (let c = 0; c <= C; c++) {
         const u = c / C, p = L.clone().lerp(T, u);
         const belly = depth * Math.sin(Math.PI * u) * Math.pow(Math.sin(Math.PI * Math.min(1, f * 1.05 + 0.03)), 0.7);
         const flap = luff * 0.35 * Math.sin(time * 9 + u * 6 + f * 4) * Math.sin(Math.PI * u);
-        pts[i++] = p.x + flow.x * (belly + flap);
+        let px = p.x + flow.x * (belly + flap), pz = p.z + flow.z * (belly + flap) - ahead * (0.6 + 0.4 * Math.sin(Math.PI * u));
+        const push = clearOfMain(px, y, pz);
+        px += nx * push; pz += nz * push;
+        pts[i++] = px;
         pts[i++] = y + belly * 0.12;
-        pts[i++] = p.z + flow.z * (belly + flap) - ahead * Math.sin(Math.PI * u * 0.8 + 0.3);
+        pts[i++] = pz;
       }
     }
     this.writeSail(this.spiSail, pts);
