@@ -469,7 +469,7 @@ export class World {
     }
     // scia
     const fwd = dirVec(s.heading), stb = dirVec(s.heading + 90);
-    if (sim.replay === null) this.wake.update({ x: x - fwd.x * 3.9, y: z + fwd.y * 3.9 }, { x: stb.x, y: -stb.y }, Math.max(0, s.u), s.time, waves);
+    if (sim.replay === null) this.wake.update({ x: x - fwd.x * 3.7, y: z + fwd.y * 3.7 }, { x: stb.x, y: -stb.y }, Math.max(0, s.u), s.time, waves);
     // boe
     this.buoys.forEach((b, i) => {
       const p = sim.marks[i], smp = waves.sample(p.x, -p.y);
@@ -524,7 +524,7 @@ export class World {
       cam.lookAt(x + back.x * 3, 1.2, z - back.y * 3);
     } else if (this.mode === 1) {
       const m = this.helmMount;
-      if (this.boat.wheel) m.position.set(s.crew * 0.12, 1.95, 3.7); else m.position.set(s.crew * 1.0, 1.55, 2.6);
+      if (this.boat.wheel) m.position.set(s.crew * 0.12, 1.95, 3.45); else m.position.set(s.crew * 1.0, 1.55, 2.45);
       m.rotation.set((this.boat.wheel ? -0.34 : -0.07) + rad(this.orbitPitch) * 0.5, rad(-this.orbitYaw), rad(s.heel) * 0.55, 'YXZ');
       m.updateMatrixWorld(true);
       m.matrixWorld.decompose(cam.position, cam.quaternion, new THREE.Vector3());

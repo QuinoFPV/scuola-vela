@@ -78,6 +78,14 @@ La polare di riferimento è la mediana di 16 certificati ORC della classe, pubbl
 - **Angolo morto.** Va sotto i 34° dal vento reale; la barca risale al meglio a 38-42°.
 - **Sbandamento.** Da barca sportiva con l'equipaggio fuori bordo: circa 8° con 6 nodi, 14° con 10, 24° con 20.
 
+Anche il modello 3D segue il certificato ORC (disegno del profilo e misure):
+- **Scafo:** 7,50 × 2,42 m, prua con un po' di slancio, bulbo a 1,76 m.
+- **Albero:** a 2,67 m dallo strallo; boma a 1,13 m dalla coperta.
+- **Randa:** inferitura 8,50 m, base 3,40 m e larghezze 2,98 / 2,35 / 1,40 / 0,82 / 0,20 m a 1/4, 1/2, 3/4, 7/8 e in testa.
+- **Genoa:** sormonta l'albero, inferitura 8,70 m e base 3,83 m.
+- **Spinnaker:** base 6 m, tangone 3,25 m, drizza a 8,67 m.
+- **Coperta:** tuga che parte dall'albero, osteriggio a prua, pozzetto aperto.
+
 Simulatore e, tra parentesi, ORC (nodi):
 
 | Vento | Bolina: angolo · VMG | 60° | 90° | 120° (spi) | 150° (spi) | Poppa con spi: angolo · VMG |

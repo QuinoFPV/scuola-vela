@@ -2,17 +2,22 @@
 // Y in alto, linea di galleggiamento a y = 0 (come nella versione Mac).
 import * as THREE from './vendor/three.module.min.js';
 import { rad, clamp, dirVec, mainReefs, stormJib } from './physics.js';
-import { sailTexture, hullTexture, boomTexture, foamTexture, dropTexture, stormTexture, spiTexture } from './textures.js';
+import { sailTexture, hullTexture, boomTexture, foamTexture, dropTexture, stormTexture, spiTexture, mainChord } from './textures.js';
 
-export const MAST_Z = -0.6, BOOM_Y = 1.8, HEAD_Y = 10.3;
-const TACK = new THREE.Vector3(0, 0.95, -3.7);
-const STAY0 = new THREE.Vector3(0, 0.9, -3.9), STAY1 = new THREE.Vector3(0, 9.2, -0.6);
-const JIB_FOOT = 3.25, COCKPIT_Z = 0.45, FLOOR_Y = 0.30, SIDE_DECK = 0.36;
+// Protagonist 7.50, misure dal certificato ORC: lunghezza 7,495 m, larghezza 2,422 m, pescaggio 1,76 m;
+// albero 2,67 m dietro lo strallo (J), che e' 0,26 m dietro la prua; boma 1,13 m sopra la coperta (BAS),
+// inferitura della randa 8,50 m (P), strallo a 8,645 m sull'albero (I).
+export const LOA = 7.5, HL = LOA / 2, BEAM = 2.42;
+export const MAST_Z = -0.82, BOOM_Y = 1.86, HEAD_Y = 10.36;
+const STAY0 = new THREE.Vector3(0, 0.86, -3.49), STAY1 = new THREE.Vector3(0, 9.37, MAST_Z);
+const TACK = new THREE.Vector3(0, 0.95, -3.45);
+const JIB_FOOT = 3.83, COCKPIT_Z = 0.5, FLOOR_Y = 0.30, SIDE_DECK = 0.36;
 
-export const halfBeam = (t) => t < 0.6 ? 1.25 * Math.pow(Math.sin(t / 0.6 * Math.PI / 2), 0.82) : 1.25 * (1 - 0.08 * ((t - 0.6) / 0.4) ** 2);
+export const halfBeam = (t) => t < 0.6 ? BEAM / 2 * Math.pow(Math.sin(t / 0.6 * Math.PI / 2), 0.82) : BEAM / 2 * (1 - 0.08 * ((t - 0.6) / 0.4) ** 2);
 export const sheer = (t) => 0.62 + 0.22 * Math.pow(1 - t, 1.5);
-const keelLine = (t) => 0.1 - 0.16 * t - 0.5 * Math.sin(Math.PI * Math.pow(t, 0.75));
-export const tAt = (z) => clamp((z + 3.95) / 7.9, 0, 1);
+// prua con un po' di slancio: il piede di ruota esce dall'acqua circa mezzo metro dietro la prua
+const keelLine = (t) => 0.22 - 0.27 * t - 0.5 * Math.sin(Math.PI * Math.pow(t, 0.75));
+export const tAt = (z) => clamp((z + HL) / LOA, 0, 1);
 export function deckY(t, x) {
   const b = Math.max(0.01, halfBeam(t)), u = clamp(x / b, -1, 1);
   return sheer(t) + 0.06 * (1 - u * u) * Math.min(1, b / 0.6);
@@ -114,7 +119,7 @@ class Sailor {
 export function hullGeometry() {
   const K = 56, M = 36, pos = [], uv = [], idx = [];
   for (let k = 0; k <= K; k++) {
-    const t = k / K, z = -3.95 + 7.9 * t;
+    const t = k / K, z = -HL + LOA * t;
     const b = Math.max(0.01, halfBeam(t)), top = sheer(t), bot = keelLine(t);
     for (let m = 0; m <= M; m++) {
       const th = m / M * Math.PI, c = Math.cos(th), s = Math.sin(th);
@@ -183,7 +188,8 @@ export class BoatModel {
       const xmax = tb * Math.pow(Math.sqrt(Math.max(0, 1 - sn * sn)), 0.62);
       if (Math.abs(cx) <= xmax && (cy <= FLOOR_Y || Math.abs(cx) >= inner)) {
         const base = tp.length / 3;
-        tp.push(x, y, 3.949, x + cell, y, 3.949, x + cell, y + cell, 3.949, x, y + cell, 3.949);
+        const zt = HL - 0.001;
+        tp.push(x, y, zt, x + cell, y, zt, x + cell, y + cell, zt, x, y + cell, zt);
         ti.push(base, base + 1, base + 2, base, base + 2, base + 3);
       }
     }
@@ -193,8 +199,8 @@ export class BoatModel {
     // chiglia con bulbo e timone
     const keelMat = std(0x121212, 0.45);
     const fin = mesh(new THREE.BoxGeometry(0.12, 1.3, 0.9), keelMat); fin.position.y = -1.05; this.tilt.add(fin);
-    const bulb = mesh(new THREE.CapsuleGeometry(0.2, 1.1, 6, 12), keelMat); bulb.rotation.x = Math.PI / 2; bulb.position.set(0, -1.7, 0.1); this.tilt.add(bulb);
-    this.rudderPivot = new THREE.Group(); this.rudderPivot.position.z = 3.55; this.tilt.add(this.rudderPivot);
+    const bulb = mesh(new THREE.CapsuleGeometry(0.2, 1.1, 6, 12), keelMat); bulb.rotation.x = Math.PI / 2; bulb.position.set(0, -1.56, 0.1); this.tilt.add(bulb);
+    this.rudderPivot = new THREE.Group(); this.rudderPivot.position.z = HL - 0.4; this.tilt.add(this.rudderPivot);
     const blade = mesh(new THREE.BoxGeometry(0.05, 1.25, 0.42), keelMat); blade.position.set(0, -0.6, 0.18); this.rudderPivot.add(blade);
     this.tillerNode = new THREE.Group();
     const tiller = mesh(new THREE.BoxGeometry(0.05, 0.06, 1.7), std(0x8c5c2e, 0.4)); tiller.position.set(0, 0.62, -0.85); tiller.rotation.x = -0.08;
@@ -203,9 +209,9 @@ export class BoatModel {
     // ruota su colonnina (opzione)
     const steel = std(0xd1d1d1, 0.2, 1);
     this.wheelNode = new THREE.Group();
-    const pedestal = mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.75, 12), steel); pedestal.position.set(0, 0.68, 2.85); this.wheelNode.add(pedestal);
-    const compass = mesh(new THREE.SphereGeometry(0.11, 16, 12), std(0x141414, 0.15)); compass.position.set(0, 1.1, 2.85); this.wheelNode.add(compass);
-    this.wheelSpin = new THREE.Group(); this.wheelSpin.position.set(0, 0.95, 3.0); this.wheelNode.add(this.wheelSpin);
+    const pedestal = mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.75, 12), steel); pedestal.position.set(0, 0.68, 2.65); this.wheelNode.add(pedestal);
+    const compass = mesh(new THREE.SphereGeometry(0.11, 16, 12), std(0x141414, 0.15)); compass.position.set(0, 1.1, 2.65); this.wheelNode.add(compass);
+    this.wheelSpin = new THREE.Group(); this.wheelSpin.position.set(0, 0.95, 2.8); this.wheelNode.add(this.wheelSpin);
     this.wheelSpin.add(mesh(new THREE.TorusGeometry(0.5, 0.025, 8, 40), steel));
     for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; this.wheelSpin.add(rod(V(0, 0, 0), V(Math.cos(a) * 0.5, Math.sin(a) * 0.5, 0), 0.015, steel)); }
     const mark = mesh(new THREE.BoxGeometry(0.06, 0.1, 0.06), std(0xdd2222, 0.5)); mark.position.y = 0.5; this.wheelSpin.add(mark);
@@ -216,7 +222,7 @@ export class BoatModel {
   /** Coperta piatta con passavanti, pozzetto aperto a poppa, tuga bassa con oblo' tondi. */
   buildDeck() {
     const zs = [];
-    for (let i = 0; i <= 56; i++) zs.push(-3.95 + 7.9 * i / 56);
+    for (let i = 0; i <= 56; i++) zs.push(-HL + LOA * i / 56);
     zs.push(COCKPIT_Z); zs.sort((a, b) => a - b);
     const cols = 10, row = cols + 3, pos = [], idx = [];
     for (const z of zs) {
@@ -253,9 +259,11 @@ export class BoatModel {
     shape.moveTo(-w + r, -h); shape.lineTo(w - r, -h); shape.quadraticCurveTo(w, -h, w, -h + r); shape.lineTo(w, h - r);
     shape.quadraticCurveTo(w, h, w - r, h); shape.lineTo(-w + r, h); shape.quadraticCurveTo(-w, h, -w, h - r);
     shape.lineTo(-w, -h + r); shape.quadraticCurveTo(-w, -h, -w + r, -h);
-    const cabinGeo = new THREE.ExtrudeGeometry(shape, { depth: 2.4, bevelEnabled: true, bevelSize: 0.06, bevelThickness: 0.08, bevelSegments: 3 });
+    // tuga: comincia poco davanti all'albero e arriva al pozzetto, come sulla Protagonist
+    const cabinLen = COCKPIT_Z - (MAST_Z - 0.35) - 0.08;
+    const cabinGeo = new THREE.ExtrudeGeometry(shape, { depth: cabinLen, bevelEnabled: true, bevelSize: 0.06, bevelThickness: 0.08, bevelSegments: 3 });
     const cabin = mesh(cabinGeo, std(0xf2f2f2, 0.25));
-    cabin.position.set(0, 0.76, COCKPIT_Z - 2.48);
+    cabin.position.set(0, 0.76, COCKPIT_Z - cabinLen - 0.08);
     this.tilt.add(cabin);
     const glass = std(0x0a0a0a, 0.08);
     const port = (x, y, z, axis) => {
@@ -266,51 +274,51 @@ export class BoatModel {
     };
     for (const sd of [-1, 1]) {
       port(sd * 0.45, 0.86, COCKPIT_Z + 0.005, 'z');
-      for (const z of [-1.4, -0.75]) port(sd * 0.795, 0.86, z, 'x');
+      for (const z of [-0.55, 0.05]) port(sd * 0.795, 0.86, z, 'x');
     }
     const comp = mesh(new THREE.BoxGeometry(0.5, 0.62, 0.03), std(0x1f1f1f, 0.3)); comp.position.set(0, 0.66, COCKPIT_Z + 0.01); this.tilt.add(comp);
     // pulpiti: a poppa ai due angoli, a prua
     const steel = std(0xd1d1d1, 0.22, 1);
     for (const sd of [-1, 1]) {
-      const pts = [V(sd * 1.08, 0.64, 3.1), V(sd * 1.08, 1.24, 3.2), V(sd * 0.98, 1.24, 3.85), V(sd * 0.98, 0.62, 3.9)];
+      const pts = [V(sd * 1.05, 0.64, 2.94), V(sd * 1.05, 1.24, 3.04), V(sd * 0.95, 1.24, HL - 0.1), V(sd * 0.95, 0.62, HL - 0.05)];
       for (let i = 0; i < 3; i++) this.tilt.add(rod(pts[i], pts[i + 1], 0.014, steel));
     }
     const top = 1.42;
-    this.tilt.add(rod(V(-0.42, 0.82, -3.0), V(-0.42, top, -3.1), 0.014, steel));
-    this.tilt.add(rod(V(0.42, 0.82, -3.0), V(0.42, top, -3.1), 0.014, steel));
-    this.tilt.add(rod(V(-0.42, top, -3.1), V(0, top, -3.72), 0.014, steel));
-    this.tilt.add(rod(V(0.42, top, -3.1), V(0, top, -3.72), 0.014, steel));
+    this.tilt.add(rod(V(-0.42, 0.82, -2.82), V(-0.42, top, -2.92), 0.014, steel));
+    this.tilt.add(rod(V(0.42, 0.82, -2.82), V(0.42, top, -2.92), 0.014, steel));
+    this.tilt.add(rod(V(-0.42, top, -2.92), V(0, top, -HL + 0.2), 0.014, steel));
+    this.tilt.add(rod(V(0.42, top, -2.92), V(0, top, -HL + 0.2), 0.014, steel));
   }
 
   buildRig() {
     const paint = std(0xededed, 0.3, 0.2), mz = MAST_Z;
-    this.tilt.add(rod(V(0, 1.0, mz), V(0, 10.7, mz), 0.06, paint, 12));
+    this.tilt.add(rod(V(0, 1.0, mz), V(0, HEAD_Y + 0.2, mz), 0.06, paint, 12));
     for (const s of [-1, 1]) {
       const chain = V(s * 1.1, 0.72, mz + 0.35), sp1 = V(s * 0.72, 4.0, mz + 0.18), sp2 = V(s * 0.48, 7.0, mz + 0.12);
       this.tilt.add(rod(V(0, 4.0, mz), sp1, 0.018, paint));
       this.tilt.add(rod(V(0, 7.0, mz), sp2, 0.015, paint));
-      for (const [a, b] of [[chain, sp1], [sp1, sp2], [sp2, V(0, 9.2, mz)], [chain, V(0, 4.0, mz)], [sp1, V(0, 7.0, mz)]]) {
+      for (const [a, b] of [[chain, sp1], [sp1, sp2], [sp2, V(0, STAY1.y, mz)], [chain, V(0, 4.0, mz)], [sp1, V(0, 7.0, mz)]]) {
         this.tilt.add(rod(a, b, 0.005, this.lineMat, 5));
       }
     }
     this.tilt.add(rod(STAY0, STAY1, 0.007, this.lineMat, 5));
-    this.tilt.add(rod(V(0, 10.65, mz), V(0, 0.66, 3.9), 0.006, this.lineMat, 5));
+    this.tilt.add(rod(V(0, HEAD_Y + 0.15, mz), V(0, 0.62, HL - 0.05), 0.006, this.lineMat, 5));
     // boma bianco con SPORTACTION sui due lati
     this.boomPivot = new THREE.Group(); this.boomPivot.position.set(0, BOOM_Y - 0.05, mz); this.tilt.add(this.boomPivot);
     const plain = std(0xf2f2f2, 0.3);
     const lettered = (c) => new THREE.MeshStandardMaterial({ map: boomTexture(c), roughness: 0.3 });
-    const boom = mesh(new THREE.BoxGeometry(0.08, 0.14, 3.35), [lettered(0.42), lettered(0.58), plain, plain, plain, plain]);
-    boom.position.z = 1.67;
+    const boom = mesh(new THREE.BoxGeometry(0.08, 0.14, 3.55), [lettered(0.42), lettered(0.58), plain, plain, plain, plain]);
+    boom.position.z = 1.77;
     this.boomPivot.add(boom);
     this.boomPivot.add(rod(V(0, -0.03, 0.95), V(0, -0.6, 0.12), 0.018, std(0x262626, 0.4)));
     // tela dei terzaroli raccolta sul boma
-    this.reefBundle = mesh(new THREE.CylinderGeometry(1, 1, 2.8, 12), std(0x1c1d20, 0.6));
+    this.reefBundle = mesh(new THREE.CylinderGeometry(1, 1, 3.1, 12), std(0x1c1d20, 0.6));
     this.reefBundle.rotation.x = Math.PI / 2;
-    this.reefBundle.position.set(0, 0.1, 1.5);
+    this.reefBundle.position.set(0, 0.1, 1.65);
     this.reefBundle.visible = false;
     this.boomPivot.add(this.reefBundle);
     // segnavento
-    this.windex = new THREE.Group(); this.windex.position.set(0, 10.75, mz); this.tilt.add(this.windex);
+    this.windex = new THREE.Group(); this.windex.position.set(0, HEAD_Y + 0.25, mz); this.tilt.add(this.windex);
     const arrow = mesh(new THREE.BoxGeometry(0.02, 0.02, 0.55), std(0x000000)); arrow.position.z = -0.05; this.windex.add(arrow);
     const vane = mesh(new THREE.BoxGeometry(0.01, 0.14, 0.14), std(0xdd2222)); vane.position.z = 0.22; this.windex.add(vane);
   }
@@ -319,27 +327,27 @@ export class BoatModel {
   buildFittings() {
     const black = std(0x151515, 0.4), wire = std(0xb3b3b3, 0.3, 0.8), steel = std(0xd1d1d1, 0.22, 1);
     for (const sd of [-1, 1]) {
-      const tops = [V(sd * 0.42, 1.42, -3.1)], mids = [V(sd * 0.42, 1.12, -3.05)];
-      for (const z of [-2.3, -1.15, 0.0, 1.15, 2.25]) {
+      const tops = [V(sd * 0.42, 1.42, -2.92)], mids = [V(sd * 0.42, 1.12, -2.87)];
+      for (const z of [-2.15, -1.05, 0.0, 1.05, 2.1]) {
         const t = tAt(z), x = sd * (halfBeam(t) - 0.06), y = sheer(t);
         this.tilt.add(rod(V(x, y, z), V(x, y + 0.6, z), 0.013, black));
         tops.push(V(x, y + 0.6, z)); mids.push(V(x, y + 0.3, z));
       }
-      tops.push(V(sd * 1.08, 1.24, 3.2)); mids.push(V(sd * 1.08, 0.94, 3.15));
+      tops.push(V(sd * 1.05, 1.24, 3.04)); mids.push(V(sd * 1.05, 0.94, 2.99));
       for (const line of [tops, mids]) for (let i = 0; i < line.length - 1; i++) this.tilt.add(rod(line[i], line[i + 1], 0.004, wire, 4));
-      const tw = tAt(1.6), wx = sd * (halfBeam(tw) - 0.2);
-      for (const [p, r] of [[V(wx, deckY(tw, wx) + 0.07, 1.6), 0.085], [V(sd * 0.45, 1.06, 0.2), 0.065]]) {
+      const tw = tAt(1.45), wx = sd * (halfBeam(tw) - 0.2);
+      for (const [p, r] of [[V(wx, deckY(tw, wx) + 0.07, 1.45), 0.085], [V(sd * 0.45, 1.06, 0.3), 0.065]]) {
         const drum = mesh(new THREE.CylinderGeometry(r, r, 0.13, 16), steel); drum.position.copy(p); this.tilt.add(drum);
         const topc = mesh(new THREE.CylinderGeometry(r * 0.75, r * 0.75, 0.05, 16), std(0x1f1f1f, 0.5)); topc.position.set(p.x, p.y + 0.09, p.z); this.tilt.add(topc);
       }
       const light = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.1), new THREE.MeshBasicMaterial({ color: sd < 0 ? 0xff2020 : 0x20ff50 }));
-      light.position.set(sd * 0.18, 0.86, -3.55); this.tilt.add(light);
+      light.position.set(sd * 0.18, 0.88, -HL + 0.38); this.tilt.add(light);
     }
-    const bridge = mesh(new THREE.BoxGeometry(1.7, 0.22, 0.18), std(0xebebeb, 0.5)); bridge.position.set(0, 0.42, 1.95); this.tilt.add(bridge);
-    const track = mesh(new THREE.BoxGeometry(1.5, 0.04, 0.07), std(0x262626, 0.4)); track.position.set(0, 0.55, 1.95); this.tilt.add(track);
+    const bridge = mesh(new THREE.BoxGeometry(1.7, 0.22, 0.18), std(0xebebeb, 0.5)); bridge.position.set(0, 0.42, 2.15); this.tilt.add(bridge);
+    const track = mesh(new THREE.BoxGeometry(1.5, 0.04, 0.07), std(0x262626, 0.4)); track.position.set(0, 0.55, 2.15); this.tilt.add(track);
     const glass = std(0x0d1419, 0.08);
-    const hatch = mesh(new THREE.BoxGeometry(0.55, 0.05, 0.55), glass); hatch.position.set(0, deckY(tAt(-2.35), 0) + 0.03, -2.35); this.tilt.add(hatch);
-    const slide = mesh(new THREE.BoxGeometry(0.6, 0.04, 0.6), glass); slide.position.set(0, 1.02, 0.1); this.tilt.add(slide);
+    const hatch = mesh(new THREE.BoxGeometry(0.55, 0.05, 0.55), glass); hatch.position.set(0, deckY(tAt(-1.95), 0) + 0.03, -1.95); this.tilt.add(hatch);
+    const slide = mesh(new THREE.BoxGeometry(0.6, 0.04, 0.6), glass); slide.position.set(0, 1.02, 0.15); this.tilt.add(slide);
     // scotte (aggiornate a ogni fotogramma)
     this.mainSheetLine = mesh(new THREE.CylinderGeometry(0.012, 0.012, 1, 6), this.lineMat);
     this.jibSheetLine = mesh(new THREE.CylinderGeometry(0.012, 0.012, 1, 6), this.lineMat);
@@ -446,9 +454,10 @@ export class BoatModel {
     this.jib.mesh.visible = this.jibSheetLine.visible = s.jibFurl < 0.5;
     this.furled.visible = s.jibFurl >= 0.5;
     const a = rad(s.mainAngle);
-    this.setLine(this.mainSheetLine, V(Math.sin(a) * 2.7, BOOM_Y - 0.1, MAST_Z + Math.cos(a) * 2.7), V(0, 0.55, 1.95));
-    const tl = tAt(1.0);
-    this.setLine(this.jibSheetLine, clew, V(s.jibSide * (halfBeam(tl) - 0.15), sheer(tl) + 0.05, 1.0));
+    this.setLine(this.mainSheetLine, V(Math.sin(a) * 2.95, BOOM_Y - 0.1, MAST_Z + Math.cos(a) * 2.95), V(0, 0.55, 2.15));
+    // il genoa sormonta l'albero: il carrello della scotta e' sul passavanti dietro le sartie
+    const tl = tAt(0.75);
+    this.setLine(this.jibSheetLine, clew, V(s.jibSide * (halfBeam(tl) - 0.15), sheer(tl) + 0.05, 0.75));
     this.pole.visible = s.farfalla;
     if (s.farfalla) this.setLine(this.pole, V(0, 1.35, MAST_Z - 0.08), clew);
 
@@ -469,12 +478,12 @@ export class BoatModel {
         return;
       }
       if (k === 0 && this.wheel) {
-        p.root.position.set(s.crew * 0.15, FLOOR_Y + 0.92, 3.55);
+        p.root.position.set(s.crew * 0.15, FLOOR_Y + 0.92, 3.2);
         p.root.rotation.set(0, 0, rad(s.heel) * 0.7);
         p.stand(1.15);
         return;
       }
-      const zz = k === 0 ? 2.45 : 1.2, t = tAt(zz), xx = s.crew * (halfBeam(t) - 0.2);
+      const zz = k === 0 ? 2.3 : 1.15, t = tAt(zz), xx = s.crew * (halfBeam(t) - 0.2);
       p.root.position.set(xx, deckY(t, xx) + 0.07, zz);
       p.root.rotation.set(0, Math.PI / 2 * sideK, 0);
       p.sit(hike, k === 0 ? 0.75 : 0.55);
@@ -510,7 +519,7 @@ export class BoatModel {
     let i = 0;
     for (let r = 0; r <= R; r++) {
       const f = r / R, y = BOOM_Y + f * Hv, fo = (drop + f * Hv) / H;
-      const chord = 3.05 * Math.pow(1 - fo, 0.85) + 0.3 * fo;
+      const chord = mainChord(fo);
       const a = rad(s.mainAngle + side * twist * f);
       const dx = Math.sin(a), dz = Math.cos(a), nx = Math.cos(a) * side, nz = -Math.sin(a) * side;
       for (let c = 0; c <= C; c++) {
@@ -535,25 +544,25 @@ export class BoatModel {
     // tangone: avanti sui laschi stretti, quasi al traverso in poppa
     const phi = rad(clamp(20 + (absA - 60) * 0.55, 20, 85));
     const mast = V(0, 1.3, MAST_Z);
-    const tack = V(ws * Math.sin(phi) * 2.9, 1.25, MAST_Z - Math.cos(phi) * 2.9);
+    const tack = V(ws * Math.sin(phi) * 3.25, 1.25, MAST_Z - Math.cos(phi) * 3.25);
     // vento apparente nella barca (x dritta, z poppa); la base della vela gli sta di traverso, verso sottovento e indietro
     const flow = V(-Math.sin(awa), 0, Math.cos(awa));
     const foot = V(Math.cos(awa), 0, Math.sin(awa));
     if (Math.sign(foot.x) === ws) foot.negate();
     foot.x -= ws * 0.6; foot.normalize();
-    const clew = tack.clone().addScaledVector(foot, 5.0 * (0.35 + 0.65 * up));
-    clew.y = 1.7;
+    const clew = tack.clone().addScaledVector(foot, 6.0 * (0.35 + 0.65 * up));
+    clew.y = 2.3;                                         // la bugna sta alta: sbandando non deve toccare l'acqua
     // in poppa la randa e' aperta quasi di traverso: lo spi, bugna compresa, deve stare tutto davanti a lei
     const run = clamp((absA - 115) / 45, 0, 1);
     clew.z = Math.min(clew.z, MAST_Z - 2.2 * run + 3 * (1 - run));
     tack.z = Math.min(tack.z, MAST_Z - 1.2 * run + 3 * (1 - run));
-    const headY = 1.6 + up * (9.3 - 1.6), head = V(0, headY, MAST_Z - 1.0);
+    const headY = 1.6 + up * (9.39 - 1.6), head = V(0, headY, MAST_Z - 1.0);
     const luff = s.spiLuff, depth = 2.7 * (1 - 0.65 * luff) * up;
     // piano della randa (boma dall'albero): nessun punto dello spi deve finirle dietro o troppo vicino
     const ma = rad(s.mainAngle), bx = Math.sin(ma), bz = Math.cos(ma), msd = Math.sign(s.mainAngle) || 1;
     const nx = msd * bz, nz = -msd * bx;                  // normale verso prua della randa
     const clearOfMain = (px, y, pz) => {
-      const fo = clamp((y - BOOM_Y) / (HEAD_Y - BOOM_Y), 0, 1), chord = 3.05 * Math.pow(1 - fo, 0.85) + 0.3 * fo + 0.4;
+      const fo = clamp((y - BOOM_Y) / (HEAD_Y - BOOM_Y), 0, 1), chord = mainChord(fo) + 0.4;
       const dx = px, dz = pz - MAST_Z, along = dx * bx + dz * bz, ahead = dx * nx + dz * nz;
       const need = 0.7 - ahead;
       return along > -0.2 && along < chord && need > 0 ? need : 0;
@@ -562,7 +571,7 @@ export class BoatModel {
     for (let r = 0; r <= R; r++) {
       const f = r / R, sh = f * f;                        // larga fin quasi in cima, come le spalle di uno spi
       const y = tack.y + (headY - tack.y) * f;
-      const girth = 1 + 0.3 * Math.sin(Math.PI * Math.min(1, f * 1.2));   // a meta' altezza piu' larga della base
+      const girth = 1 + 0.15 * Math.sin(Math.PI * Math.min(1, f * 1.2));   // a meta' altezza larga quanto la base (SHW = SFL)
       const L = tack.clone().lerp(head, sh), T = clew.clone().lerp(head, sh);
       const cen = L.clone().lerp(T, 0.5), half = T.clone().sub(L).multiplyScalar(0.5 * girth);
       L.copy(cen).sub(half); T.copy(cen).add(half);
@@ -592,7 +601,7 @@ export class BoatModel {
     const storm = stormJib(s);
     this.jib.mesh.material = storm ? this.stormMat : this.jibMat;
     const tack = storm ? TACK.clone().add(V(0, 0.45, 0.25)) : TACK;
-    const head = STAY0.clone().lerp(STAY1, storm ? 0.58 : 0.86);
+    const head = TACK.clone().lerp(STAY1, storm ? 0.58 : 0.97);
     const a = rad(s.jibAngle), foot = storm ? 1.8 : JIB_FOOT;
     const clew = V(tack.x + Math.sin(a) * foot, tack.y + (storm ? 0.25 : 0.2), tack.z + Math.cos(a) * foot);
     // in cappa il vento prende il fiocco dalla parte di fuori: il grasso va verso l'interno
@@ -629,7 +638,7 @@ export class BoatModel {
       for (const sd of [-1, 1]) {
         const base = pos.length / 3, n = 12;
         for (let i = 0; i <= n; i++) {
-          const f = i / n, z = -3.8 + f * 5.2, t = tAt(z);
+          const f = i / n, z = -HL + 0.15 + f * 5.0, t = tAt(z);
           const inner = waterlineHalf(t) + 0.02;
           const lee = 1 + 0.6 * clamp(s.heel * sd / 20, -0.5, 1);
           const width = (0.15 + f * 1.3) * (0.5 + strength) * lee;
@@ -646,7 +655,7 @@ export class BoatModel {
     // spruzzi
     const sp = this.spray, arr = this.sprayPoints.geometry.attributes.position.array;
     sp.acc += Math.max(0, speed - 4.5) * (0.4 + waves.amp * 4) * 70 * dt;
-    const bowW = new THREE.Vector3(0, 0.35, -3.3).applyMatrix4(this.tilt.matrixWorld);
+    const bowW = new THREE.Vector3(0, 0.35, -HL + 0.55).applyMatrix4(this.tilt.matrixWorld);
     const fw = dirVec(s.heading);
     while (sp.acc >= 1) {
       sp.acc -= 1;

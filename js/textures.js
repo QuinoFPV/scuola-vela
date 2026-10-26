@@ -20,8 +20,20 @@ export const BOATS = [
   { name: 'SPORTACTION BIANCA · ITA 09', sails: 'white' },
 ];
 
-const JIB_FOOT = 3.25, LUFF = 7.6;
-const mainChord = (f) => 3.05 * Math.pow(1 - f, 0.85) + 0.3 * f;
+// genoa della Protagonist 7.50 (certificato ORC): inferitura 8,70 m, base 3,83 m (LP 3,59)
+const JIB_FOOT = 3.83, LUFF = 8.7;
+/** Larghezza della randa (m) alla frazione f dell'inferitura: base 3,40, poi 2,98 / 2,35 / 1,40 / 0,82 a 1/4, 1/2, 3/4, 7/8
+ *  e 0,20 in testa (certificato ORC: 18,15 m²). Interpolata dolcemente fra le misure. */
+const MAIN_W = [[0, 3.40], [0.25, 2.98], [0.5, 2.35], [0.75, 1.40], [0.875, 0.82], [1, 0.20]];
+export function mainChord(f) {
+  const x = Math.min(1, Math.max(0, f));
+  let i = 0;
+  while (i < MAIN_W.length - 2 && x > MAIN_W[i + 1][0]) i++;
+  const [f0, w0] = MAIN_W[i], [f1, w1] = MAIN_W[i + 1], t = (x - f0) / (f1 - f0);
+  // Catmull-Rom tra i punti vicini, per una balumina senza spigoli
+  const wm = (MAIN_W[i - 1] ?? MAIN_W[i])[1], wp = (MAIN_W[i + 2] ?? MAIN_W[i + 1])[1];
+  return 0.5 * ((2 * w0) + (-wm + w1) * t + (2 * wm - 5 * w0 + 4 * w1 - wp) * t * t + (-wm + 3 * w0 - 3 * w1 + wp) * t * t * t);
+}
 
 /** Logo della scuola in alto sulla randa nera: si carica all'avvio, prima di disegnare le vele. */
 let sailLogo = null;
