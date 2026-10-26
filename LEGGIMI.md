@@ -168,6 +168,10 @@ python3 serve.py
 Poi si apre http://localhost:8765 nel browser.
 
 ## Pubblicarlo
+Prima di ogni pubblicazione si lancia `python3 tools/versione.py`.
+- Aggiunge a `index.html` un timbro di versione (un'impronta del codice) sugli indirizzi di foglio di stile e moduli.
+- Così i browser scaricano subito i file nuovi invece di riusare quelli in memoria: GitHub Pages li fa tenere per 10 minuti.
+
 È un sito statico: basta copiare tutta la cartella su un qualsiasi hosting, oppure in una sottocartella del sito Sportaction. Pesa circa 3 MB in tutto:
 - three.js 0,7 MB;
 - dati del lago 2,2 MB;
