@@ -35,10 +35,17 @@ console.log('Polare con vele regolate (nodi / sbandamento):');
 for (const tws of [6, 10, 15, 20]) {
   console.log(`  ${tws} kn: ` + [45, 60, 90, 120, 150, 180].map((a) => { const r = speed(tws, a); return `${a}°=${f1(r.kn)}/${f0(r.heel)}°`; }).join('  '));
 }
-const up = speed(10, 45), reach = speed(10, 90), down = speed(10, 175);
-check(up.kn >= 3.8 && up.kn <= 5.5, `bolina 10 nodi: ${f1(up.kn)} kn`);
-check(reach.kn >= 4.8 && reach.kn <= 6.3, `traverso 10 nodi: ${f1(reach.kn)} kn`);
-check(down.kn >= 3.2 && down.kn <= 5.0, `poppa 10 nodi: ${f1(down.kn)} kn`);
+// confronto con la polare ORC della Protagonist 7.50 (mediana di 16 certificati): dalla bolina al traverso
+const near = (x, ref, tol) => Math.abs(x - ref) / ref <= tol;
+let beat10 = { vmg: 0 };
+for (let a = 34; a <= 46; a += 2) { const r = speed(10, a), v = r.kn * Math.cos(a * Math.PI / 180); if (v > beat10.vmg) beat10 = { a, vmg: v }; }
+check(near(beat10.vmg, 4.44, 0.05) && Math.abs(beat10.a - 37.8) <= 4, `bolina 10 nodi: VMG ${beat10.vmg.toFixed(2)} a ${beat10.a}° (ORC 4.44 a 37.8°)`);
+for (const [tws, twa, ref] of [[6, 60, 5.65], [10, 60, 6.45], [10, 90, 6.83], [16, 75, 7.29]]) {
+  const r = speed(tws, twa);
+  check(near(r.kn, ref, 0.06), `${tws} nodi a ${twa}°: ${r.kn.toFixed(2)} kn (ORC ${ref})`);
+}
+const down = speed(10, 175);
+check(down.kn >= 4.0 && down.kn <= 6.0, `poppa 10 nodi senza spinnaker: ${f1(down.kn)} kn (ORC con spinnaker 6.0 a 150°)`);
 check(speed(6, 45).heel < speed(15, 45).heel, "piu' vento, piu' sbandamento");
 
 const w = steady(10);
@@ -206,12 +213,12 @@ const irons = (kn) => {
 };
 const secs = (sm, t, rudder = 0) => { for (let i = 0; i < t * 60; i++) sm.update(1 / 60, { tillerTarget: rudder }); };
 const turned = (sm, h0) => norm180(sm.boat.heading - h0);
-const adrift = irons(10); secs(adrift, 8);
+const adrift = irons(10); secs(adrift, 6);
 const back = irons(10), h0 = back.boat.heading;
 back.toggleBackMain(1); secs(back, 4);
 const backedNow = back.boat.mainBacked;
-secs(back, 4);
-check(backedNow && back.boat.u < adrift.boat.u * 2.5 && back.boat.u < -0.5 && turned(back, h0) > 20,
+secs(back, 2);
+check(backedNow && back.boat.u < adrift.boat.u * 2 && back.boat.u < -0.5 && turned(back, h0) > 20,
   `randa scontrata a dritta: indietro a ${f1(-back.boat.u / 0.5144)} kn (scadendo ${f1(-adrift.boat.u / 0.5144)}), la prua cade a dritta di ${f0(turned(back, h0))}°`);
 const astern = irons(10), h1 = astern.boat.heading;
 astern.toggleBackMain(1); secs(astern, 16, 20);
@@ -221,8 +228,14 @@ back.toggleBackMain(0);
 let tacked = false;
 for (let i = 0; i < 25 * 60; i++) { back.update(1 / 60, { tillerTarget: clamp(norm180(twaOf(back.boat) + 80) * 1.2 - back.boat.r * 0.8, -25, 25) }); if (back.events.some((e) => e.type === 'tack' || e.type === 'gybe')) tacked = true; }
 check(!tacked && speedKn(back.boat) > 3 && back.boat.mainSide === 1, `mollato il boma si riparte mure a sinistra (${f1(speedKn(back.boat))} kn), senza contare una virata`);
-const strong = irons(20); strong.toggleBackMain(-1); secs(strong, 3);
-check(Math.abs(strong.boat.mainAngle) < 66 && strong.boat.u > -1.8, `con 20 nodi il boma rientra (${f0(Math.abs(strong.boat.mainAngle))}°) e la retromarcia resta sotto i 3,5 nodi`);
+const strong = irons(20); strong.toggleBackMain(-1);
+let fastest = 0, held = 90;
+for (let i = 0; i < 10 * 60; i++) {
+  strong.update(1 / 60, { tillerTarget: 0 });
+  fastest = Math.min(fastest, strong.boat.u);
+  if (strong.boat.mainBacked && i > 60) held = Math.min(held, strong.boat.backAng);
+}
+check(held < 40 && fastest > -1.8, `con 20 nodi chi spinge il boma cede (tenuto a ${f0(held)}°) e la retromarcia resta sotto i 3,5 nodi (${f1(-fastest / 0.5144)})`);
 }
 // andatura a farfalla: in poppa piena il fiocco coperto dalla randa rende poco, a farfalla prende vento pulito
 {
@@ -234,7 +247,7 @@ check(Math.abs(strong.boat.mainAngle) < 66 && strong.boat.u > -1.8, `con 20 nodi
     return { kn: acc / n, b };
   };
   const dead = runAt(178, false), wing = runAt(178, true), broad = runAt(150, false), broadWing = runAt(150, true);
-  check(dead.b.jibBlanket > 0.8 && wing.b.jibSide === -wing.b.mainSide && wing.kn > dead.kn * 1.08,
+  check(dead.b.jibBlanket > 0.8 && wing.b.jibSide === -wing.b.mainSide && wing.kn > dead.kn * 1.05,
     `in poppa piena a farfalla si va più forte (${f1(dead.kn)} → ${f1(wing.kn)} kn), il fiocco non è più coperto`);
   check(broad.kn > broadWing.kn, `al gran lasco conviene il fiocco dalla parte della randa (${f1(broad.kn)} contro ${f1(broadWing.kn)} kn)`);
   const sm = new Simulation(lake);

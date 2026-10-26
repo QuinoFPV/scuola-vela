@@ -48,7 +48,7 @@ export class HUD {
     const tack = Coach.tack(twa);
     HUD.put('spd', `${speedKn(s).toFixed(1)} nodi`);
     const pos = HUD.put('posail', Coach.pointOfSail(twa) + (tack ? '  ·  ' + tack : ''));
-    pos.style.color = Math.abs(twa) < 38 ? COLORS.bad : '#99d9ff';
+    pos.style.color = Math.abs(twa) < 34 ? COLORS.bad : '#99d9ff';
     const v = vmg(s);
     const m = sim.marks[sim.nextMark];
     let lap = 'Giro delle boe: parte alla boa di bolina';
@@ -156,7 +156,7 @@ export class HUD {
     const ang = (a) => rad(a) - Math.PI / 2;
     if (aids) {
       g.fillStyle = 'rgba(255,51,51,0.22)';
-      g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, R, ang(twaOf(s) - 38), ang(twaOf(s) + 38)); g.closePath(); g.fill();
+      g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, R, ang(twaOf(s) - 34), ang(twaOf(s) + 34)); g.closePath(); g.fill();
     }
     g.fillStyle = 'rgba(235,235,235,0.9)';
     g.beginPath(); g.moveTo(0, -44); g.bezierCurveTo(15, -22, 17, 6, 15, 34); g.lineTo(-15, 34); g.bezierCurveTo(-17, 6, -15, -22, 0, -44); g.fill();

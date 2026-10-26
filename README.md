@@ -5,6 +5,7 @@ Simulatore di vela nel browser, per la scuola **Sportaction** sul Lago d'Iseo (b
 **Provalo:** https://quinofpv.github.io/scuola-vela/ (computer, telefono o tablet; Chrome, Safari, Edge o Firefox)
 
 - Fisica a forze vere: vento apparente, vele, chiglia, timone, sbandamento, virate, strambate, prua al vento.
+- La barca è una Protagonist 7.50, tarata sulla sua polare ORC dalla bolina al traverso (lo spinnaker non c'è).
 - Lago d'Iseo reale: montagne, foto satellitare, boschi, paesi; base Sportaction con statale, ombrelloni, pontile e barche all'ormeggio.
 - Venti del Sebino: Ora (da sud) e Sover (da nord), da 6 a 30 nodi, con raffiche e salti.
 - Istruttore virtuale: consigli su timone e vele, filetti del fiocco, moviola.

@@ -53,6 +53,28 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
   - le particelle scorrono col vento;
   - quando le vele sbattono la scia quasi sparisce.
 
+## La barca: Protagonist 7.50 con le polari ORC
+La fisica è tarata sulla Protagonist 7.50:
+- lunghezza 7,50 m, 850 kg più l'equipaggio (in tutto 1090 kg);
+- randa 18,8 m², fiocco (genoa) 15,9 m².
+
+La polare di riferimento è la mediana di 16 certificati ORC della classe, pubblicata su https://windregatta.com/it/modelo/protagonist-750.
+
+- **Cosa si è tarato.** Resistenza dello scafo, deriva e stabilità sono stati cercati automaticamente perché il simulatore riproduca la bolina (angolo e VMG) e le velocità a 52°, 60°, 75° e 90°. Lo sbandamento è tenuto realistico per una barca sportiva con l'equipaggio fuori bordo (circa 8° con 6 nodi, 14° con 10, 24° con 20).
+- **Spinnaker.** Dai 110° in giù i numeri ORC sono con lo spinnaker da 47 m², che qui non c'è: al lasco e in poppa il simulatore va più piano.
+- **Angolo morto.** Va sotto i 34° dal vento reale; la barca risale al meglio a 38-42°.
+
+Simulatore e, tra parentesi, ORC (nodi):
+
+| Vento | Bolina: angolo · VMG | 52° | 60° | 75° | 90° | 120° | 150° |
+|---|---|---|---|---|---|---|---|
+| 6 nodi | 42° · 3.65 (41.5° · 3.64) | 5.4 (5.4) | 5.6 (5.7) | 5.8 (5.8) | 5.9 (5.7) | 5.6 (5.5) | 4.4 (4.1) |
+| 10 nodi | 39° · 4.36 (37.8° · 4.44) | 6.2 (6.2) | 6.4 (6.5) | 6.6 (6.7) | 6.6 (6.8) | 6.4 (7.0) | 5.7 (6.0) |
+| 14 nodi | 38° · 4.67 (37.5° · 4.56) | 6.6 (6.4) | 6.8 (6.7) | 7.0 (7.1) | 7.1 (7.6) | 7.0 (8.2) | 6.4 (7.4) |
+| 20 nodi | 39° · 4.81 (38.4° · 4.58) | 6.9 (6.5) | 7.1 (6.9) | 7.4 (7.5) | 7.6 (8.3) | 7.6 (9.6) | 7.1 (10.7) |
+
+Il test automatico confronta bolina, 60°, 75° e 90° con questi numeri ORC.
+
 ## Telefono e tablet
 Si riconoscono da soli (schermo touch) e si usano in orizzontale; in verticale compare l'invito a girare il dispositivo.
 - **Barra del timone** in basso a sinistra: si trascina il dito e la barra resta dove la si lascia; il centro la raddrizza. Con "barra reale" si spinge al contrario, come sulla barca.
