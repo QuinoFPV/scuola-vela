@@ -2,9 +2,9 @@
 // Uso: node test/selftest.mjs
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { Wind, newBoat, step, idealSheets, norm180, norm360, clamp, speedKn, twaOf, dirVec, len, sub, add, mul, SAIL_PLANS, byLee } from '../js/physics.js';
+import { Wind, newBoat, step, idealSheets, norm180, norm360, clamp, speedKn, twaOf, dirVec, len, sub, add, mul, bearing, SAIL_PLANS, byLee } from '../js/physics.js';
 import { Lake } from '../js/lake.js';
-import { Simulation, Coach, COURSE, WINDS } from '../js/sim.js';
+import { Simulation, Coach, COURSE, WINDS, MOB } from '../js/sim.js';
 
 const dataDir = fileURLToPath(new URL('../data/', import.meta.url));
 let failures = 0;
@@ -352,6 +352,66 @@ check(held < 40 && fastest > -1.8, `con 20 nodi chi spinge il boma cede (tenuto 
   go.toggleCappa(); go.autoTrim = true;
   for (let i = 0; i < 30 * 60; i++) go.update(1 / 60, { tillerTarget: clamp(norm180(twaOf(go.boat) - 60 * Math.sign(twaOf(go.boat))) * 1.2 - go.boat.r * 0.8, -25, 25) });
   check(!go.boat.cappa && speedKn(go.boat) > 4, `liberato il fiocco si riparte (${f1(speedKn(go.boat))} kn)`);
+}
+
+// uomo a mare: il salvagente vola dalla poppa, scarroccia col vento e si afferra solo arrivando quasi fermi
+{
+  const make = (kn = 10) => {
+    const sm = new Simulation(lake);
+    sm.settings.gusts = false; sm.settings.windIndex = WINDS.findIndex((x) => x[1] === kn); sm.reset(); sm.wind.shifts = false;
+    sm.boat.pos = add(lake.center, mul(dirVec(sm.wind.baseDir + 180), 60));
+    Object.assign(sm.boat, { heading: norm360(sm.wind.baseDir - 50), u: 3, v: 0, r: 0, heel: 0 });
+    sm.autoTrim = true;
+    return sm;
+  };
+  const near = (sm, along, across, u) => {
+    const b = sm.boat, f = dirVec(b.heading), st = dirVec(b.heading + 90);
+    Object.assign(b, { u, v: 0, r: 0 });
+    sm.mob.fly = 0; sm.mob.pos = add(b.pos, add(mul(f, along), mul(st, across)));
+  };
+  const sm = make();
+  sm.manOverboard();
+  const throwAt = { ...sm.boat.pos };
+  check(sm.mob && sm.message.includes('UOMO A MARE') && Coach.tips(sm.boat, lake, sm.mob).some(([x]) => x.includes('allontanati')), "uomo a mare: salvagente lanciato, l'istruttore dice di allontanarsi");
+  for (let i = 0; i < 60; i++) sm.update(1 / 60, {});
+  const landed = { ...sm.mob.pos };
+  check(sm.mob.fly === 0 && len(sub(landed, throwAt)) < 9, `il salvagente cade a poppa (${f1(len(sub(landed, throwAt)))} m dal lancio)`);
+  sm.boat.pos = add(sm.boat.pos, mul(dirVec(sm.wind.baseDir), 300));          // la barca si toglie di mezzo
+  for (let i = 0; i < 60 * 60; i++) sm.update(1 / 60, {});
+  const moved = sub(sm.mob.pos, landed), down = dirVec(sm.wind.baseDir + 180), along = moved.x * down.x + moved.y * down.y;
+  check(along > 6 && along < 14 && along > len(moved) * 0.95, `scarroccia sottovento (${f1(along)} m in un minuto con 10 nodi)`);
+  const fast = make(); fast.manOverboard(); near(fast, 0, -2.5, 2.6); fast.update(1 / 60, {});
+  check(fast.mob && fast.message.includes('TROPPO VELOCE'), 'a 5 nodi non lo si afferra');
+  const hit = make(); hit.manOverboard(); near(hit, 3, 0, 2.6); hit.update(1 / 60, {});
+  const hrel = sub(hit.mob.pos, hit.boat.pos), hacross = Math.abs(hrel.x * dirVec(hit.boat.heading + 90).x + hrel.y * dirVec(hit.boat.heading + 90).y);
+  check(hit.mob && hit.message.includes('INVESTITO') && hacross > 0.5, `preso di prua: investito e scostato dallo scafo (${f1(hacross)} m di lato)`);
+  // twa > 0: vento da dritta, sottovento e' a sinistra (across < 0)
+  const lee = make(); lee.manOverboard(); near(lee, 0.5, -2.6, 0.4); lee.update(1 / 60, {});
+  check(!lee.mob && lee.lastMob !== null && lee.message.includes('RECUPERATO') && lee.message.includes('SOTTOVENTO, COME'), 'quasi fermo, sottovento alle sartie: recuperato');
+  const wnd = make(); wnd.manOverboard(); near(wnd, 0.5, 2.6, 0.4); wnd.update(1 / 60, {});
+  check(!wnd.mob && wnd.message.includes('MEGLIO SOTTOVENTO'), "sopravento si recupera, ma l'istruttore lo fa notare");
+  const off = make(); off.manOverboard(); off.manOverboard();
+  check(!off.mob && off.message.includes('ANNULLATO'), 'di nuovo per annullare');
+  // avvicinamento vero: 90 m sottovento, di bolina larga verso il salvagente, vele in bando dove dice l'istruttore
+  for (const kn of [10, 20]) {
+    const ap = make(kn), ring = add(lake.center, mul(dirVec(ap.wind.baseDir + 180), 60)), from = norm360(ap.wind.baseDir + 180 + 58);     // da sottovento, 58° dal vento
+    ap.boat.pos = add(ring, mul(dirVec(from), 90));
+    Object.assign(ap.boat, { heading: norm360(from + 180), u: 3 });
+    ap.manOverboard(); ap.mob.pos = ring; ap.mob.fly = 0;
+    let t = 0, said = '', advised = false;
+    while (ap.mob && t < 150) {
+      const b = ap.boat, rel = sub(ap.mob.pos, b.pos), d = len(rel), up = dirVec(b.twd);
+      const tip = Coach.tips(b, lake, ap.mob).map(([x]) => x).join(' ');
+      const m = /a (\d+) m metti le vele in bando/.exec(tip);
+      if (m) { said = m[1]; advised = true; }
+      if (said && d < +said && !b.bando) ap.toggleBando();
+      const aim = add(ap.mob.pos, mul(up, d > 15 ? 2 : 1));
+      let c = { tillerTarget: clamp(norm180(bearing(sub(aim, b.pos)) - b.heading) * 1.2 - b.r * 0.8, -25, 25) };
+      if (d < 10 && speedKn(b) > 2) c = { tillerTarget: clamp(norm180(twaOf(b) - 30 * Math.sign(twaOf(b))) * 1.2 - b.r * 0.8, -25, 25) };   // all'ultimo orza
+      ap.update(1 / 60, c); t += 1 / 60;
+    }
+    check(advised && !ap.mob && ap.message.includes('RECUPERATO'), `${kn} nodi: di bolina larga, vele in bando a ${said} m, recuperato in ${f0(t)} s`);
+  }
 }
 
 console.log(failures === 0 ? 'TUTTO OK' : `${failures} ERRORI`);

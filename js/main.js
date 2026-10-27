@@ -112,6 +112,7 @@ async function main() {
       case 'KeyY': sim.toggleFarfalla(); break;        // andatura a farfalla, di nuovo per riportare il fiocco
       case 'KeyE': sim.toggleSpi(); break;             // spinnaker: issa / ammaina
       case 'KeyU': sim.toggleCappa(); break;           // fiocco in cappa / libero
+      case 'Enter': case 'NumpadEnter': sim.manOverboard(); break;   // uomo a mare: salvagente in acqua, di nuovo per annullare
       case 'KeyJ': sim.toggleBackMain(-1); break;      // ... a sinistra
       case 'KeyL': sim.toggleBackMain(1); break;       // ... a dritta
       case 'KeyF': st.triangle = !st.triangle; sim.say(st.triangle ? 'TRIANGOLO DEI VENTI: REALE, APPARENTE E VELOCITÀ DELLA BARCA' : 'TRIANGOLO DEI VENTI NASCOSTO', 'info'); break;

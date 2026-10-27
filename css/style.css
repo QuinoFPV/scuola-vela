@@ -44,6 +44,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0a1420; col
   text-align: center; white-space: nowrap; line-height: 1.15; box-shadow: 0 3px 10px rgba(0, 0, 0, .35); }
 #markTag b { display: block; font-size: 10px; font-weight: 600; letter-spacing: 2px; color: #ffd23f; }
 #markTag span { font-size: 18px; font-weight: 700; color: #fff; }
+/* verso il salvagente la freccia e' arancione come lui */
+#markPtr.mob path { fill: #ff7a1f; }
+#markTag.mob { border-color: rgba(255, 122, 31, .9); }
+#markTag.mob b { color: #ff9a4d; }
 #footer { position: absolute; bottom: 18px; left: 560px; right: 290px; text-align: center; font-size: 12px; color: rgba(255, 255, 255, .6); }
 
 .overlay { position: fixed; inset: 0; display: none; touch-action: none; align-items: center; justify-content: center; background: rgba(3, 10, 20, .55); }
@@ -90,7 +94,8 @@ body.touch #touchUI { display: block; position: fixed; inset: 0; pointer-events:
 #tbar button { pointer-events: auto; }
 #tbar button { height: 34px; padding: 0 8px; border-radius: 8px; font-size: 11px; font-weight: 700; letter-spacing: .3px;
   background: rgba(8, 18, 31, .72); border: 1px solid rgba(255, 255, 255, .2); }
-#tbar button:active, #tbar button.on { background: rgba(242, 140, 26, .9); }
+#tbar #tMob { line-height: 1.05; background: rgba(170, 28, 20, .78); border-color: rgba(255, 120, 100, .5); }
+#tbar button:active, #tbar button.on, #tbar #tMob.on { background: rgba(242, 140, 26, .9); }
 #tiller { position: absolute; left: var(--sl); bottom: var(--sb); width: min(42vw, 420px); height: 78px; pointer-events: auto; touch-action: none;
   background: rgba(8, 18, 31, .62); border: 1px solid rgba(255, 255, 255, .14); border-radius: 14px; }
 #tiller .rail { position: absolute; left: 26px; right: 26px; top: 50%; height: 6px; margin-top: 2px; background: rgba(255, 255, 255, .22); border-radius: 3px; }
@@ -156,7 +161,7 @@ body.touch #markPtr { width: 58px; height: 58px; }
   body.touch #markTag b { font-size: 8px; letter-spacing: 1.2px; }
   body.touch #markTag span { font-size: 13px; }
   #tbar { left: calc(var(--sl) + 230px); right: calc(var(--sr) + 128px); gap: 5px; }
-  #tbar button { height: 32px; padding: 0 7px; font-size: 10px; }
+  #tbar button { height: 32px; padding: 0 5px; font-size: 10px; }
   #tiller { height: 70px; }
   .sheet { width: 80px; padding: 5px; gap: 3px; }
   .sheet button { height: 34px; font-size: 11px; }

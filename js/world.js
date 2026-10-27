@@ -6,7 +6,7 @@ import { buildBase } from './base.js';
 import { WindTriangle, DirtyAir, RoundingArrows } from './overlays.js';
 import { skyTexture, skyDir, markTexture } from './textures.js';
 import { rad, clamp, dirVec, norm180, norm360, len, sub, bearing, twaOf } from './physics.js';
-import { Waves } from './sim.js';
+import { Waves, MOB } from './sim.js';
 
 export const CAMERAS = ["GOMMONE DELL'ISTRUTTORE", 'TIMONIERE', 'LATERALE', "DALL'ALTO"];
 
@@ -207,6 +207,9 @@ export class World {
     this.wake = new Wake();
     this.scene.add(this.wake.mesh);
     this.buoys = [0, 1, 2].map(() => { const b = this.buildBuoy(); this.scene.add(b); return b; });
+    this.lifebuoy = this.buildLifebuoy();
+    this.lifebuoy.visible = false;
+    this.scene.add(this.lifebuoy);
     this.rib = this.buildRib();
     this.ribWake = new Wake();
     this.scene.add(this.rib, this.ribWake.mesh);
@@ -244,7 +247,7 @@ export class World {
   captureEnvironment() {
     const c = this.lake.center;
     this.cubeCam.position.set(c.x, 3, -c.y);
-    const hide = [this.water, this.boat.root, this.wake.mesh, this.rib, this.ribWake.mesh, this.boat.sprayPoints, ...this.buoys,
+    const hide = [this.water, this.boat.root, this.wake.mesh, this.rib, this.ribWake.mesh, this.boat.sprayPoints, ...this.buoys, this.lifebuoy,
                   this.triangle.root, this.dirtyAir.root, this.rounding.root];
     const vis = hide.map((o) => o.visible);
     hide.forEach((o) => { o.visible = false; });
@@ -426,6 +429,31 @@ export class World {
     return n;
   }
 
+  /** Salvagente anulare arancione con le fasce riflettenti e la cima intorno, legato a un'asta galleggiante con la
+   *  bandierina che si vede da lontano. */
+  buildLifebuoy() {
+    const root = new THREE.Group(), orange = std(0xff5a14, 0.55), white = std(0xf0f0f0, 0.3);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.085, 12, 40), orange);
+    ring.rotation.x = Math.PI / 2; root.add(ring);
+    for (let i = 0; i < 4; i++) {
+      const g = new THREE.Group(), band = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.09, 12, 4, 0.24), white);
+      band.rotation.set(Math.PI / 2, 0, -0.12);
+      g.rotation.y = i * Math.PI / 2 + Math.PI / 4;
+      g.add(band); root.add(g);
+    }
+    const rope = new THREE.Mesh(new THREE.TorusGeometry(0.39, 0.012, 6, 48), std(0xe8e0c8, 0.8));
+    rope.rotation.x = Math.PI / 2; root.add(rope);
+    // asta: galleggiante giallo, palo bianco, bandierina arancione che sventola sottovento
+    const pole = new THREE.Group(); pole.position.set(0.8, 0, 0); root.add(pole);
+    const float = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.36, 16), std(0xffc61a, 0.5)); float.position.y = 0.06; pole.add(float);
+    const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.022, 1.9, 8), white); stick.position.y = 1.15; pole.add(stick);
+    this.flagArm = new THREE.Group(); this.flagArm.position.y = 1.9; pole.add(this.flagArm);
+    const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.34), new THREE.MeshStandardMaterial({ color: 0xff5a14, roughness: 0.7, side: THREE.DoubleSide }));
+    flag.position.set(0.26, -0.17, 0); this.flagArm.add(flag);
+    root.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    return root;
+  }
+
   /** Il gommone dell'istruttore. */
   buildRib() {
     const root = new THREE.Group(), tube = std(0x5c6166, 0.55), orange = std(0xf2730f, 0.6);
@@ -477,6 +505,22 @@ export class World {
       b.rotation.set(-smp.gz * 0.6, 0, smp.gx * 0.6);
     });
     this.rounding.update(sim, waves);
+    // salvagente: vola dalla poppa e poi galleggia sulle onde (anche in moviola)
+    const mp = sim.mobShown, lb = this.lifebuoy;
+    lb.visible = !!mp;
+    if (mp) {
+      const fly = sim.replay === null && sim.mob ? sim.mob.fly / MOB.fly : 0, smp = waves.sample(mp.x, -mp.y);
+      if (fly > 0) {
+        const f = sim.mob.from, k = 1 - fly;
+        lb.position.set(f.x + (mp.x - f.x) * k, 1.3 * (1 - k) + smp.h * k + 2.4 * k * (1 - k), -(f.y + (mp.y - f.y) * k));
+        lb.rotation.set(k * 4, 0, k * 1.5);
+      } else {
+        lb.position.set(mp.x, smp.h + 0.02, -mp.y);
+        lb.rotation.set(-smp.gz * 0.8, 0, smp.gx * 0.8);
+      }
+      const down = dirVec(sim.wind.direction + 180);
+      this.flagArm.rotation.y = Math.atan2(down.y, down.x);
+    }
     // gommone: segue la barca da dietro e sopravento (nella vista dal gommone e' la telecamera)
     const r = this.rib.userData, windSide = twaOf(s) >= 0 ? 1 : -1;
     const tf = dirVec(s.heading), ts = dirVec(s.heading + 90 * windSide);

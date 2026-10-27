@@ -111,6 +111,28 @@ Il test automatico confronta con la polare ORC:
 - col fiocco: 60°, 75° e 90°;
 - con lo spi: 120°, 150° e il VMG di poppa.
 
+## Uomo a mare
+- **Comandi:** INVIO sul computer, UOMO A MARE sul telefono (nella barra in alto); di nuovo per annullare l'esercizio.
+- **Il lancio:** l'istruttore butta in acqua dalla poppa il salvagente anulare arancione, con le fasce bianche, la cima e l'asta galleggiante con la bandierina, che si vede da lontano.
+  - In acqua il salvagente scarroccia col vento (circa il 3% della velocità del vento: 9 m al minuto con 10 nodi).
+  - Il freccione diventa arancione e indica il salvagente anche con gli aiuti spenti: è il braccio di chi a prua non lo perde di vista. Sparisce sotto i 12-20 m, quando il salvagente si vede bene.
+  - Negli strumenti c'è il tempo dal lancio e la distanza; sulla mappa un pallino arancione.
+  - Durante l'esercizio le boe aspettano: il giro non va avanti.
+- **La manovra classica**, guidata dall'istruttore passo passo:
+  1. poggiare al traverso e allontanarsi di 5-6 lunghezze (40 m);
+  2. virare e scendere sottovento al salvagente;
+  3. risalire verso il salvagente di bolina larga (50-60° dal vento), puntando un paio di metri sopra;
+  4. mettere le vele in bando alla distanza che dice l'istruttore e arrivare per abbrivio; all'ultimo, se si va ancora forte, orzare un po'.
+
+  Se il salvagente è nell'angolo morto, o si arriva al traverso, l'istruttore lo dice. Si arriva di bolina larga perché è l'andatura in cui lascando le vele ci si ferma: al traverso, anche con le vele in bando, la barca va ancora a 1-1,5 nodi.
+- **Quanto prima mettere le vele in bando:** di bolina larga la barca si ferma in circa 70 m con 6 nodi di vento, 50 m con 10 nodi, 35 m con 20 nodi (con più vento le vele che sbattono frenano di più). L'istruttore dà il numero giusto per il vento del momento.
+- **Il recupero:**
+  - il salvagente si afferra col mezzo marinaio, a 2 m dal bordo, fra la poppa e le sartie, con la barca sotto 1,5 nodi;
+  - più veloci non si riesce: "troppo veloce, riprova arrivando piano";
+  - lo scafo lo scosta; se lo si prende di prua a più di 2 nodi l'istruttore avvisa che con una persona in acqua sarebbe gravissimo;
+  - recuperato, compare il tempo; sottovento è "come si deve" (la barca scarroccia verso di lui), sopravento si accetta ma l'istruttore lo fa notare. Il tempo dell'ultimo recupero resta negli strumenti.
+- **Prove:** nelle prove automatiche un pilota rifà l'avvicinamento da 90 m sottovento seguendo i consigli dell'istruttore e recupera il salvagente con 10 e 20 nodi; a parte è stato provato da 6 a 25 nodi, sempre sottovento.
+
 ## Fiocco in cappa
 - **Comandi:**
   - U sul computer, FIOCCO IN CAPPA sul telefono (di bolina e al traverso, non con lo spi su);
@@ -156,7 +178,7 @@ Si riconoscono da soli (schermo touch) e si usano in orizzontale; in verticale c
 - **CAZZA / LASCA** in basso a destra, per randa e fiocco, si tengono premuti. Compaiono solo con le vele manuali; la barretta arancione mostra quanto è cazzata la scotta e la tacca verde la regolazione giusta.
 - **Pulsanti in alto:**
   - ☰ apre il menu (vento, raffiche, Ora o Sover, timone, barca, aiuti);
-  - VISTA, VELE AUTO/MAN., RIDUCI/AUMENTA, MOVIOLA, PAUSA.
+  - VISTA, VELE AUTO/MAN., RIDUCI/AUMENTA, UOMO A MARE, MOVIOLA, PAUSA.
 - **Scena:** un dito gira intorno alla barca, due dita avvicinano o allontanano.
 - **Telefono:** gli strumenti sono ridotti; toccandoli si vedono tutti i dati.
 - **Tablet:** lo schermo è come sul computer.

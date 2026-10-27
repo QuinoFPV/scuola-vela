@@ -1,7 +1,7 @@
 // Simulazione: barca, vento, onde, boe, moviola, messaggi e consigli dell'istruttore.
 import {
   Wind, newBoat, copyBoat, step, idealSheets, Spec, norm180, norm360, rad, deg, clamp, dirVec, len, sub, add, mul,
-  speedKn, twaOf, stormJib, byLee, KNOT,
+  speedKn, twaOf, stormJib, byLee, bearing, KNOT,
 } from './physics.js';
 
 /** Le onde del lago (le stesse dello shader dell'acqua, per far galleggiare barca e boe). */
@@ -38,6 +38,9 @@ export const MARK_NAMES = ['BOA DI BOLINA', 'BOA DI POPPA', 'BOA DI TRAVERSO'];
 /** Da MARK_FAR metri si avvisa di lasciare la boa a sinistra; sotto MARK_NEAR la freccia antioraria ha preso il posto
  *  del freccione giallo che da lontano indica dov'e' la boa. */
 export const MARK_NEAR = 50, MARK_FAR = 70;
+/** Uomo a mare: secondi di volo del salvagente lanciato; frazione del vento a cui scarroccia; velocita' massima (nodi)
+ *  e distanza dal bordo (m) a cui lo si afferra col mezzo marinaio; meta' larghezza dello scafo. */
+export const MOB = { fly: 0.8, drift: 0.03, slow: 1.5, reach: 2.0, halfBeam: 1.25 };
 
 export class Simulation {
   constructor(lake) {
@@ -75,6 +78,7 @@ export class Simulation {
     this.history = []; this.historyTimer = 0;
     this.track = []; this.trackTimer = 0;
     this.courseStep = 0; this.lapStart = null; this.lastLap = null; this.buoyTouch = -100;
+    this.mob = null; this.lastMob = null;
     this.sweep = 0; this.sweepAngle = null; this.wrongWay = false; this.approachSaid = false;
     this.replay = null;
     this.time = 0;
@@ -210,6 +214,19 @@ export class Simulation {
     this.say("ANDATURA A FARFALLA: RANDA DA UNA PARTE, FIOCCO DALL'ALTRA SUL TANGONE", 'good');
   }
 
+  /** Uomo a mare: l'istruttore butta in acqua il salvagente anulare (con l'asta e la bandierina) dalla poppa e
+   *  l'allievo deve tornare a prenderlo. Di nuovo per annullare l'esercizio. */
+  manOverboard() {
+    if (this.replay !== null) return;
+    if (this.mob) { this.mob = null; this.say('ESERCIZIO ANNULLATO, IL GOMMONE RIPRENDE IL SALVAGENTE', 'info'); return; }
+    const b = this.boat, fwd = dirVec(b.heading), side = dirVec(b.heading + 90), k = Math.random() < 0.5 ? -1 : 1;
+    const from = sub(b.pos, mul(fwd, 3.4));
+    this.mob = { from, pos: add(from, add(mul(fwd, -3), mul(side, 2 * k))), t0: this.time, fly: MOB.fly, hit: -100, miss: -100, away: false };
+    this.say('UOMO A MARE! NON PERDERE DI VISTA IL SALVAGENTE', 'bad');
+  }
+  /** Dove si vede il salvagente, anche in moviola; null se non e' in acqua. */
+  get mobShown() { return this.replay !== null ? this.shown.mobPos ?? null : this.mob ? this.mob.pos : null; }
+
   startReplay() {
     if (this.history.length < 30) return;
     this.replay = Math.max(this.historySpan[0], this.time - 20);
@@ -244,9 +261,12 @@ export class Simulation {
       if (e.type === 'tack') this.say(twaOf(this.boat) > 0 ? 'VIRATA: ORA MURE A DRITTA' : 'VIRATA: ORA MURE A SINISTRA', 'good');
     }
     this.checkCourse(dt);
+    this.checkMob(dt);
     this.historyTimer -= dt;
     if (this.historyTimer <= 0) {
-      this.history.push(copyBoat(this.boat));
+      const snap = copyBoat(this.boat);
+      snap.mobPos = this.mob ? { ...this.mob.pos } : null;
+      this.history.push(snap);
       this.historyTimer = 1 / 30;
       while (this.history.length && this.time - this.history[0].time > 40) this.history.shift();
     }
@@ -283,6 +303,7 @@ export class Simulation {
         this.events.push({ type: 'ground' });
       }
     }
+    if (this.mob) return;                                 // durante l'uomo a mare le boe aspettano
     // la boa si gira in senso antiorario, lasciandola a sinistra: si somma l'angolo percorso intorno a lei
     const rel = sub(b.pos, this.marks[this.nextMark]), dist = len(rel);
     if (dist < MARK_FAR && !this.approachSaid) {
@@ -314,6 +335,43 @@ export class Simulation {
       this.say(`${MARK_NAMES[this.nextMark]} PRESA · ORA ${MARK_NAMES[COURSE[(this.courseStep + 1) % 3]]}`, 'good');
     }
     this.courseStep = (this.courseStep + 1) % 3;
+  }
+
+  /** Il salvagente scarroccia col vento; lo scafo lo scosta; lo si afferra dal bordo, tra la poppa e le sartie,
+   *  solo con la barca quasi ferma. */
+  checkMob(dt) {
+    const mob = this.mob;
+    if (!mob) return;
+    if (mob.fly > 0) { mob.fly = Math.max(0, mob.fly - dt); return; }
+    const w = this.wind.at(mob.pos);
+    mob.pos = add(mob.pos, mul(dirVec(w.dir + 180), w.speed * KNOT * MOB.drift * dt));
+    const b = this.boat, rel = sub(mob.pos, b.pos), fwd = dirVec(b.heading), stb = dirVec(b.heading + 90);
+    const along = rel.x * fwd.x + rel.y * fwd.y, across = rel.x * stb.x + rel.y * stb.y;
+    const kn = Math.hypot(b.u, b.v) / KNOT;
+    if (len(rel) > 25) mob.away = true;                  // la barca si e' allontanata: ora si torna indietro
+    // la prua e' stretta, da meta' barca in giu' lo scafo e' largo quasi uguale fino allo specchio di poppa
+    const half = along > 0.5 ? MOB.halfBeam * clamp((3.75 - along) / 3.25, 0, 1) : MOB.halfBeam;
+    if (Math.abs(along) < 3.75 && Math.abs(across) < half + 0.35) {
+      mob.pos = add(mob.pos, mul(stb, (across >= 0 ? 1 : -1) * (half + 0.35) - across));
+      if (kn > 2 && this.time - mob.hit > 5) {
+        mob.hit = this.time;
+        this.say('SALVAGENTE INVESTITO! CON UNA PERSONA SAREBBE GRAVISSIMO', 'bad');
+      }
+      if (kn > MOB.slow) return;
+    }
+    if (along < -3.4 || along > 2.6 || Math.abs(across) > half + MOB.reach) return;
+    if (kn > MOB.slow) {
+      if (this.time - mob.miss > 6 && this.time - mob.hit > 3) {
+        mob.miss = this.time;
+        this.say('TROPPO VELOCE PER AFFERRARLO: RIPROVA ARRIVANDO PIANO', 'warn');
+      }
+      return;
+    }
+    // sottovento: il salvagente e' dalla parte opposta a quella da cui arriva il vento (twa > 0 = vento da dritta)
+    const t = (this.time - mob.t0) | 0, lee = across * twaOf(b) < 0;
+    this.lastMob = this.time - mob.t0;
+    this.mob = null;
+    this.say(`RECUPERATO IN ${(t / 60) | 0}:${String(t % 60).padStart(2, '0')} · ${lee ? 'SOTTOVENTO, COME SI DEVE' : 'SOPRAVENTO (MEGLIO SOTTOVENTO)'}`, lee ? 'good' : 'info');
   }
 
   /** Chiglia (1,9 m) sul fondo o prua sulla riva: la barca si ferma. */
@@ -376,7 +434,31 @@ export const Coach = {
     if (s.jibAlpha > 22) return ["Filetto sottovento che cade: orza un po' o lasca", 'warn'];
     return ['Filetti dritti: fiocco regolato bene', 'good'];
   },
-  tips(s, lake) {
+  /** Uomo a mare: cosa fare secondo dove sta il salvagente rispetto alla barca e al vento. Si allontana al traverso,
+   *  si vira, si scende sottovento e si risale di bolina larga, l'andatura in cui lascando le vele ci si ferma. */
+  mobTip(s, mob) {
+    const rel = sub(mob.pos, s.pos), d = len(rel), kn = Math.abs(speedKn(s)), up = dirVec(s.twd);
+    const above = rel.x * up.x + rel.y * up.y;                   // di quanto il salvagente e' sopravento alla barca
+    const off = Math.abs(norm180(bearing(rel) - s.twd));         // la rotta per arrivarci, in gradi dal vento
+    if (s.spi) return ['Uomo a mare con lo spi: ammainalo subito (E), con lo spi non si torna indietro', 'bad'];
+    // appena lanciato e' vicino ma si sta andando via (a meno di essersi fermati subito)
+    if (d < 14 && (mob.away || kn <= MOB.slow)) return kn > MOB.slow ? ['Troppo veloce per afferrarlo: vele in bando (SPAZIO) o orza per frenare', 'bad']
+      : ["Barca quasi ferma, così: salvagente sottovento (la barca scarroccia verso di lui), all'altezza delle sartie, e lo si afferra col mezzo marinaio", 'good'];
+    if (d > 160) return ['La barca è troppo lontana: torna verso il salvagente e non perderlo di vista', 'warn'];
+    if (above > 10) {
+      if (off < 40) return ["Il salvagente è nell'angolo morto: poggia, spostati di lato e risali di bolina larga", 'warn'];
+      if (off > 75) return ["Scendi ancora un po' sottovento: l'ultimo tratto va fatto di bolina larga, così lascando ti fermi", 'info'];
+      // con le vele in bando di bolina larga la barca si ferma in una cinquantina di metri: di piu' con poco vento, meno con tanto
+      const stop = Math.round(50 * Math.pow(10 / Math.max(4, s.tws), 0.6) / 5) * 5;
+      if (d > stop + 8 && !s.bando) return [`Bolina larga verso il salvagente, puntando un paio di metri sopra: a ${stop} m metti le vele in bando (SPAZIO)`, 'good'];
+      if (!s.bando && kn > 2.5) return ['Ora frena: vele in bando (SPAZIO), arrivi per abbrivio', 'warn'];
+      return kn > 3 && d < 25 ? ["Vai ancora forte: all'ultimo orza un po' per fermarti", 'warn']
+        : ["Arrivi piano: tieni il salvagente sottovento, all'altezza delle sartie", 'good'];
+    }
+    if (d < 40) return ['Uomo a mare: chi è a prua indica il salvagente col braccio. Poggia al traverso e allontanati di 5-6 lunghezze (40 m)', 'info'];
+    return ['Ora vira e scendi sottovento al salvagente: ci tornerai di bolina larga, dove puoi frenare lascando le vele', 'info'];
+  },
+  tips(s, lake, mob = null) {
     const out = [];
     const twa = Math.abs(twaOf(s)), ideal = idealSheets(s), kn = speedKn(s);
     if (s.backMain) {
@@ -421,10 +503,11 @@ export const Coach = {
     // spinnaker: quando issarlo, quando si chiude, quando e' troppo
     if (s.spi && s.spiUp > 0.8 && s.spiLuff > 0.5 && !s.bando) out.unshift(["Lo spi si chiude: sei troppo all'orza, poggia o ammainalo (E)", 'bad']);
     else if (s.spi && s.tws > 21 && twa < 125) out.push(['Vento forte al lasco con lo spi: rischio di straorzata, poggia o ammaina (E)', 'warn']);
-    else if (!s.spi && twa > 105 && s.tws < 21 && !s.bando && !s.backMain) out.push(['Andatura portante: issa lo spi (E)', 'info']);
+    else if (!s.spi && twa > 105 && s.tws < 21 && !s.bando && !s.backMain && !mob) out.push(['Andatura portante: issa lo spi (E)', 'info']);
     if (s.bando) { /* niente consigli sulle scotte: sono libere apposta */ }
     else if (Math.abs(s.heel) > 26) out.push(['Troppo sbandata: lasca la randa per scaricare', 'bad']);
     else if (Math.abs(s.rudder) > 9 && Math.abs(s.r) < 2 && Math.abs(s.heel) > 15) out.push(["Barca ardente (tira all'orza): lasca un po' di randa", 'warn']);
+    if (mob) out.unshift(Coach.mobTip(s, mob));
     if (byLee(s) > 1) out.unshift(['False mure: la randa è dalla parte del vento, rischio di strambata involontaria. Orza un poco o stramba', 'bad']);
     if (Math.abs(s.rudder) > 22 && Math.abs(kn) > 1) out.push(['Tanto timone frena la barca: correzioni più dolci', 'info']);
     if (lake.depth(add(s.pos, mul(dirVec(s.heading), 25))) < 2.5 && s.u > 0.5) out.unshift(['Attenzione, bassofondale davanti: vira o poggia subito', 'bad']);

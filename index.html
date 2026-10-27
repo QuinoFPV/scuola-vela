@@ -13,7 +13,7 @@
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <title>Scuola di Vela · Sportaction</title>
 <meta name="description" content="Simulatore di vela della scuola Sportaction sul Lago d'Iseo: timone, scotte, vento vero, consigli dell'istruttore.">
-<link rel="stylesheet" href="css/style.css?v=e02f4cf8">
+<link rel="stylesheet" href="css/style.css?v=7c80b30d">
 </head>
 <body>
 <canvas id="view"></canvas>
@@ -52,6 +52,7 @@
     <button data-k="KeyT" id="tTrim">VELE AUTO</button>
     <button data-k="KeyZ">RIDUCI</button>
     <button data-k="KeyX">AUMENTA</button>
+    <button data-k="Enter" id="tMob">UOMO<br>A MARE</button>
     <button data-k="KeyR" id="tReplay">MOVIOLA</button>
     <button data-k="KeyP" id="tPause">PAUSA</button>
   </div>
@@ -88,6 +89,7 @@
       <dt>FARFALLA</dt><dd>compare in poppa: fiocco dalla parte opposta alla randa, sul tangone; si chiude se si orza oltre i 140°</dd>
       <dt>SCONTRA RANDA</dt><dd>da fermi prua al vento: si spinge fuori il boma, la barca va indietro e la prua cade da quel lato; in retromarcia il timone lavora al contrario. Di nuovo per mollare il boma</dd>
       <dt>RIDUCI / AUMENTA</dt><dd>la tela: 1 mano, 2 mani, 2 mani + tormentina</dd>
+      <dt>UOMO A MARE</dt><dd>l'istruttore butta in acqua il salvagente: allontanati, scendi sottovento e torna di bolina larga, arrivando quasi fermo; di nuovo per annullare</dd>
       <dt>Scena</dt><dd>trascina con un dito per girare intorno alla barca · due dita per avvicinarti</dd>
       <dt>VISTA</dt><dd>gommone dietro, timoniere, laterale, dall'alto</dd>
       <dt>MOVIOLA</dt><dd>gli ultimi 20 secondi al rallentatore</dd>
@@ -105,6 +107,7 @@
       <dt>Y</dt><dd>andatura a farfalla in poppa (fiocco dall'altra parte, sul tangone); di nuovo per riportarlo</dd>
       <dt>K · J · L</dt><dd>scontra la randa (dal lato del boma · a sinistra · a dritta): si va indietro; di nuovo per mollare il boma</dd>
       <dt>Z / X</dt><dd>riduci / aumenta la tela: 1 mano, 2 mani, 2 mani + tormentina</dd>
+      <dt>INVIO</dt><dd>uomo a mare: l'istruttore butta in acqua il salvagente; torna a prenderlo di bolina larga, arrivando quasi fermo (vele in bando); di nuovo per annullare</dd>
       <dt>Mouse</dt><dd>trascina a destra/sinistra: barra · tasto destro: gira la vista · rotella: zoom</dd>
       <dt>Gamepad</dt><dd>levetta sinistra: barra · grilletti: randa · dorsali: fiocco</dd>
       <dt>C</dt><dd>vista: gommone dietro, timoniere, laterale, dall'alto</dd>
@@ -132,21 +135,21 @@
 <script type="importmap">
 {
   "imports": {
-    "./js/audio.js": "./js/audio.js?v=e02f4cf8",
-    "./js/base.js": "./js/base.js?v=e02f4cf8",
-    "./js/boat.js": "./js/boat.js?v=e02f4cf8",
-    "./js/hud.js": "./js/hud.js?v=e02f4cf8",
-    "./js/lake.js": "./js/lake.js?v=e02f4cf8",
-    "./js/main.js": "./js/main.js?v=e02f4cf8",
-    "./js/overlays.js": "./js/overlays.js?v=e02f4cf8",
-    "./js/physics.js": "./js/physics.js?v=e02f4cf8",
-    "./js/sim.js": "./js/sim.js?v=e02f4cf8",
-    "./js/textures.js": "./js/textures.js?v=e02f4cf8",
-    "./js/vendor/three.module.min.js": "./js/vendor/three.module.min.js?v=e02f4cf8",
-    "./js/world.js": "./js/world.js?v=e02f4cf8"
+    "./js/audio.js": "./js/audio.js?v=7c80b30d",
+    "./js/base.js": "./js/base.js?v=7c80b30d",
+    "./js/boat.js": "./js/boat.js?v=7c80b30d",
+    "./js/hud.js": "./js/hud.js?v=7c80b30d",
+    "./js/lake.js": "./js/lake.js?v=7c80b30d",
+    "./js/main.js": "./js/main.js?v=7c80b30d",
+    "./js/overlays.js": "./js/overlays.js?v=7c80b30d",
+    "./js/physics.js": "./js/physics.js?v=7c80b30d",
+    "./js/sim.js": "./js/sim.js?v=7c80b30d",
+    "./js/textures.js": "./js/textures.js?v=7c80b30d",
+    "./js/vendor/three.module.min.js": "./js/vendor/three.module.min.js?v=7c80b30d",
+    "./js/world.js": "./js/world.js?v=7c80b30d"
   }
 }
 </script>
-<script type="module" src="js/main.js?v=e02f4cf8"></script>
+<script type="module" src="js/main.js?v=7c80b30d"></script>
 </body>
 </html>
