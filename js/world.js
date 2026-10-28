@@ -558,6 +558,17 @@ export class World {
     this.boat.sunDirView.value.copy(this.sunDir).transformDirection(this.camera.matrixWorldInverse);
   }
 
+  /** Con lo zoom lontano, vicino a riva, la telecamera finirebbe dentro le case o la collina (schermo bianco):
+   *  sopra terra, e un po' prima di arrivarci, si alza fino a 22 m sopra il terreno, sopra i tetti. Sale in fretta e scende piano. */
+  liftOverLand(px, pz, py, dt) {
+    let ground = -10;
+    for (const [dx, dz] of [[0, 0], [12, 0], [-12, 0], [0, 12], [0, -12]]) ground = Math.max(ground, this.lake.height(px + dx, -(pz + dz)));
+    const need = Math.max(0, Math.max(0, ground) + 22 * clamp((ground + 2) / 4, 0, 1) - py);
+    this.camLift ??= 0;
+    this.camLift += (need - this.camLift) * Math.min(1, dt * (need > this.camLift ? 8 : 2));
+    return py + this.camLift;
+  }
+
   placeCamera(s, waves, dt) {
     const x = s.pos.x, z = -s.pos.y, cam = this.camera;
     this.camYaw = norm360(this.camYaw + norm180(s.heading - this.camYaw) * Math.min(1, dt * 0.9));
@@ -568,7 +579,7 @@ export class World {
       const back = dirVec(yaw);
       const px = x - back.x * dist * Math.cos(elev), pz = z + back.y * dist * Math.cos(elev);
       const py = Math.max(2.5 + dist * Math.sin(elev), waves.sample(px, pz).h + 0.8);
-      cam.position.set(px, py, pz);
+      cam.position.set(px, this.liftOverLand(px, pz, py, dt), pz);
       cam.up.set(0, 1, 0);
       cam.lookAt(x + back.x * 3, 1.2, z - back.y * 3);
     } else if (this.mode === 1) {
@@ -580,7 +591,8 @@ export class World {
     } else if (this.mode === 2) {
       const windward = twaOf(s) >= 0 ? 1 : -1;
       const side = dirVec(s.heading + 90 * windward + this.orbitYaw), fwd = dirVec(s.heading), dist = 17 * this.zoom;
-      cam.position.set(x + side.x * dist + fwd.x * 2, 3 + dist * Math.sin(rad(clamp(8 + this.orbitPitch, -3, 80))), z - side.y * dist - fwd.y * 2);
+      const px = x + side.x * dist + fwd.x * 2, pz = z - side.y * dist - fwd.y * 2;
+      cam.position.set(px, this.liftOverLand(px, pz, 3 + dist * Math.sin(rad(clamp(8 + this.orbitPitch, -3, 80))), dt), pz);
       cam.up.set(0, 1, 0);
       cam.lookAt(x, 3.8, z);
     } else {
