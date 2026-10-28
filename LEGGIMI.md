@@ -12,6 +12,8 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
   - il magazzino con l'insegna, le bandiere SPORTACTION, il pontile con la piattaforma galleggiante e la manica a vento;
   - le case e il capannone Marini Marmi a nord;
   - una ventina di barche all'ormeggio, che si girano col vento. Se ci si urta la barca si ferma.
+  - si parte 10 m a nord del pontile, con la prua verso il largo, in un corridoio lasciato libero dalle barche all'ormeggio: per 260 m davanti la più vicina resta ad almeno 20 m dalla rotta.
+- **Freccia giù** (o su): la barra torna esattamente al centro, a 0°, anche premendo il tasto una volta sola. Le frecce destra e sinistra, il mouse o il dito la riprendono subito.
 - **Il gioco parte sempre con le vele regolate in automatico**; col tasto T si passa al manuale.
 - **Riduzione della tela** (Z riduce, X aumenta): 1 mano, 2 mani, 2 mani + tormentina.
   - Con i terzaroli la randa diventa più piccola e più bassa; durante la manovra sbatte per 6 secondi.

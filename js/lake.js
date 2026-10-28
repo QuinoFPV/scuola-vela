@@ -1,6 +1,6 @@
 // Il lago d'Iseo intorno alla base Sportaction (spiaggia di Castro): quote, profondita',
 // contorni, alberi e case. Origine = punto di partenza; x = est, y = nord (metri).
-import { clamp, dirVec, norm360, Rng } from './physics.js';
+import { clamp, dirVec, norm360, add, mul, Rng } from './physics.js';
 
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 
@@ -144,6 +144,15 @@ export class Lake {
     return { x: m.x + d.x * (m.len / 2 + 2.5), y: m.y + d.y * (m.len / 2 + 2.5) };
   }
 
+  /** Dove si parte: 45 m oltre i 3 m di fondo davanti alla base e 10 m a nord (a sinistra uscendo), con la prua
+   *  verso il largo. Davanti c'e' il corridoio lasciato libero dalle barche all'ormeggio. */
+  startPoint() {
+    const out = dirVec(this.shoreOut);
+    let d = 0;
+    while (d < 400 && this.depth(mul(out, d)) < 3) d += 2;
+    return add(mul(out, d + 45), mul(dirVec(this.shoreOut - 90), 10));
+  }
+
   /** Vero se il punto e' sulla striscia spianata (niente alberi). */
   inBaseStrip(x, y) {
     if (Math.hypot(x, y) > 800) return false;
@@ -167,12 +176,14 @@ export class Lake {
     B.flags = [this.basePoint(-30, -3), this.basePoint(-4, -3)];
     B.pier = { from: this.basePoint(-22, -2), to: this.basePoint(-22, 14) };
     B.sock = this.basePoint(-6, -6);
-    // barche all'ormeggio nella baia, lasciando libero il corridoio d'uscita davanti alla base
+    // barche all'ormeggio nella baia, lasciando libero il corridoio d'uscita lungo la rotta di partenza: la boa a
+    // piu' di 24 m dalla rotta, cosi' anche la barca girata col vento (fino a 10 m dalla boa) resta a 14 m
+    const start = this.startPoint(), out = dirVec(this.shoreOut), left = dirVec(this.shoreOut - 90);
     let tries = 0;
     while (B.moorings.length < 22 && tries++ < 600) {
       const s = rng.range(-170, 280), d = rng.range(28, 165);
-      if (Math.abs(s) < 28 && d < 170) continue;
-      const p = this.basePoint(s, d);
+      const p = this.basePoint(s, d), rx = p.x - start.x, ry = p.y - start.y;
+      if (rx * out.x + ry * out.y > -60 && rx * out.x + ry * out.y < 260 && Math.abs(rx * left.x + ry * left.y) < 24) continue;
       if (this.depth(p) < 4) continue;
       if (B.moorings.some((m) => Math.hypot(m.x - p.x, m.y - p.y) < 22)) continue;
       const motor = rng.unit() < 0.3;

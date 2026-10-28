@@ -65,6 +65,7 @@ async function main() {
   // --- comandi ------------------------------------------------------------------------------
   const keys = new Set();
   let overlay = 'menu', helpReturn = 'menu', mouseTarget = null, drag = null, demo = 0;
+  let centering = false;                       // freccia giu': la barra va al centro, esattamente a zero, anche con un tocco
   const show = (kind) => {
     overlay = kind;
     document.body.classList.toggle('sailing', !kind);
@@ -113,6 +114,7 @@ async function main() {
       case 'KeyE': sim.toggleSpi(); break;             // spinnaker: issa / ammaina
       case 'KeyU': sim.toggleCappa(); break;           // fiocco in cappa / libero
       case 'Enter': case 'NumpadEnter': sim.manOverboard(); break;   // uomo a mare: salvagente in acqua, di nuovo per annullare
+      case 'ArrowDown': case 'ArrowUp': centering = true; break;
       case 'KeyJ': sim.toggleBackMain(-1); break;      // ... a sinistra
       case 'KeyL': sim.toggleBackMain(1); break;       // ... a dritta
       case 'KeyF': st.triangle = !st.triangle; sim.say(st.triangle ? 'TRIANGOLO DEI VENTI: REALE, APPARENTE E VELOCITÀ DELLA BARCA' : 'TRIANGOLO DEI VENTI NASCOSTO', 'info'); break;
@@ -246,7 +248,7 @@ async function main() {
   });
 
   function controls() {
-    const c = { tiller: 0, tillerFine: false, tillerTarget: mouseTarget, centerTiller: keys.has('ArrowUp'), main: 0, jib: 0 };
+    const c = { tiller: 0, tillerFine: false, tillerTarget: mouseTarget, main: 0, jib: 0 };
     const invert = sim.settings.steering === 1 ? -1 : 1;
     if (keys.has('ArrowLeft')) c.tiller -= invert;
     if (keys.has('ArrowRight')) c.tiller += invert;
@@ -254,6 +256,12 @@ async function main() {
     if (tillerSet !== null) {
       c.tillerTarget = tillerSet;
       if (!tillerDown && Math.abs(sim.boat.rudder - tillerSet) < 0.5) tillerSet = null;     // arrivata: resta li'
+    }
+    // la barra va al centro finche' non arriva a zero; la si riprende con le frecce, il mouse o il dito
+    if (keys.has('ArrowLeft') || keys.has('ArrowRight') || mouseTarget !== null || tillerDown) centering = false;
+    if (centering) {
+      c.tillerTarget = 0;
+      if (sim.boat.rudder === 0) centering = false;
     }
     c.main += held.main; c.jib += held.jib;
     if (keys.has('KeyQ')) c.main += 1;
@@ -263,7 +271,7 @@ async function main() {
     const pad = navigator.getGamepads ? [...navigator.getGamepads()].find((p) => p) : null;
     if (pad) {
       const x = pad.axes[0] || 0;
-      if (Math.abs(x) > 0.12) c.tillerTarget = x * 30 * invert;
+      if (Math.abs(x) > 0.12) { c.tillerTarget = x * 30 * invert; centering = false; }
       c.main += (pad.buttons[7]?.value || 0) - (pad.buttons[6]?.value || 0);
       if (pad.buttons[5]?.pressed) c.jib += 1;
       if (pad.buttons[4]?.pressed) c.jib -= 1;

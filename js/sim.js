@@ -64,11 +64,8 @@ export class Simulation {
     this.wind = new Wind(this.windKn, this.settings.gusts ? 0.55 : 0, (Math.random() * 1e9) | 0);
     this.wind.baseDir = this.windDir;
     this.placeMarks();
-    const out = dirVec(lake.shoreOut);
-    let d = 0;
-    while (d < 400 && lake.depth(mul(out, d)) < 3) d += 2;
     const b = newBoat();
-    b.pos = mul(out, d + 45);
+    b.pos = lake.startPoint();
     const h1 = norm360(this.wind.baseDir + 90), h2 = norm360(this.wind.baseDir - 90);
     b.heading = Math.abs(norm180(h1 - lake.shoreOut)) < Math.abs(norm180(h2 - lake.shoreOut)) ? h1 : h2;
     const lee = norm180(this.wind.baseDir - b.heading) < 0 ? 1 : -1;
@@ -391,7 +388,6 @@ export class Simulation {
   applyControls(c, dt) {
     const b = this.boat;
     if (c.tillerTarget !== null && c.tillerTarget !== undefined) b.rudder += clamp(c.tillerTarget - b.rudder, -90 * dt, 90 * dt);
-    else if (c.centerTiller) b.rudder += clamp(-b.rudder, -90 * dt, 90 * dt);
     else if (c.tiller) b.rudder += c.tiller * (c.tillerFine ? 10 : 40) * dt;
     b.rudder = clamp(b.rudder, -Spec.rudderMax, Spec.rudderMax);
     if (b.bando) {
