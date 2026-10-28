@@ -10,6 +10,15 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0a1420; col
 #instruments { left: 18px; top: 18px; width: 330px; padding: 10px 16px 12px; font-size: 15px; font-weight: 600; line-height: 22px; }
 #instruments .big { font-size: 26px; font-weight: 700; line-height: 34px; }
 #posail { color: #99d9ff; }
+/* altoparlante: onde quando l'audio e' acceso, una X quando e' spento */
+#sound { position: absolute; right: 8px; top: 8px; width: 36px; height: 36px; padding: 7px; border-radius: 50%; pointer-events: auto; cursor: pointer;
+  background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .18); color: #fff; }
+#sound:hover { background: rgba(255, 255, 255, .2); }
+#sound svg { display: block; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#sound .spk { fill: currentColor; }
+#sound .off, #sound.muted .on { display: none; }
+#sound.muted .off { display: inline; }
+#sound.muted { color: #ff9a8a; border-color: rgba(255, 154, 138, .5); }
 #dial { position: absolute; right: 15px; top: 18px; }
 #map { position: absolute; right: 50px; top: 320px; }
 #tips { left: 18px; bottom: 138px; width: 470px; padding: 10px 14px; min-height: 100px; }
@@ -139,6 +148,7 @@ body.touch #markPtr { width: 58px; height: 58px; }
 @media (max-height: 520px) {
   body.touch #instruments { width: 222px; padding: 5px 10px 6px; font-size: 11px; line-height: 15px; }
   body.touch #instruments .big { font-size: 20px; line-height: 24px; }
+  body.touch #sound { right: 5px; top: 4px; width: 28px; height: 28px; padding: 5px; }
   body.touch #instruments .big::after { content: "  ⌄"; font-size: .6em; color: rgba(255, 255, 255, .5); }
   body.touch #instruments.open .big::after { content: "  ⌃"; }
   body.touch #instruments:not(.open) #lines { display: none; }

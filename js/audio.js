@@ -1,6 +1,17 @@
 // Suoni con Web Audio: vento, acqua sullo scafo, vele che sbattono, winch e boma.
 export class Audio {
-  constructor() { this.ctx = null; this.muted = false; this.lastClick = 0; this.flapPhase = 0; }
+  constructor() {
+    this.ctx = null; this.lastClick = 0; this.flapPhase = 0;
+    // la scelta resta per le volte dopo (in una finestra privata il browser puo' non ricordarla)
+    try { this.muted = localStorage.getItem('scuolaVela.muto') === '1'; } catch { this.muted = false; }
+  }
+
+  /** Spegne o riaccende tutto: vento, acqua, vele, winch e boma. */
+  setMuted(on) {
+    this.muted = on;
+    try { localStorage.setItem('scuolaVela.muto', on ? '1' : '0'); } catch { /* niente memoria: vale solo adesso */ }
+    if (this.ctx) this.master.gain.setTargetAtTime(on ? 0 : 0.8, this.ctx.currentTime, 0.03);
+  }
 
   /** Va avviato da un gesto dell'utente (regola dei browser). */
   start() {
@@ -11,7 +22,7 @@ export class Audio {
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     this.noise = buf;
     this.master = ctx.createGain();
-    this.master.gain.value = 0.8;
+    this.master.gain.value = this.muted ? 0 : 0.8;
     this.master.connect(ctx.destination);
     const chain = (type, freq, q) => {
       const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;

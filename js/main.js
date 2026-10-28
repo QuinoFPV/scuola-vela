@@ -51,6 +51,11 @@ async function main() {
   const world = new World(renderer, lake, { light: TOUCH });
   const hud = new HUD(lake, TOUCH);
   const audio = new Audio();
+  const showSound = () => {
+    $('sound').classList.toggle('muted', audio.muted);
+    $('sound').title = (audio.muted ? 'Audio spento: tocca per accenderlo' : 'Audio acceso: tocca per spegnerlo') + (TOUCH ? '' : ' (M)');
+  };
+  showSound();
   $('loadBar').style.width = '100%';
 
   function resize() {
@@ -128,7 +133,7 @@ async function main() {
       case 'KeyP': sim.paused = !sim.paused; break;
       case 'KeyR': if (sim.replay === null) sim.startReplay(); else sim.stopReplay(); break;
       case 'KeyI': st.aids = !st.aids; sim.say(st.aids ? "AIUTI DELL'ISTRUTTORE ATTIVI" : 'AIUTI DISATTIVATI', 'info'); break;
-      case 'KeyM': audio.muted = !audio.muted; break;
+      case 'KeyM': audio.setMuted(!audio.muted); showSound(); break;
       case 'KeyZ': sim.reef(1); break;                 // riduce la tela: terzaroli, poi tormentina
       case 'KeyX': sim.reef(-1); break;                // la aumenta
       case 'KeyG': st.gusts = !st.gusts; sim.applyWind(); sim.say(st.gusts ? 'RAFFICHE E SALTI DI VENTO' : 'VENTO COSTANTE', 'info'); break;
@@ -245,6 +250,9 @@ async function main() {
   }
   // la barra dei pulsanti fa le veci dei tasti; toccando gli strumenti si vedono tutti i dati
   for (const b of document.querySelectorAll('#tbar button, #sheets .acts button')) b.addEventListener('click', () => command(b.dataset.k));
+  // senza fuoco sul pulsante: la barra spaziatrice resta "vele in bando" e non riaccende l'audio
+  $('sound').addEventListener('mousedown', (e) => e.preventDefault());
+  $('sound').addEventListener('click', (e) => { e.stopPropagation(); command('KeyM'); });    // senza aprire gli strumenti
   $('instruments').addEventListener('click', () => { if (TOUCH) $('instruments').classList.toggle('open'); });
   document.addEventListener('visibilitychange', () => {
     if (!audio.ctx) return;

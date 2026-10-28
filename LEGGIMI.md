@@ -79,6 +79,9 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
   - vicino a riva la telecamera sale sopra case e collina invece di entrarci;
   - se zoom, rotazione o altezza della telecamera ricevono un valore non valido, si azzerano da soli nello stesso fotogramma (prima lo schermo restava bianco finché non si cambiava vista);
   - uno scatto velocissimo della rotella allontana o avvicina al massimo di una volta e mezza.
+- **Audio** (tasto M o altoparlante in alto a destra nel riquadro degli strumenti, anche sul telefono):
+  - spegne tutto: vento, acqua, vele che sbattono, winch e boma; da spento l'icona è rosa con la X;
+  - la scelta resta anche le volte dopo (salvo nelle finestre private, dove il browser può dimenticarla).
 - **Aria sporca** (tasto O o menu):
   - la scia viola parte dalle vele lungo il vento apparente, per circa 90 m, e si allarga;
   - quando le vele sbattono la scia quasi sparisce.
