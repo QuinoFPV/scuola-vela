@@ -23,6 +23,12 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
   - Il prodiere siede sopravento davanti al timoniere, piegato in avanti verso il bozzello: la coda esce dallo strozzatore, passa nella mano avanti e nell'altra, più in basso, poi pende.
   - Quando si cazza la randa (a mano o con le vele automatiche) la recupera a bracciate: la mano avanti va verso il bozzello e tira.
   - Sporgendosi fuori continua a tenere la scotta; con la randa scontrata lascia la scotta e spinge il boma.
+- **Terzo uomo alle scotte del fiocco** (giubbotto azzurro, berretto arancione): siede sopravento a prua del pozzetto, le mani sulle ginocchia. La scotta del fiocco va dal carrello sul passavanti al winch sottovento.
+  - Quando il fiocco passa dall'altra parte va al winch da quella parte, che è il lato dove era seduto (il vecchio sopravento è il nuovo sottovento).
+  - In virata recupera la scotta a mano, a bracciate, per un secondo e mezzo, poi la cazza con la manovella: una mano gira la manovella sul winch, l'altra tiene la coda che esce dal self-tailing.
+  - In strambata, col fiocco scarico, la recupera solo a mano, per circa tre secondi.
+  - Poi attraversa il pozzetto e torna sopravento.
+- **Equipaggio sopravento:** i tre stanno sempre sul passavanti dalla parte opposta al boma, anche in poppa quando la barca non sbanda. In virata e in strambata timoniere e randista passano dall'altra parte in mezzo secondo, mentre il terzo uomo è al winch.
 - **Riduzione della tela** (Z riduce, X aumenta): 1 mano, 2 mani, 2 mani + tormentina.
   - Con i terzaroli la randa diventa più piccola e più bassa; durante la manovra sbatte per 6 secondi.
   - La tormentina arancione sostituisce il fiocco; il cambio dura 10 secondi, durante i quali sbatte il fiocco.

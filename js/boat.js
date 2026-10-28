@@ -17,6 +17,9 @@ const TILLER_L = 1.697, TILLER_Y = 0.552, EXT_L = 1.2;
 // scotta randa: bozzello sul boma a 2,1 m dall'albero, bozzello con strozzatore sul fondo del pozzetto, al centro,
 // 35 cm davanti alla punta della barra
 const MS_BOOM = 2.1, MS_Z = 1.3;
+// winch delle scotte del fiocco sui passavanti; il carrello del fiocco e' a z = 0.75
+const WINCH_Z = 1.45, WINCH_TOP = 0.115;
+const winchAt = (side) => { const t = tAt(WINCH_Z), x = side * (halfBeam(t) - 0.2); return V(x, deckY(t, x) + 0.07, WINCH_Z); };
 
 export const halfBeam = (t) => t < 0.6 ? BEAM / 2 * Math.pow(Math.sin(t / 0.6 * Math.PI / 2), 0.82) : BEAM / 2 * (1 - 0.08 * ((t - 0.6) / 0.4) ** 2);
 export const sheer = (t) => 0.62 + 0.22 * Math.pow(1 - t, 1.5);
@@ -104,7 +107,7 @@ class Sailor {
   }
   /** Seduto sul bordo con i piedi nel pozzetto; hike = quanto si sporge fuori (0...1). */
   sit(hike, arms) {
-    this.torso.rotation.x = 0.08 + hike * 0.6;
+    this.torso.rotation.set(0.08 + hike * 0.6, 0, 0);
     for (const h of this.hips) h.rotation.x = 0.15 + hike * 0.15;
     for (const k of this.knees) k.rotation.x = -0.65 - hike * 0.2;
     this.shoulders.forEach((s, i) => { s.rotation.set(arms + hike * 0.3 + (i === 0 ? 0.1 : -0.1), 0, 0); });
@@ -112,7 +115,7 @@ class Sailor {
   }
   /** In piedi (dietro la ruota), con le braccia in avanti. */
   stand(armsForward) {
-    this.torso.rotation.x = -0.05;
+    this.torso.rotation.set(-0.05, 0, 0);
     for (const h of this.hips) h.rotation.x = -Math.PI / 2;
     for (const k of this.knees) k.rotation.x = Math.PI / 2 - 0.05;
     for (const s of this.shoulders) s.rotation.set(armsForward, 0, 0);
@@ -372,8 +375,7 @@ export class BoatModel {
       }
       tops.push(V(sd * 1.05, 1.24, 3.04)); mids.push(V(sd * 1.05, 0.94, 2.99));
       for (const line of [tops, mids]) for (let i = 0; i < line.length - 1; i++) this.tilt.add(rod(line[i], line[i + 1], 0.004, wire, 4));
-      const tw = tAt(1.45), wx = sd * (halfBeam(tw) - 0.2);
-      for (const [p, r] of [[V(wx, deckY(tw, wx) + 0.07, 1.45), 0.085], [V(sd * 0.45, 1.06, 0.3), 0.065]]) {
+      for (const [p, r] of [[winchAt(sd), 0.085], [V(sd * 0.45, 1.06, 0.3), 0.065]]) {
         const drum = mesh(new THREE.CylinderGeometry(r, r, 0.13, 16), steel); drum.position.copy(p); this.tilt.add(drum);
         const topc = mesh(new THREE.CylinderGeometry(r * 0.75, r * 0.75, 0.05, 16), std(0x1f1f1f, 0.5)); topc.position.set(p.x, p.y + 0.09, p.z); this.tilt.add(topc);
       }
@@ -395,7 +397,16 @@ export class BoatModel {
     this.mainSheetLines = [line(), line(), line()];
     this.mainTail = [line(), line(), line()];
     this.jibSheetLine = mesh(new THREE.CylinderGeometry(0.012, 0.012, 1, 6), this.lineMat);
-    this.tilt.add(...this.mainSheetLines, ...this.mainTail, this.jibSheetLine);
+    // fiocco: dal carrello al winch sottovento, e la coda in mano al terzo uomo durante le manovre
+    this.jibLead = line();
+    this.jibTail = [line(), line(), line()];
+    this.tilt.add(...this.mainSheetLines, ...this.mainTail, this.jibSheetLine, this.jibLead, ...this.jibTail);
+    // manovella del winch: compare quando si cazza il fiocco in virata
+    this.winchHandle = new THREE.Group();
+    this.winchHandle.add(rod(V(0, 0, 0), V(0, 0.05, 0), 0.012, steel), rod(V(0, 0.04, 0), V(0.2, 0.04, 0), 0.012, steel),
+                         rod(V(0.2, 0.04, 0), V(0.2, 0.13, 0), 0.016, std(0x151515, 0.6)));
+    this.winchHandle.visible = false;
+    this.tilt.add(this.winchHandle);
     this.haul = 0;
     // tangone: tiene fuori il fiocco quando si va a farfalla
     this.pole = mesh(new THREE.CylinderGeometry(0.028, 0.028, 1, 8), std(0xc8ccd0, 0.3, 0.8));
@@ -404,7 +415,7 @@ export class BoatModel {
   }
 
   buildCrew() {
-    this.crew = [new Sailor(0xe62619, 0x26385f, 0xf2f2f2), new Sailor(0xffb80d, 0xebebeb, 0x1a4db3)];
+    this.crew = [new Sailor(0xe62619, 0x26385f, 0xf2f2f2), new Sailor(0xffb80d, 0xebebeb, 0x1a4db3), new Sailor(0x2a9fd8, 0x2b2b2b, 0xff6a00)];
     for (const p of this.crew) { p.root.traverse((o) => { if (o.isMesh) o.castShadow = true; }); this.tilt.add(p.root); }
   }
 
@@ -496,7 +507,7 @@ export class BoatModel {
     const clew = this.updateJib(s, time);
     this.updateSpi(s, time);
     // con lo spi su il fiocco e' avvolto sullo strallo
-    this.jib.mesh.visible = this.jibSheetLine.visible = s.jibFurl < 0.5;
+    this.jib.mesh.visible = this.jibSheetLine.visible = this.jibLead.visible = s.jibFurl < 0.5;
     this.furled.visible = s.jibFurl >= 0.5;
     const a = rad(s.mainAngle);
     // scotta randa: tre passate dal bozzello del boma a quello del pozzetto
@@ -507,12 +518,19 @@ export class BoatModel {
     });
     // il genoa sormonta l'albero: il carrello della scotta e' sul passavanti dietro le sartie
     const tl = tAt(0.75);
-    this.setLine(this.jibSheetLine, clew, V(s.jibSide * (halfBeam(tl) - 0.15), sheer(tl) + 0.05, 0.75));
+    const car = V(s.jibSide * (halfBeam(tl) - 0.15), sheer(tl) + 0.05, 0.75), wj = winchAt(s.jibSide);
+    this.setLine(this.jibSheetLine, clew, car);
+    this.setLine(this.jibLead, car, V(wj.x - s.jibSide * 0.07, wj.y + 0.02, wj.z - 0.04));
     this.pole.visible = s.farfalla;
     if (s.farfalla) this.setLine(this.pole, V(0, 1.35, MAST_Z - 0.08), clew);
 
     // equipaggio sopravento, sporto fuori quando la barca sbanda
-    const sideK = clamp(s.crew * 1.6, -1, 1);
+    // seduti sul passavanti dalla parte opposta al boma (anche in poppa, quando la barca non sbanda); in virata e in
+    // strambata passano dall'altra parte in mezzo secondo, mentre il terzo uomo va al winch del fiocco
+    this.jibJobUpdate(s);
+    const target = -s.mainSide || 1;
+    this.crewVis = this.crewVis === undefined ? target : this.crewVis + (target - this.crewVis) * Math.min(1, dt * 4);
+    const crew = this.crewVis, sideK = clamp(crew * 1.6, -1, 1);
     const hike = clamp((Math.abs(s.heel) - 6) / 20, 0, 1) * Math.min(1, Math.abs(s.crew));
     this.crew.forEach((p, k) => {
       p.root.visible = !this.crewHidden;
@@ -528,22 +546,23 @@ export class BoatModel {
         return;
       }
       if (k === 0 && this.wheel) {
-        p.root.position.set(s.crew * 0.15, FLOOR_Y + 0.92, 3.2);
+        p.root.position.set(crew * 0.15, FLOOR_Y + 0.92, 3.2);
         p.root.rotation.set(0, 0, rad(s.heel) * 0.7);
         p.stand(1.15);
         return;
       }
       if (k === 0) {
         // timoniere: sopravento, girato in avanti verso il centro, la mano sottovento sulla prolunga
-        const t = tAt(2.35), xx = s.crew * (halfBeam(t) - 0.2);
+        const t = tAt(2.35), xx = crew * (halfBeam(t) - 0.2);
         p.root.position.set(xx, deckY(t, xx) + 0.07, 2.35);
         p.root.rotation.set(0, 0.6 * sideK, 0);
         p.sit(hike, 0.4);
         this.steer(p, s, sideK);
         return;
       }
+      if (k === 2) { this.jibCrew(p, s, hike, crew, sideK, dt); return; }
       // prodiere: sopravento davanti al timoniere, girato verso il centro, lavora la scotta randa
-      const t = tAt(1.15), xx = s.crew * (halfBeam(t) - 0.2);
+      const t = tAt(1.15), xx = crew * (halfBeam(t) - 0.2);
       p.root.position.set(xx, deckY(t, xx) + 0.07, 1.15);
       p.root.rotation.set(0, Math.PI / 2 * sideK, 0);
       p.sit(hike, 0.55);
@@ -552,6 +571,7 @@ export class BoatModel {
     });
     this.extension.visible = this.extGrip.visible = this.extJoint.visible = !this.wheel && !this.crewHidden;
     for (const m of this.mainTail) m.visible = !this.crewHidden && !s.backMain;
+    if (this.crewHidden) { for (const m of this.jibTail) m.visible = false; this.winchHandle.visible = false; }
     this.lastMainSheet = s.mainSheet;
     this.updateBowWave(s, waves, dt);
   }
@@ -597,6 +617,72 @@ export class BoatModel {
     this.setLine(this.mainTail[1], a, b);
     this.setLine(this.mainTail[2], b, end);
     this.msBlock.rotation.y = Math.atan2(dir.x, dir.z);
+  }
+
+  /** Il terzo uomo lavora le scotte del fiocco. Di solito siede sopravento a prua del pozzetto, le mani sulle ginocchia.
+   *  Quando il fiocco passa dall'altra parte va al winch da quella parte (e' il lato dov'era seduto: il vecchio
+   *  sopravento e' il nuovo sottovento): in virata recupera la scotta a mano e poi la cazza con la manovella, in
+   *  strambata, col fiocco scarico, la recupera solo a mano. Poi attraversa il pozzetto e torna sopravento. */
+  /** Tiene il conto della manovra del fiocco: comincia quando il fiocco passa dall'altra parte. */
+  jibJobUpdate(s) {
+    const J = this.jibJob ??= { side: s.jibSide, t0: -100, kind: null, pos: null, rot: 0 };
+    if (s.jibSide !== J.side) {
+      if (!s.cappa && s.jibFurl < 0.5) { J.kind = Math.abs(s.awa) > 100 ? 'gybe' : 'tack'; J.t0 = s.time; }
+      J.side = s.jibSide;
+    }
+    J.t = s.time - J.t0;
+    J.pull = J.kind === 'tack' ? 1.6 : 3.2;
+    J.grind = J.kind === 'tack' ? 3.2 : 0;
+    J.busy = J.kind !== null && J.t >= 0 && J.t < 0.8 + J.pull + J.grind;
+    return J;
+  }
+
+  jibCrew(p, s, hike, crew, sideK, dt) {
+    const J = this.jibJob, { t, pull, busy } = J;
+    // dove deve stare: al winch dalla parte del fiocco, o seduto sopravento
+    const lee = s.jibSide, ts = tAt(busy ? 1.15 : 0.62);
+    const sx = busy ? lee * (halfBeam(ts) - 0.2) : crew * (halfBeam(ts) - 0.2);
+    const seat = V(sx, deckY(ts, sx) + 0.07, busy ? 1.15 : 0.62), rot = Math.PI / 2 * (busy ? lee : sideK);
+    if (!J.pos || J.pos.distanceTo(seat) > 3) J.pos = seat.clone();
+    // si sposta in fretta, come gli altri quando cambiano lato
+    J.pos.lerp(seat, Math.min(1, dt * 5));
+    J.rot += (rot - J.rot) * Math.min(1, dt * 6);
+    p.root.position.copy(J.pos);
+    p.root.rotation.set(0, J.rot, 0);
+    const tail = this.jibTail;
+    this.winchHandle.visible = false;
+    for (const m of tail) m.visible = false;
+    if (!busy || J.pos.distanceTo(seat) > 0.25) {
+      p.sit(hike, 0.5);
+      for (const i of [0, 1]) p.reach(i, V(0, 0.1, 0.03).applyMatrix4(p.chain(p.knees[i])));
+      return;
+    }
+    // al winch: piegato verso di lui, che e' dalla parte di poppa
+    p.sit(0, 0.5);
+    p.torso.rotation.set(-0.25, 0, 0.25 * lee);
+    const w = winchAt(lee), top = V(w.x, w.y + WINCH_TOP + 0.03, w.z);
+    const aft = lee > 0 ? 0 : 1, fwdHand = 1 - aft;
+    const chest = V(0, 0.4, -0.08).applyMatrix4(p.chain(p.torso));
+    const dir = top.clone().sub(chest).normalize();
+    const show = (m, a, b) => { m.visible = true; this.setLine(m, a, b); };
+    let a, b;
+    if (t < 0.8 + pull) {
+      // a bracciate: le mani si alternano lungo la scotta che esce dal winch
+      const k = 0.5 - 0.5 * Math.cos(t * Math.PI * 2 * 1.4);
+      a = p.reach(aft, chest.clone().addScaledVector(dir, 0.45 - 0.25 * k));
+      b = p.reach(fwdHand, chest.clone().addScaledVector(dir, 0.2 + 0.25 * k).add(V(0, -0.05, 0)));
+      const [far, near] = a.distanceTo(top) < b.distanceTo(top) ? [a, b] : [b, a];
+      show(tail[0], top, far); show(tail[1], far, near); show(tail[2], near, near.clone().add(V(0, -0.4, 0)));
+    } else {
+      // con la manovella: una mano gira, l'altra tiene la coda che esce dal self-tailing
+      const phi = (t - 0.8 - pull) * Math.PI * 2 * 1.1, h = this.winchHandle;
+      h.visible = true;
+      h.position.set(w.x, w.y + WINCH_TOP, w.z);
+      h.rotation.y = phi;
+      a = p.reach(aft, V(w.x + 0.2 * Math.cos(phi), w.y + WINCH_TOP + 0.1, w.z - 0.2 * Math.sin(phi)));
+      b = p.reach(fwdHand, chest.clone().addScaledVector(dir, 0.2).add(V(0, -0.22, 0)));
+      show(tail[0], top, b); show(tail[1], b, b.clone().add(V(0, -0.4, 0)));
+    }
   }
 
   setLine(m, a, b) {
