@@ -179,7 +179,11 @@ async function main() {
     }
   });
   window.addEventListener('mouseup', () => { drag = null; mouseTarget = null; });
-  canvas.addEventListener('wheel', (e) => { e.preventDefault(); world.zoom = clamp(world.zoom * (1 + e.deltaY * 0.001), 0.35, 5); }, { passive: false });
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    // a scatti esponenziali: anche una rotella velocissima non porta lo zoom a zero o sotto
+    if (Number.isFinite(e.deltaY)) world.zoom = clamp(world.zoom * Math.exp(clamp(e.deltaY, -400, 400) * 0.001), 0.35, 5);
+  }, { passive: false });
 
   // --- comandi a dito ---------------------------------------------------------------------------
   // il dito resta "agganciato" al comando anche se esce dal suo riquadro
@@ -205,7 +209,7 @@ async function main() {
       world.orbitPitch = clamp(world.orbitPitch + (cur.y - prev.y) * 0.3, -10, 75);
     } else if (fingers.size === 2) {
       const [a, b] = [...fingers.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
-      if (pinch) world.zoom = clamp(world.zoom * pinch / d, 0.35, 5);
+      if (pinch && d > 1) world.zoom = clamp(world.zoom * pinch / d, 0.35, 5);
       pinch = d;
     }
   });

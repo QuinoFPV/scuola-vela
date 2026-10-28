@@ -564,12 +564,17 @@ export class World {
     let ground = -10;
     for (const [dx, dz] of [[0, 0], [12, 0], [-12, 0], [0, 12], [0, -12]]) ground = Math.max(ground, this.lake.height(px + dx, -(pz + dz)));
     const need = Math.max(0, Math.max(0, ground) + 22 * clamp((ground + 2) / 4, 0, 1) - py);
-    this.camLift ??= 0;
-    this.camLift += (need - this.camLift) * Math.min(1, dt * (need > this.camLift ? 8 : 2));
+    if (!Number.isFinite(this.camLift)) this.camLift = 0;
+    if (Number.isFinite(need)) this.camLift += (need - this.camLift) * Math.min(1, dt * (need > this.camLift ? 8 : 2));
     return py + this.camLift;
   }
 
   placeCamera(s, waves, dt) {
+    // un solo valore non valido (NaN) qui resterebbe per sempre e lo schermo diventerebbe bianco: si riparte puliti
+    if (!Number.isFinite(this.zoom)) this.zoom = 1;
+    if (!Number.isFinite(this.orbitYaw)) this.orbitYaw = 0;
+    if (!Number.isFinite(this.orbitPitch)) this.orbitPitch = 0;
+    if (!Number.isFinite(this.camYaw)) this.camYaw = Number.isFinite(s.heading) ? s.heading : 0;
     const x = s.pos.x, z = -s.pos.y, cam = this.camera;
     this.camYaw = norm360(this.camYaw + norm180(s.heading - this.camYaw) * Math.min(1, dt * 0.9));
     cam.fov = this.mode === 1 ? 68 : 52;

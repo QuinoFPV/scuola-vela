@@ -75,6 +75,10 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
   - cerchi a 5, 10 e 20 nodi (1 nodo = 1,2 m);
   - targhette con nome e valore; per l'apparente anche l'angolo dalla prua;
   - si legge meglio dall'alto (tasto C fino a "dall'alto"): la vista parte a 34 m e, col triangolo acceso, si sposta un po' sopravento per inquadrarlo tutto.
+- **Zoom delle viste** (rotella o due dita): fino a 5 volte più lontano.
+  - vicino a riva la telecamera sale sopra case e collina invece di entrarci;
+  - se zoom, rotazione o altezza della telecamera ricevono un valore non valido, si azzerano da soli nello stesso fotogramma (prima lo schermo restava bianco finché non si cambiava vista);
+  - uno scatto velocissimo della rotella allontana o avvicina al massimo di una volta e mezza.
 - **Aria sporca** (tasto O o menu):
   - la scia viola parte dalle vele lungo il vento apparente, per circa 90 m, e si allarga;
   - quando le vele sbattono la scia quasi sparisce.
