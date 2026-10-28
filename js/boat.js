@@ -12,6 +12,8 @@ export const MAST_Z = -0.82, BOOM_Y = 1.86, HEAD_Y = 10.36;
 const STAY0 = new THREE.Vector3(0, 0.86, -3.49), STAY1 = new THREE.Vector3(0, 9.37, MAST_Z);
 const TACK = new THREE.Vector3(0, 0.95, -3.45);
 const JIB_FOOT = 3.83, COCKPIT_Z = 0.5, FLOOR_Y = 0.30, SIDE_DECK = 0.36;
+// barra: lunga 1,7 m dall'asse del timone, la punta 0,55 m sull'acqua; prolunga di 1,2 m incernierata in punta
+const TILLER_L = 1.697, TILLER_Y = 0.552, EXT_L = 1.2;
 
 export const halfBeam = (t) => t < 0.6 ? BEAM / 2 * Math.pow(Math.sin(t / 0.6 * Math.PI / 2), 0.82) : BEAM / 2 * (1 - 0.08 * ((t - 0.6) / 0.4) ** 2);
 export const sheer = (t) => 0.62 + 0.22 * Math.pow(1 - t, 1.5);
@@ -39,7 +41,7 @@ function geometry(pos, idx, uv = null, normals = null) {
   if (normals) g.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3)); else g.computeVertexNormals();
   return g;
 }
-const UP = new THREE.Vector3(0, 1, 0);
+const UP = new THREE.Vector3(0, 1, 0), DOWN = new THREE.Vector3(0, -1, 0);
 /** Cilindro da a a b (sartie, candelieri, tubi). */
 export function rod(a, b, radius, mat, seg = 8) {
   const d = new THREE.Vector3().subVectors(b, a);
@@ -102,16 +104,41 @@ class Sailor {
     this.torso.rotation.x = 0.08 + hike * 0.6;
     for (const h of this.hips) h.rotation.x = 0.15 + hike * 0.15;
     for (const k of this.knees) k.rotation.x = -0.65 - hike * 0.2;
-    this.shoulders.forEach((s, i) => { s.rotation.x = arms + hike * 0.3 + (i === 0 ? 0.1 : -0.1); });
-    for (const e of this.elbows) e.rotation.x = 0.7;
+    this.shoulders.forEach((s, i) => { s.rotation.set(arms + hike * 0.3 + (i === 0 ? 0.1 : -0.1), 0, 0); });
+    for (const e of this.elbows) e.rotation.set(0.7, 0, 0);
   }
   /** In piedi (dietro la ruota), con le braccia in avanti. */
   stand(armsForward) {
     this.torso.rotation.x = -0.05;
     for (const h of this.hips) h.rotation.x = -Math.PI / 2;
     for (const k of this.knees) k.rotation.x = Math.PI / 2 - 0.05;
-    for (const s of this.shoulders) s.rotation.x = armsForward;
-    for (const e of this.elbows) e.rotation.x = 0.5;
+    for (const s of this.shoulders) s.rotation.set(armsForward, 0, 0);
+    for (const e of this.elbows) e.rotation.set(0.5, 0, 0);
+  }
+  /** Dal sistema di `node` a quello della barca (il genitore di root). */
+  chain(node) {
+    const list = [], m = new THREE.Matrix4();
+    for (let o = node; o; o = o.parent) { list.push(o); if (o === this.root) break; }
+    for (let i = list.length - 1; i >= 0; i--) { list[i].updateMatrix(); m.multiply(list[i].matrix); }
+    return m;
+  }
+  /** Porta la mano i (0 sinistra, 1 destra) sul punto p della barca: braccio e avambraccio da 30 cm, gomito in basso e
+   *  in fuori (cinematica inversa a due segmenti). Se il punto e' troppo lontano il braccio si tende verso di lui.
+   *  Restituisce dove arriva la mano. */
+  reach(i, p) {
+    const sh = this.shoulders[i], el = this.elbows[i], A = 0.3, B = 0.3;
+    const toBoat = this.chain(this.torso);
+    const d = p.clone().applyMatrix4(toBoat.clone().invert()).sub(sh.position);
+    const dist = clamp(d.length(), 0.1, A + B - 0.002), u = d.normalize();
+    // il gomito sta nel piano del braccio, dalla parte del polo (giu', in fuori, un po' indietro)
+    const pole = V(i ? 0.6 : -0.6, -1, 0.4), w = pole.addScaledVector(u, -pole.dot(u)).normalize();
+    const a = Math.acos(clamp((A * A + dist * dist - B * B) / (2 * A * dist), -1, 1));
+    const upper = u.clone().multiplyScalar(Math.cos(a)).addScaledVector(w, Math.sin(a));
+    sh.quaternion.setFromUnitVectors(DOWN, upper);
+    const hand = sh.position.clone().addScaledVector(u, dist), elbow = sh.position.clone().addScaledVector(upper, A);
+    const fore = hand.clone().sub(elbow).normalize().applyQuaternion(sh.quaternion.clone().invert());
+    el.quaternion.setFromUnitVectors(DOWN, fore);
+    return hand.applyMatrix4(toBoat);
   }
 }
 
@@ -205,6 +232,11 @@ export class BoatModel {
     this.tillerNode = new THREE.Group();
     const tiller = mesh(new THREE.BoxGeometry(0.05, 0.06, 1.7), std(0x8c5c2e, 0.4)); tiller.position.set(0, 0.62, -0.85); tiller.rotation.x = -0.08;
     this.tillerNode.add(tiller); this.rudderPivot.add(this.tillerNode);
+    // prolunga: asta nera con l'impugnatura in fondo, snodata in punta alla barra; la tiene il timoniere
+    this.extension = mesh(new THREE.CylinderGeometry(0.011, 0.011, 1, 8), std(0x30343a, 0.35, 0.6));
+    this.extGrip = mesh(new THREE.CylinderGeometry(0.018, 0.018, 1, 10), std(0x111111, 0.8));
+    this.extJoint = mesh(new THREE.SphereGeometry(0.025, 10, 8), std(0x111111, 0.5));
+    this.tilt.add(this.extension, this.extGrip, this.extJoint);
     const stock = mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.5, 8), this.lineMat); stock.position.y = 0.45; this.rudderPivot.add(stock);
     // ruota su colonnina (opzione)
     const steel = std(0xd1d1d1, 0.2, 1);
@@ -483,12 +515,44 @@ export class BoatModel {
         p.stand(1.15);
         return;
       }
-      const zz = k === 0 ? 2.3 : 1.15, t = tAt(zz), xx = s.crew * (halfBeam(t) - 0.2);
-      p.root.position.set(xx, deckY(t, xx) + 0.07, zz);
+      if (k === 0) {
+        // timoniere: sopravento, girato in avanti verso il centro, la mano sottovento sulla prolunga
+        const t = tAt(2.35), xx = s.crew * (halfBeam(t) - 0.2);
+        p.root.position.set(xx, deckY(t, xx) + 0.07, 2.35);
+        p.root.rotation.set(0, 0.6 * sideK, 0);
+        p.sit(hike, 0.4);
+        this.steer(p, s, sideK);
+        return;
+      }
+      const t = tAt(1.15), xx = s.crew * (halfBeam(t) - 0.2);
+      p.root.position.set(xx, deckY(t, xx) + 0.07, 1.15);
       p.root.rotation.set(0, Math.PI / 2 * sideK, 0);
-      p.sit(hike, k === 0 ? 0.75 : 0.55);
+      p.sit(hike, 0.55);
     });
+    this.extension.visible = this.extGrip.visible = this.extJoint.visible = !this.wheel && !this.crewHidden;
     this.updateBowWave(s, waves, dt);
+  }
+
+  /** La prolunga va dalla punta della barra alla mano sottovento del timoniere, l'altra mano sul ginocchio.
+   *  Se la barra e' lontana (tutta sottovento in virata) il timoniere scivola verso il centro, fino a 30 cm, si sporge
+   *  meno fuori e la mano scorre verso il fondo della prolunga. */
+  steer(p, s, sideK) {
+    const r = rad(s.rudder), tip = V(-TILLER_L * Math.sin(r), TILLER_Y + 0.03, this.rudderPivot.position.z - TILLER_L * Math.cos(r));
+    const pos = p.root.position, i = sideK >= 0 ? 0 : 1;        // sopravento a dritta la mano sottovento e' la sinistra
+    const comfort = V(pos.x - sideK * 0.4, pos.y + 0.4, pos.z - 0.25);
+    const grip = tip.clone().addScaledVector(comfort.sub(tip).normalize(), EXT_L - 0.12);
+    const shoulder = p.shoulders[i].position.clone().applyMatrix4(p.chain(p.torso));
+    const short = shoulder.distanceTo(grip) - 0.56;
+    if (short > 0) pos.x -= Math.sign(pos.x || 1) * Math.min(short, 0.3);
+    if (short > 0.3) p.torso.rotation.x = Math.max(0.08, p.torso.rotation.x - (short - 0.3) * 1.5);
+    const hand = p.reach(i, grip);
+    p.reach(1 - i, V(0, 0.1, 0.03).applyMatrix4(p.chain(p.knees[1 - i])));
+    const dir = hand.clone().sub(tip), len = Math.max(EXT_L, dir.length() + 0.04);
+    dir.normalize();
+    const end = tip.clone().addScaledVector(dir, len);
+    this.setLine(this.extension, tip, end);
+    this.setLine(this.extGrip, tip.clone().addScaledVector(dir, len - 0.24), end);
+    this.extJoint.position.copy(tip);
   }
 
   setLine(m, a, b) {

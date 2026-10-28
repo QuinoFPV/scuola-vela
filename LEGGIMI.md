@@ -15,6 +15,10 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
   - si parte 10 m a nord del pontile, con la prua verso il largo, in un corridoio lasciato libero dalle barche all'ormeggio: per 260 m davanti la più vicina resta ad almeno 20 m dalla rotta.
 - **Freccia giù** (o su): la barra torna esattamente al centro, a 0°, anche premendo il tasto una volta sola. Le frecce destra e sinistra, il mouse o il dito la riprendono subito.
 - **Il gioco parte sempre con le vele regolate in automatico**; col tasto T si passa al manuale.
+- **Timoniere con la prolunga:** siede sopravento a poppa, girato in avanti verso il centro, e tiene con la mano sottovento la prolunga della barra (1,2 m, snodata in punta alla barra); l'altra mano sta sul ginocchio.
+  - Il braccio segue la prolunga da solo (spalla e gomito calcolati a ogni fotogramma, col gomito in basso e in fuori), con la barra in qualunque posizione, sbandati, sporti fuori e sulle due mure.
+  - Con la barra tutta sottovento il timoniere scivola un po' verso il centro e si sporge meno; in virata attraversa il pozzetto e la prolunga passa da una mano all'altra.
+  - Con la ruota e nella vista dal timoniere la prolunga non c'è.
 - **Riduzione della tela** (Z riduce, X aumenta): 1 mano, 2 mani, 2 mani + tormentina.
   - Con i terzaroli la randa diventa più piccola e più bassa; durante la manovra sbatte per 6 secondi.
   - La tormentina arancione sostituisce il fiocco; il cambio dura 10 secondi, durante i quali sbatte il fiocco.
