@@ -19,6 +19,10 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
   - Il braccio segue la prolunga da solo (spalla e gomito calcolati a ogni fotogramma, col gomito in basso e in fuori), con la barra in qualunque posizione, sbandati, sporti fuori e sulle due mure.
   - Con la barra tutta sottovento il timoniere scivola un po' verso il centro e si sporge meno; in virata attraversa il pozzetto e la prolunga passa da una mano all'altra.
   - Con la ruota e nella vista dal timoniere la prolunga non c'è.
+- **Scotta randa e prodiere:** la scotta è un paranco a tre passate dal bozzello sul boma (a 2,1 m dall'albero) al bozzello con strozzatore sul fondo del pozzetto, al centro, 35 cm davanti alla punta della barra; il bozzello gira verso chi la lavora.
+  - Il prodiere siede sopravento davanti al timoniere, piegato in avanti verso il bozzello: la coda esce dallo strozzatore, passa nella mano avanti e nell'altra, più in basso, poi pende.
+  - Quando si cazza la randa (a mano o con le vele automatiche) la recupera a bracciate: la mano avanti va verso il bozzello e tira.
+  - Sporgendosi fuori continua a tenere la scotta; con la randa scontrata lascia la scotta e spinge il boma.
 - **Riduzione della tela** (Z riduce, X aumenta): 1 mano, 2 mani, 2 mani + tormentina.
   - Con i terzaroli la randa diventa più piccola e più bassa; durante la manovra sbatte per 6 secondi.
   - La tormentina arancione sostituisce il fiocco; il cambio dura 10 secondi, durante i quali sbatte il fiocco.

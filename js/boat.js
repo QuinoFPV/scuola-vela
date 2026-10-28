@@ -14,6 +14,9 @@ const TACK = new THREE.Vector3(0, 0.95, -3.45);
 const JIB_FOOT = 3.83, COCKPIT_Z = 0.5, FLOOR_Y = 0.30, SIDE_DECK = 0.36;
 // barra: lunga 1,7 m dall'asse del timone, la punta 0,55 m sull'acqua; prolunga di 1,2 m incernierata in punta
 const TILLER_L = 1.697, TILLER_Y = 0.552, EXT_L = 1.2;
+// scotta randa: bozzello sul boma a 2,1 m dall'albero, bozzello con strozzatore sul fondo del pozzetto, al centro,
+// 35 cm davanti alla punta della barra
+const MS_BOOM = 2.1, MS_Z = 1.3;
 
 export const halfBeam = (t) => t < 0.6 ? BEAM / 2 * Math.pow(Math.sin(t / 0.6 * Math.PI / 2), 0.82) : BEAM / 2 * (1 - 0.08 * ((t - 0.6) / 0.4) ** 2);
 export const sheer = (t) => 0.62 + 0.22 * Math.pow(1 - t, 1.5);
@@ -343,6 +346,8 @@ export class BoatModel {
     boom.position.z = 1.77;
     this.boomPivot.add(boom);
     this.boomPivot.add(rod(V(0, -0.03, 0.95), V(0, -0.6, 0.12), 0.018, std(0x262626, 0.4)));
+    const boomBlock = mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.04, 14), std(0x151515, 0.4));
+    boomBlock.rotation.z = Math.PI / 2; boomBlock.position.set(0, -0.17, MS_BOOM); this.boomPivot.add(boomBlock);
     // tela dei terzaroli raccolta sul boma
     this.reefBundle = mesh(new THREE.CylinderGeometry(1, 1, 3.1, 12), std(0x1c1d20, 0.6));
     this.reefBundle.rotation.x = Math.PI / 2;
@@ -375,15 +380,23 @@ export class BoatModel {
       const light = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.1), new THREE.MeshBasicMaterial({ color: sd < 0 ? 0xff2020 : 0x20ff50 }));
       light.position.set(sd * 0.18, 0.88, -HL + 0.38); this.tilt.add(light);
     }
-    const bridge = mesh(new THREE.BoxGeometry(1.7, 0.22, 0.18), std(0xebebeb, 0.5)); bridge.position.set(0, 0.42, 2.15); this.tilt.add(bridge);
-    const track = mesh(new THREE.BoxGeometry(1.5, 0.04, 0.07), std(0x262626, 0.4)); track.position.set(0, 0.55, 2.15); this.tilt.add(track);
+    // bozzello della scotta randa sul fondo del pozzetto: base girevole, strozzatore e puleggia; si gira verso la coda
+    this.msBlock = new THREE.Group(); this.msBlock.position.set(0, FLOOR_Y, MS_Z); this.tilt.add(this.msBlock);
+    const dark = std(0x151515, 0.4);
+    const base = mesh(new THREE.CylinderGeometry(0.075, 0.085, 0.03, 18), steel); base.position.y = 0.015; this.msBlock.add(base);
+    const post = mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.12, 8), steel); post.position.y = 0.08; this.msBlock.add(post);
+    for (const sd of [-1, 1]) { const jaw = mesh(new THREE.BoxGeometry(0.02, 0.03, 0.07), dark); jaw.position.set(sd * 0.022, 0.15, 0.03); this.msBlock.add(jaw); }
+    const sheave = mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.035, 16), dark); sheave.rotation.z = Math.PI / 2; sheave.position.y = 0.21; this.msBlock.add(sheave);
     const glass = std(0x0d1419, 0.08);
     const hatch = mesh(new THREE.BoxGeometry(0.55, 0.05, 0.55), glass); hatch.position.set(0, deckY(tAt(-1.95), 0) + 0.03, -1.95); this.tilt.add(hatch);
     const slide = mesh(new THREE.BoxGeometry(0.6, 0.04, 0.6), glass); slide.position.set(0, 1.02, 0.15); this.tilt.add(slide);
-    // scotte (aggiornate a ogni fotogramma)
-    this.mainSheetLine = mesh(new THREE.CylinderGeometry(0.012, 0.012, 1, 6), this.lineMat);
+    // scotte (aggiornate a ogni fotogramma): la randa a paranco con tre passate e la coda in mano al prodiere
+    const line = () => mesh(new THREE.CylinderGeometry(0.009, 0.009, 1, 6), this.lineMat);
+    this.mainSheetLines = [line(), line(), line()];
+    this.mainTail = [line(), line(), line()];
     this.jibSheetLine = mesh(new THREE.CylinderGeometry(0.012, 0.012, 1, 6), this.lineMat);
-    this.tilt.add(this.mainSheetLine, this.jibSheetLine);
+    this.tilt.add(...this.mainSheetLines, ...this.mainTail, this.jibSheetLine);
+    this.haul = 0;
     // tangone: tiene fuori il fiocco quando si va a farfalla
     this.pole = mesh(new THREE.CylinderGeometry(0.028, 0.028, 1, 8), std(0xc8ccd0, 0.3, 0.8));
     this.pole.visible = false;
@@ -486,7 +499,12 @@ export class BoatModel {
     this.jib.mesh.visible = this.jibSheetLine.visible = s.jibFurl < 0.5;
     this.furled.visible = s.jibFurl >= 0.5;
     const a = rad(s.mainAngle);
-    this.setLine(this.mainSheetLine, V(Math.sin(a) * 2.95, BOOM_Y - 0.1, MAST_Z + Math.cos(a) * 2.95), V(0, 0.55, 2.15));
+    // scotta randa: tre passate dal bozzello del boma a quello del pozzetto
+    const ax = V(Math.sin(a), 0, Math.cos(a)), top = V(ax.x * MS_BOOM, BOOM_Y - 0.25, MAST_Z + ax.z * MS_BOOM);
+    this.mainSheetLines.forEach((m, i) => {
+      const o = (i - 1) * 0.025;
+      this.setLine(m, top.clone().addScaledVector(ax, o), V(o, FLOOR_Y + 0.24, MS_Z));
+    });
     // il genoa sormonta l'albero: il carrello della scotta e' sul passavanti dietro le sartie
     const tl = tAt(0.75);
     this.setLine(this.jibSheetLine, clew, V(s.jibSide * (halfBeam(tl) - 0.15), sheer(tl) + 0.05, 0.75));
@@ -524,12 +542,17 @@ export class BoatModel {
         this.steer(p, s, sideK);
         return;
       }
+      // prodiere: sopravento davanti al timoniere, girato verso il centro, lavora la scotta randa
       const t = tAt(1.15), xx = s.crew * (halfBeam(t) - 0.2);
       p.root.position.set(xx, deckY(t, xx) + 0.07, 1.15);
       p.root.rotation.set(0, Math.PI / 2 * sideK, 0);
       p.sit(hike, 0.55);
+      p.torso.rotation.x -= 0.3 * (1 - hike);                // piegato in avanti verso il bozzello, se non e' fuori
+      this.trim(p, s, sideK);
     });
     this.extension.visible = this.extGrip.visible = this.extJoint.visible = !this.wheel && !this.crewHidden;
+    for (const m of this.mainTail) m.visible = !this.crewHidden && !s.backMain;
+    this.lastMainSheet = s.mainSheet;
     this.updateBowWave(s, waves, dt);
   }
 
@@ -553,6 +576,27 @@ export class BoatModel {
     this.setLine(this.extension, tip, end);
     this.setLine(this.extGrip, tip.clone().addScaledVector(dir, len - 0.24), end);
     this.extJoint.position.copy(tip);
+  }
+
+  /** Il prodiere lavora la scotta randa: la coda esce dallo strozzatore e passa nelle sue due mani, poi pende.
+   *  Quando si cazza la recupera a bracciate: la mano avanti va verso il bozzello e tira verso di se'. */
+  trim(p, s, sideK) {
+    const chest = V(0, 0.4, -0.08).applyMatrix4(p.chain(p.torso));
+    const flat = V(chest.x, 0, chest.z - MS_Z).normalize(), cleat = V(flat.x * 0.04, FLOOR_Y + 0.16, MS_Z + flat.z * 0.04);
+    const dir = chest.clone().sub(cleat), L = dir.length();
+    dir.normalize();
+    this.haul = (this.haul + Math.max(0, (this.lastMainSheet ?? s.mainSheet) - s.mainSheet) * 80) % (2 * Math.PI);
+    const stroke = 0.5 - 0.5 * Math.cos(this.haul), lead = sideK >= 0 ? 0 : 1;
+    const out = Math.min(L - 0.15, 0.36 - 0.18 * stroke);
+    const a = p.reach(lead, chest.clone().addScaledVector(dir, -out));
+    // l'altra mano tiene la coda in basso, davanti alla sua spalla
+    const sh = p.shoulders[1 - lead].position.clone().applyMatrix4(p.chain(p.torso));
+    const b = p.reach(1 - lead, sh.addScaledVector(dir, -0.22).add(V(0, -0.38, 0)));
+    const end = b.clone().add(V(0, -0.4, 0)).addScaledVector(dir, 0.08);
+    this.setLine(this.mainTail[0], cleat, a);
+    this.setLine(this.mainTail[1], a, b);
+    this.setLine(this.mainTail[2], b, end);
+    this.msBlock.rotation.y = Math.atan2(dir.x, dir.z);
   }
 
   setLine(m, a, b) {
