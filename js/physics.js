@@ -50,6 +50,10 @@ export const Spec = {
   reefArea: [1, 0.76, 0.56], reefDrop: 0.45, reefTime: 6,
   // tormentina: fiocco da burrasca (superficie relativa, discesa del centro di spinta, secondi per il cambio)
   stormJibArea: 0.4, stormDrop: 0.25, stormTime: 10,
+  // vela che sbatte con la scotta libera (in bando, durante i terzaroli): sbandiera e frena come una bandiera; resistenza
+  // in piu' sulla sua superficie, che cresce col quadrato del vento apparente. Con la scotta cazzata la bugna e' tenuta
+  // e la vela fileggia soltanto: frena poco
+  flogDrag: 0.15,
 };
 /** Riduzioni possibili: 0 randa piena, 1 e 2 mani di terzaroli, 3 = due mani + tormentina. */
 export const SAIL_PLANS = ['randa piena', '1 mano di terzaroli', '2 mani di terzaroli', '2 mani + tormentina'];
@@ -284,7 +288,8 @@ export function step(s, wind, dt) {
     const c0 = coefficients(alpha);
     // con vento forte l'equipaggio smagrisce le vele: meno portanza e meno resistenza indotta
     const flat = 1 / (1 + Math.max(0, s.aws - Spec.flatStart) * Spec.flatRate);
-    const cl = c0.cl * flat, cd = c0.cd - 0.09 * c0.cl * c0.cl * (1 - flat * flat);
+    const flog = (alpha < 4 ? (4 - alpha) / 4 : 0) * (changing ? 1 : main ? s.mainSheet : s.jibSheet);
+    const cl = c0.cl * flat, cd = c0.cd - 0.09 * c0.cl * c0.cl * (1 - flat * flat) + Spec.flogDrag * flog;
     const sg = delta >= 0 ? 1 : -1;
     // in poppa la randa copre il fiocco che sta dalla sua stessa parte: prende poco vento e si affloscia
     const blanket = !main && side === s.mainSide ? clamp((absAwa - 135) / 35, 0, 1) : 0;

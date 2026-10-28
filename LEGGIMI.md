@@ -120,20 +120,27 @@ Il test automatico confronta con la polare ORC:
   - Il freccione diventa arancione e indica il salvagente anche con gli aiuti spenti: è il braccio di chi a prua non lo perde di vista. Sparisce sotto i 12-20 m, quando il salvagente si vede bene.
   - Negli strumenti c'è il tempo dal lancio e la distanza; sulla mappa un pallino arancione.
   - Durante l'esercizio le boe aspettano: il giro non va avanti.
-- **La manovra classica**, guidata dall'istruttore passo passo:
-  1. poggiare al traverso e allontanarsi di 5-6 lunghezze (40 m);
-  2. virare e scendere sottovento al salvagente;
-  3. risalire verso il salvagente di bolina larga (50-60° dal vento), puntando un paio di metri sopra;
-  4. mettere le vele in bando alla distanza che dice l'istruttore e arrivare per abbrivio; all'ultimo, se si va ancora forte, orzare un po'.
+- **La manovra classica**, guidata dall'istruttore passo passo, con distanze che dipendono dal vento:
+  1. poggiare al traverso e allontanarsi abbastanza (70 m con 10 nodi);
+  2. virare e scendere al gran lasco sotto al salvagente;
+  3. quando lo si vede a 50-60° dal vento, ad almeno la distanza giusta (55 m con 10 nodi), orzare e puntarlo di bolina larga, un paio di metri di lato per non investirlo;
+  4. mettere le vele in bando alla distanza che dice l'istruttore e arrivare per abbrivio; all'ultimo, se si va ancora forte, orzare un po'. Se la barca si ferma prima, si riprendono un attimo le scotte e poi di nuovo in bando.
 
-  Se il salvagente è nell'angolo morto, o si arriva al traverso, l'istruttore lo dice. Si arriva di bolina larga perché è l'andatura in cui lascando le vele ci si ferma: al traverso, anche con le vele in bando, la barca va ancora a 1-1,5 nodi.
-- **Quanto prima mettere le vele in bando:** di bolina larga la barca si ferma in circa 70 m con 6 nodi di vento, 50 m con 10 nodi, 35 m con 20 nodi (con più vento le vele che sbattono frenano di più). L'istruttore dà il numero giusto per il vento del momento.
+  | Vento | Allontanarsi | Risalire da | Vele in bando a |
+  |---|---|---|---|
+  | 6 nodi | 85 m | 70 m | 50 m |
+  | 10 nodi | 70 m | 55 m | 35 m |
+  | 15 nodi | 60 m | 45 m | 25 m |
+  | 20 nodi | 60 m | 40 m | 20 m |
+
+  Se si orza troppo vicino, l'istruttore dice che non c'è spazio per fermarsi e di riprovare più lontano; se il salvagente è nell'angolo morto, o si arriva al traverso, lo dice. Si arriva di bolina larga perché è l'andatura in cui lascando le vele ci si ferma: al traverso, anche con le vele in bando, la barca va ancora a 1-2 nodi con 10-20 nodi di vento, perché le vele che sbattono la spingono.
+- **Le vele che sbattono frenano.** Con la scotta libera (in bando, durante i terzaroli) la vela sbandiera e frena come una bandiera, tanto più quanto più vento c'è; con la scotta cazzata fileggia soltanto e frena poco. Di bolina larga, con le vele in bando, la barca passa sotto 1 nodo in 35 m con 6 nodi di vento, 26 m con 10, 19 m con 15, 14 m con 20 (prima di questa correzione servivano 59, 47, 35 e 26 m). Le polari non cambiano: con le vele regolate nessuna vela sbatte.
 - **Il recupero:**
   - il salvagente si afferra col mezzo marinaio, a 2 m dal bordo, fra la poppa e le sartie, con la barca sotto 1,5 nodi;
   - più veloci non si riesce: "troppo veloce, riprova arrivando piano";
   - lo scafo lo scosta; se lo si prende di prua a più di 2 nodi l'istruttore avvisa che con una persona in acqua sarebbe gravissimo;
-  - recuperato, compare il tempo; sottovento è "come si deve" (la barca scarroccia verso di lui), sopravento si accetta ma l'istruttore lo fa notare. Il tempo dell'ultimo recupero resta negli strumenti.
-- **Prove:** nelle prove automatiche un pilota rifà l'avvicinamento da 90 m sottovento seguendo i consigli dell'istruttore e recupera il salvagente con 10 e 20 nodi; a parte è stato provato da 6 a 25 nodi, sempre sottovento.
+  - vanno bene sia sottovento sia sopravento. Sottovento la barca scarroccia verso il salvagente; sopravento scarroccia via, e l'istruttore dice di afferrarlo subito. Recuperato, compare il tempo e il lato; il tempo dell'ultimo recupero resta negli strumenti.
+- **Prove:** nelle prove automatiche un pilota fa tutta la manovra con le distanze dell'istruttore e recupera il salvagente con 10 nodi in 1:15 circa; un secondo pilota fa l'ultimo avvicinamento con 10 e 20 nodi. A parte la manovra completa è stata provata da 6 a 20 nodi. Con 20-25 nodi e la randa piena il pilota non riesce a virare: con quel vento si prendono prima i terzaroli.
 
 ## Fiocco in cappa
 - **Comandi:**

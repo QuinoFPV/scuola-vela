@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { Wind, newBoat, step, idealSheets, norm180, norm360, clamp, speedKn, twaOf, dirVec, len, sub, add, mul, bearing, SAIL_PLANS, byLee } from '../js/physics.js';
 import { Lake } from '../js/lake.js';
-import { Simulation, Coach, COURSE, WINDS, MOB } from '../js/sim.js';
+import { Simulation, Coach, COURSE, WINDS, MOB, mobPlan } from '../js/sim.js';
 
 const dataDir = fileURLToPath(new URL('../data/', import.meta.url));
 let failures = 0;
@@ -360,7 +360,7 @@ check(held < 40 && fastest > -1.8, `con 20 nodi chi spinge il boma cede (tenuto 
     const sm = new Simulation(lake);
     sm.settings.gusts = false; sm.settings.windIndex = WINDS.findIndex((x) => x[1] === kn); sm.reset(); sm.wind.shifts = false;
     sm.boat.pos = add(lake.center, mul(dirVec(sm.wind.baseDir + 180), 60));
-    Object.assign(sm.boat, { heading: norm360(sm.wind.baseDir - 50), u: 3, v: 0, r: 0, heel: 0 });
+    Object.assign(sm.boat, { heading: norm360(sm.wind.baseDir - 50), u: 3, v: 0, r: 0, heel: 0, twd: sm.wind.baseDir, tws: kn });
     sm.autoTrim = true;
     return sm;
   };
@@ -387,11 +387,42 @@ check(held < 40 && fastest > -1.8, `con 20 nodi chi spinge il boma cede (tenuto 
   check(hit.mob && hit.message.includes('INVESTITO') && hacross > 0.5, `preso di prua: investito e scostato dallo scafo (${f1(hacross)} m di lato)`);
   // twa > 0: vento da dritta, sottovento e' a sinistra (across < 0)
   const lee = make(); lee.manOverboard(); near(lee, 0.5, -2.6, 0.4); lee.update(1 / 60, {});
-  check(!lee.mob && lee.lastMob !== null && lee.message.includes('RECUPERATO') && lee.message.includes('SOTTOVENTO, COME'), 'quasi fermo, sottovento alle sartie: recuperato');
-  const wnd = make(); wnd.manOverboard(); near(wnd, 0.5, 2.6, 0.4); wnd.update(1 / 60, {});
-  check(!wnd.mob && wnd.message.includes('MEGLIO SOTTOVENTO'), "sopravento si recupera, ma l'istruttore lo fa notare");
+  check(!lee.mob && lee.lastMob !== null && lee.message.includes('RECUPERATO') && lee.message.includes('SOTTOVENTO') && lee.tone === 'good', 'quasi fermo, sottovento alle sartie: recuperato');
+  const wnd = make(); wnd.manOverboard(); near(wnd, 0.5, 2.6, 0.4);
+  const wtip = Coach.mobTip(wnd.boat, wnd.mob)[0];
+  wnd.update(1 / 60, {});
+  check(!wnd.mob && wnd.message.includes('SOPRAVENTO') && wnd.tone === 'good' && wtip.includes('scarroccia via'), "anche sopravento va bene: l'istruttore avvisa che la barca scarroccia via");
+  const [p6, p10, p20] = [6, 10, 20].map(mobPlan);
+  check(p6.stop > p10.stop && p10.stop > p20.stop && p10.away > p10.start && p10.start > p10.stop,
+    `vele in bando a ${p6.stop} m con 6 nodi, ${p10.stop} con 10, ${p20.stop} con 20; con 10 nodi ci si allontana di ${p10.away} m e si risale da ${p10.start} m`);
   const off = make(); off.manOverboard(); off.manOverboard();
   check(!off.mob && off.message.includes('ANNULLATO'), 'di nuovo per annullare');
+  // manovra completa con le distanze dell'istruttore: traverso, virata, gran lasco sotto al salvagente, bolina larga, bando
+  for (const from of [90, 140]) {
+    const fm = make(10), to = (twa) => ({ tillerTarget: clamp(norm180(twaOf(fm.boat) - twa) * 1.2 - fm.boat.r * 0.8, -25, 25) });
+    fm.boat.pos = add(lake.center, mul(dirVec(fm.wind.baseDir + 180), 150));
+    Object.assign(fm.boat, { heading: norm360(fm.wind.baseDir + from) });
+    for (let i = 0; i < 20 * 60; i++) fm.update(1 / 60, to(-from));
+    fm.manOverboard();
+    const plan = mobPlan(10);
+    let side = Math.sign(twaOf(fm.boat)), phase = 'via', t = 0;
+    while (fm.mob && t < 240) {
+      const b = fm.boat, rel = sub(fm.mob.pos, b.pos), d = len(rel), up = dirVec(b.twd);
+      const above = rel.x * up.x + rel.y * up.y, off = norm180(bearing(rel) - b.twd);
+      let c;
+      if (phase === 'via') { c = to(90 * side); if (d >= plan.away) { phase = 'virata'; side = -side; } }
+      else if (phase === 'virata') { c = to(45 * side); if (Math.sign(twaOf(b)) === side && Math.abs(twaOf(b)) > 35) phase = 'giu'; }
+      else if (phase === 'giu') { c = to(150 * side); if (above > 10 && -off * side >= 55) phase = 'su'; }
+      else {
+        const aim = add(fm.mob.pos, mul(up, d > 15 ? 2 : 1));
+        c = { tillerTarget: clamp(norm180(bearing(sub(aim, b.pos)) - b.heading) * 1.2 - b.r * 0.8, -25, 25) };
+        if (d < plan.stop && !b.bando) fm.toggleBando();
+        if (d < 10 && speedKn(b) > 2) c = to(30 * Math.sign(twaOf(b)));
+      }
+      fm.update(1 / 60, c); t += 1 / 60;
+    }
+    check(!fm.mob && fm.message.includes('RECUPERATO'), `manovra completa con 10 nodi partendo a ${from}°: via ${plan.away} m, vele in bando a ${plan.stop} m, recuperato in ${f0(t)} s`);
+  }
   // avvicinamento vero: 90 m sottovento, di bolina larga verso il salvagente, vele in bando dove dice l'istruttore
   for (const kn of [10, 20]) {
     const ap = make(kn), ring = add(lake.center, mul(dirVec(ap.wind.baseDir + 180), 60)), from = norm360(ap.wind.baseDir + 180 + 58);     // da sottovento, 58° dal vento
