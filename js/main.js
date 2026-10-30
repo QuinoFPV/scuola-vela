@@ -5,6 +5,7 @@ import { Simulation, WINDS } from './sim.js';
 import { World } from './world.js';
 import { HUD } from './hud.js';
 import { Audio } from './audio.js';
+import { Voice } from './voice.js';
 import { BOATS, loadSailLogo } from './textures.js';
 import { clamp, norm180, twaOf, speedKn, Spec } from './physics.js';
 
@@ -51,6 +52,8 @@ async function main() {
   const world = new World(renderer, lake, { light: TOUCH });
   const hud = new HUD(lake, TOUCH);
   const audio = new Audio();
+  const voice = new Voice();
+  sim.settings.voices = voice.mode;
   const showSound = () => {
     $('sound').classList.toggle('muted', audio.muted);
     $('sound').title = (audio.muted ? 'Audio spento: tocca per accenderlo' : 'Audio acceso: tocca per spegnerlo') + (TOUCH ? '' : ' (M)');
@@ -88,6 +91,7 @@ async function main() {
     if (row === 5) st.aids = !st.aids;
     if (row === 6) st.triangle = !st.triangle;
     if (row === 7) st.dirtyAir = !st.dirtyAir;
+    if (row === 8) { voice.setMode((voice.mode + (d > 0 ? 1 : 2)) % 3); st.voices = voice.mode; }
     show('menu');
   }
   // a tutto schermo e in orizzontale dove il browser lo permette (Android, iPad); l'iPhone lo fa dalla schermata Home
@@ -99,6 +103,7 @@ async function main() {
   const startSailing = () => {
     fullscreen();
     audio.start();
+    voice.unlock();
     sim.reset();
     sim.autoTrim = true;                       // si parte sempre con le vele regolate in automatico (T per il manuale)
     world.orbitYaw = 0; world.orbitPitch = 0; world.zoom = 1; world.wake.reset();
@@ -120,6 +125,7 @@ async function main() {
       case 'KeyU': sim.toggleCappa(); break;           // fiocco in cappa / libero
       case 'Enter': case 'NumpadEnter': sim.manOverboard(); break;   // uomo a mare: salvagente in acqua, di nuovo per annullare
       case 'Digit0': case 'Numpad0': sim.mooring(); break;          // gavitello: rientro e ormeggio, di nuovo per annullare o mollarlo
+      case 'Digit9': case 'Numpad9': voice.unlock(); sim.announce(); break;   // "pronti a virare?" (o a strambare)
       case 'ArrowDown': case 'ArrowUp': centering = true; break;
       case 'KeyJ': sim.toggleBackMain(-1); break;      // ... a sinistra
       case 'KeyL': sim.toggleBackMain(1); break;       // ... a dritta
@@ -250,7 +256,7 @@ async function main() {
     b.addEventListener('lostpointercapture', off);
   }
   // la barra dei pulsanti fa le veci dei tasti; toccando gli strumenti si vedono tutti i dati
-  for (const b of document.querySelectorAll('#tbar button, #sheets .acts button')) b.addEventListener('click', () => command(b.dataset.k));
+  for (const b of document.querySelectorAll('#tbar button, #sheets .acts button, #sheets .calls button')) b.addEventListener('click', () => command(b.dataset.k));
   // senza fuoco sul pulsante: la barra spaziatrice resta "vele in bando" e non riaccende l'audio
   $('sound').addEventListener('mousedown', (e) => e.preventDefault());
   $('sound').addEventListener('click', (e) => { e.stopPropagation(); command('KeyM'); });    // senza aprire gli strumenti
@@ -309,6 +315,7 @@ async function main() {
     }
     sim.update(dt, c);
     world.update(sim, dt, now / 1000);
+    voice.update(sim, !overlay && !sim.paused && sim.replay === null && !document.hidden, audio.muted);
     for (const e of sim.events) if (e.type === 'gybe' || e.type === 'tack') audio.boom(e.type === 'gybe' && e.violent);
     const s = sim.shown, quiet = sim.paused || sim.replay !== null;
     audio.set({ aws: quiet ? 0 : s.aws, speed: quiet ? 0 : speedKn(s), luff: quiet ? 0 : Math.max(s.mainLuff, s.jibLuff * (1 - s.jibFurl), s.spiLuff * s.spiUp), winching: (c.main || 0) > 0 || (c.jib || 0) > 0 }, dt);
@@ -327,7 +334,7 @@ async function main() {
     }
     requestAnimationFrame(frame);
   }
-  window.__sim = sim; window.__world = world;
+  window.__sim = sim; window.__world = world; window.__voice = voice;
   requestAnimationFrame(frame);
 }
 

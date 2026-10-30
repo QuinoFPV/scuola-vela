@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { Wind, newBoat, step, idealSheets, norm180, norm360, clamp, speedKn, twaOf, dirVec, len, sub, add, mul, bearing, SAIL_PLANS, byLee } from '../js/physics.js';
 import { Lake } from '../js/lake.js';
-import { Simulation, Coach, COURSE, WINDS, MOB, mobPlan, GAV, gavPlan } from '../js/sim.js';
+import { Simulation, Coach, COURSE, WINDS, MOB, mobPlan, GAV, gavPlan, CALL } from '../js/sim.js';
+import { speechText, Voice } from '../js/voice.js';
 
 const dataDir = fileURLToPath(new URL('../data/', import.meta.url));
 let failures = 0;
@@ -510,6 +511,104 @@ check(held < 40 && fastest > -1.8, `con 20 nodi chi spinge il boma cede (tenuto 
   for (let i = 0; i < 15 * 30; i++) mo.update(1 / 30, {});
   const gone = len(sub(add(mo.boat.pos, mul(dirVec(mo.boat.heading), 3.6)), mo.gavPos));
   check(!mo.gav && mo.message.includes('MOLLATO') && gone > GAV.line + 1, `mollato il gavitello la barca scade (${f1(gone)} m dopo 15 s)`);
+}
+
+// chiamate della manovra: "pronti a virare?", "pronti!", "viro!". Senza avvisare l'equipaggio protesta; in strambata
+// chiamata, con le vele automatiche, al "pronti!" la randa si cazza al centro e il boma passa piano
+{
+  const make = (twa) => {
+    const sm = new Simulation(lake);
+    sm.settings.gusts = false; sm.settings.windIndex = 1; sm.reset(); sm.wind.shifts = false; sm.autoTrim = true;
+    const b = sm.boat;
+    Object.assign(b, { pos: { ...lake.center }, heading: norm360(sm.wind.baseDir - twa), u: 2.5, mainSide: twa > 0 ? -1 : 1, jibSide: twa > 0 ? -1 : 1 });
+    return sm;
+  };
+  // naviga a twa gradi dal vento; in said le frasi dette a bordo e le manovre, nell'ordine
+  const sail = (sm, secs, twa, said = []) => {
+    for (let i = 0; i < secs * 60; i++) {
+      sm.update(1 / 60, { tillerTarget: clamp(norm180(twaOf(sm.boat) - twa) * 1.2 - sm.boat.r * 0.8, -25, 25) });
+      for (const e of sm.events) if (e.type === 'tack' || e.type === 'gybe') said.push(e.violent ? 'BOMA DI COLPO' : e.type === 'tack' ? 'VIRATA' : 'STRAMBATA');
+      said.push(...sm.lines.splice(0).map((l) => l.text));
+    }
+    return said;
+  };
+  const inOrder = (said, ...want) => { let i = 0; for (const t of said) if (t === want[i]) i++; return i === want.length; };
+  const called = (from, to) => { const sm = make(from); sail(sm, 15, from); sm.announce(); return { sm, said: sail(sm, 2, from, [sm.lines.pop().text]).concat(sail(sm, 12, to)) }; };
+  const tk = called(42, -42);
+  check(inOrder(tk.said, 'Pronti a virare?', 'Pronti!', 'Viro!', 'VIRATA') && !tk.said.some((t) => t.includes('vvisa')) && !tk.sm.call,
+    `virata chiamata: ${tk.said.filter((t) => !t.includes(' NODI')).join(' → ')}`);
+  const tk0 = make(42); sail(tk0, 15, 42); const said0 = sail(tk0, 12, -42);
+  check(said0.includes('Ehi, avvisa quando viri!') && tk0.message.includes('SENZA AVVISARE'), 'virata senza avvisare: "Ehi, avvisa quando viri!"');
+  // virata prima della risposta: la barca passa il vento subito dopo la chiamata
+  const tk1 = make(42); sail(tk1, 15, 42); tk1.announce(); tk1.boat.heading = norm360(2 * tk1.boat.twd - tk1.boat.heading);
+  const said1 = sail(tk1, 0.5, -42);
+  check(said1.includes('Aspetta, non eravamo pronti!'), `virata prima del «pronti!» (${CALL.answer} s): "Aspetta, non eravamo pronti!"`);
+  const gy = called(150, -150);
+  check(inOrder(gy.said, 'Pronti a strambare?', 'Pronti!', 'Strambo!', 'STRAMBATA') && !gy.said.includes('BOMA DI COLPO'),
+    `strambata chiamata, vele automatiche: randa cazzata al centro, il boma passa piano (${gy.said.filter((t) => !t.includes(' NODI')).join(' → ')})`);
+  const gy0 = make(150); sail(gy0, 15, 150); const said2 = sail(gy0, 15, -150);
+  check(said2.includes('BOMA DI COLPO') && said2.includes('Attenti al boma!'), 'strambata senza avvisare: il boma passa di colpo, "Attenti al boma!"');
+  const ex = make(42); sail(ex, 5, 42); ex.announce(); const said3 = sail(ex, CALL.wait + 2, 42);
+  check(!ex.call && !said3.includes('Viro!'), `senza manovra la chiamata scade dopo ${CALL.wait} s`);
+  // per la voce: minuscole, niente tasti, minuti e metri per esteso
+  const sp = [
+    ['GAVITELLO PRESO IN 1:25 · ORMEGGIATI: SCOTTE LIBERE', 'Gavitello preso in 1 minuto e 25 secondi, ormeggiati: scotte libere'],
+    ["HAI TOCCATO LA BOA! IN REGATA SAREBBE UN GIRO DI PENALITA'", 'Hai toccato la boa! in regata sarebbe un giro di penalità'],
+    ['Ora lascia andare le scotte (SPAZIO): così ti fermi sul gavitello', 'Ora lascia andare le scotte: così ti fermi sul gavitello'],
+    ['VIRATA SENZA AVVISARE: PRIMA SI CHIAMA «PRONTI A VIRARE?» (9)', 'Virata senza avvisare: prima si chiama pronti a virare?'],
+    ['Risali di bolina stretta: quando il gavitello è dritto sopravento a te, a circa 24 m, orza prua al vento', 'Risali di bolina stretta: quando il gavitello è dritto sopravento a te, a circa 24 metri, orza prua al vento'],
+  ];
+  const bad = sp.filter(([a, b]) => speechText(a) !== b);
+  check(!bad.length, 'testi per la voce' + bad.map(([a]) => `\n      "${speechText(a)}"`).join(''));
+}
+
+// voci: un pilota che obbedisce solo a cio' che sente dire dall'istruttore (con mezzo secondo di reazione) prende il
+// gavitello come quello che legge i consigli; l'equipaggio passa davanti all'istruttore
+{
+  let T = 0, cur = null;
+  const heard = [], realPerf = globalThis.performance;
+  Object.defineProperty(globalThis, 'performance', { value: { now: () => T * 1000 }, configurable: true, writable: true });
+  globalThis.SpeechSynthesisUtterance = class { constructor(text) { this.text = text; } };
+  globalThis.speechSynthesis = {
+    getVoices: () => [{ name: 'Alice', lang: 'it-IT', localService: true }], resume() {},
+    cancel() { cur = null; },
+    speak(u) { if (u.text.trim()) { heard.push({ t: T, text: u.text }); cur = { u, end: T + 0.3 + u.text.length * 0.07 / u.rate }; } },
+  };
+  const tick = (sm, voice) => { if (cur && T >= cur.end) { const u = cur.u; cur = null; u.onend?.(); } voice.update(sm, true, false); };
+  const byEar = (kn, reef, side) => {
+    T = 0; cur = null; heard.length = 0;
+    const sm = new Simulation(lake), voice = new Voice();
+    sm.settings.gusts = false; sm.settings.windIndex = WINDS.findIndex((x) => x[1] === kn); sm.reset(); sm.wind.shifts = false;
+    sm.autoTrim = true; sm.boat.reef = reef; sm.mooring();
+    const g = sm.gavPos, W = sm.wind.baseDir, plan = gavPlan(kn), ear = (w) => heard.some((h) => h.text.includes(w) && T - h.t > 0.5);
+    sm.boat.pos = add(sub(g, mul(dirVec(W), plan.luff + 70)), mul(dirVec(W + 90), side * 45));
+    let twa0 = side * 42, phase = 'bolina', tTack = -100, luffAt = 0;
+    Object.assign(sm.boat, { heading: norm360(W - twa0), u: 2.5, mainSide: -side, jibSide: -side });
+    while (!sm.gav.moored && T < 150) {
+      const b = sm.boat, U = dirVec(b.twd), P = dirVec(b.twd + 90), rel = sub(g, b.pos);
+      const above = rel.x * U.x + rel.y * U.y, lat = rel.x * P.x + rel.y * P.y, coming = twa0 > 0 ? lat < 0 : lat > 0;
+      if (phase === 'bolina' && T - tTack > 8 && T > 1) {
+        if (ear('Ora orza') && coming && Math.abs(lat) < 3.5) { phase = 'orza'; luffAt = len(rel); }
+        else if (!coming && Math.abs(lat) > Math.max(6, (above - plan.luff) / 1.9)) { twa0 = -twa0; tTack = T; sm.announce(); }
+      }
+      if (phase === 'orza' && ear('lascia andare') && !b.bando) sm.toggleBando();
+      const hd = phase === 'orza' ? b.twd + clamp(norm180(bearing(rel) - b.twd), -15, 15) : b.twd - twa0;
+      sm.update(1 / 30, { tillerTarget: clamp(norm180(hd - b.heading) * 1.2 - b.r * 0.8, -25, 25) });
+      T += 1 / 30; tick(sm, voice);
+    }
+    return { ok: sm.gav.moored, luffAt, t: T };
+  };
+  const runs = [[10, 0, 1], [20, 1, -1]].map(([kn, reef, side]) => ({ kn, ...byEar(kn, reef, side) }));
+  check(runs.every((r) => r.ok), 'a orecchio: ' + runs.map((r) => `${r.kn} nodi orza a ${f0(r.luffAt)} m, preso in ${f0(r.t)} s`).join(' · ')
+    + `; "${heard.find((h) => h.text.includes('lascia andare'))?.text ?? 'nessun lascia andare'}"`);
+  // la chiamata interrompe un consiglio lungo dell'istruttore
+  T = 0; cur = null; heard.length = 0;
+  const sm = new Simulation(lake), voice = new Voice();
+  sm.lines.length = 0; sm.talk('istruttore', 'Bolina larga verso il salvagente, puntandolo un paio di metri di lato'); tick(sm, voice);
+  T += 0.5; sm.announce(); tick(sm, voice);
+  const order = heard.map((h) => h.text).join(' | ');
+  check(/^Bolina larga[^|]* \| Pronti a (virare|strambare)\?$/.test(order), `la chiamata del timoniere interrompe l'istruttore (${order})`);
+  Object.defineProperty(globalThis, 'performance', { value: realPerf, configurable: true, writable: true });
 }
 
 console.log(failures === 0 ? 'TUTTO OK' : `${failures} ERRORI`);

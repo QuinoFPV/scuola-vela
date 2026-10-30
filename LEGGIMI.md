@@ -80,7 +80,7 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
   - se zoom, rotazione o altezza della telecamera ricevono un valore non valido, si azzerano da soli nello stesso fotogramma (prima lo schermo restava bianco finché non si cambiava vista);
   - uno scatto velocissimo della rotella allontana o avvicina al massimo di una volta e mezza.
 - **Audio** (tasto M o altoparlante in alto a destra nel riquadro degli strumenti, anche sul telefono):
-  - spegne tutto: vento, acqua, vele che sbattono, winch e boma; da spento l'icona è rosa con la X;
+  - spegne tutto: vento, acqua, vele che sbattono, winch, boma e voci; da spento l'icona è rosa con la X;
   - la scelta resta anche le volte dopo (salvo nelle finestre private, dove il browser può dimenticarla).
 - **Aria sporca** (tasto O o menu):
   - la scia viola parte dalle vele lungo il vento apparente, per circa 90 m, e si allarga;
@@ -183,11 +183,39 @@ L'esercizio di fine lezione: si rientra e si prende il gavitello della scuola a 
   | 20 nodi (con una mano di terzaroli) | 9 m |
 
   Con più vento le vele che sbattono frenano molto di più: prua al vento, da bolina stretta con 10 nodi, la barca scorre 26 m con le vele regolate e 14 con le scotte libere.
+  I consigli dell'arrivo per abbrivio valgono solo col gavitello davvero sopravento, entro 12 m dalla linea del vento: una virata che passa vicino non li fa scattare. "Il gavitello è di lato" non compare mentre la prua sta ancora girando.
 - **La presa:** a meno di 40 m chi è a prua (il terzo uomo) va in piedi davanti all'albero col mezzo marinaio, un'asta di 2,2 m col gancio nero, puntata avanti oltre la prua; quando il gavitello è a portata lo aggancia per l'anello.
   - Si prende fino a 2,5 m oltre la prua, o di fianco sulla parte di prua, con la barca sotto 1,5 nodi. Più veloci: "troppo veloce".
   - Di fianco verso poppa non vale: il gavitello si prende a prua, così la barca resta prua al vento.
 - **Ormeggiati:** le scotte vanno libere e la cima di 3 m dalla bitta di prua tiene la barca, che si mette prua al vento (dopo un minuto con 10 nodi è a 10° dal vento). Il tempo della presa resta negli strumenti.
 - **Prove:** un pilota automatico che fa quello che dice l'istruttore (orza quando lo dice, libera le scotte quando lo dice) prende il gavitello partendo dai due lati con 6 e 10 nodi, e con 15 e 20 nodi con una mano di terzaroli. A parte è stato provato che basta orzare entro 2 m dal punto indicato.
+
+## Voci a bordo e chiamata delle manovre
+Equipaggio e istruttore parlano con la voce italiana del telefono o del computer (sintesi vocale del sistema, nessuna registrazione).
+Il timbro cambia da un dispositivo all'altro; dove c'è una voce italiana sola (sul Mac "Alice") i ruoli si distinguono dal tono.
+Le voci robotiche del Mac (Eddy, Reed, Grandma...) si usano solo se non ce n'è un'altra.
+- **Chiamata della manovra:** 9 sul computer, PRONTI A VIRARE? sul telefono (sopra i pulsanti in basso a destra; con le vele manuali in basso, accanto a CAZZA e LASCA).
+  - Di bolina e al traverso il timoniere chiama «pronti a virare?», dal lasco in giù «pronti a strambare?».
+  - Dopo 1,2 s l'equipaggio risponde «pronti!»: in virata chi sta al fiocco, in strambata chi sta alla randa. Sul telefono il pulsante diventa arancione: PRONTI! ORA VIRA.
+  - Quando la prua comincia a girare (più di 5° al secondo nel verso giusto) il timoniere dice «viro!» o «strambo!».
+  - Strambata chiamata con le vele automatiche: al «pronti!» chi sta alla randa la cazza al centro e il boma passa piano. Senza chiamata la randa resta lascata e il boma passa di colpo, come prima.
+  - Con le vele manuali la randa al centro va cazzata a mano: lo ricorda il messaggio.
+  - La chiamata vale 20 s, poi scade.
+- **Se non si avvisa**, l'equipaggio protesta: «ehi, avvisa quando viri!», «attenti al boma!» se il boma passa di colpo, «aspetta, non eravamo pronti!» se si vira prima della risposta. Con gli aiuti c'è anche il messaggio dell'istruttore.
+  - Non contano le vele che passano da sole: quasi fermi (sotto 1 nodo), in bando, arrivando sul gavitello o quando la cappa finisce.
+- **L'equipaggio grida anche** «uomo a mare!» quando parte l'esercizio e «preso!» quando il salvagente o il gavitello sono a bordo.
+- **L'istruttore dice a voce:**
+  - gli avvisi importanti: urti, secca, straorzata, strambata involontaria, boe, salvagente e gavitello presi, manovre rifiutate. Non ripete invece i comandi dati dall'allievo (vele in bando, spi issato...);
+  - con gli aiuti, il primo consiglio quando cambia, solo se è un errore, un avviso o un'istruzione degli esercizi. Non lo ripete finché resta quello, né se torna entro 20 s, e tra una frase e l'altra lascia 4 s;
+  - i comandi degli esercizi ("ora orza prua al vento", "ora lascia andare le scotte") li dice subito e interrompe qualunque altra frase;
+  - tace mentre la barca gira, dalla chiamata della manovra fino a 4 s dopo la virata: in virata la prua passa apposta dall'angolo morto.
+- **Precedenze:** l'equipaggio interrompe l'istruttore. Le frasi vecchie si lasciano cadere (un «viro!» dopo la virata non serve).
+- **Testi letti a voce:** in minuscolo e senza i tasti; i tempi diventano "1 minuto e 25 secondi" e le distanze "24 metri".
+- **Si spengono** con l'altoparlante (tasto M). Nel menu, VOCI A BORDO lascia equipaggio e istruttore, solo l'equipaggio o nessuna voce; la scelta resta per le volte dopo. Col menu, in pausa e in moviola tacciono.
+- **Telefono:** Safari fa partire la voce solo dopo un tocco; la sblocca il tocco di "uscire in mare".
+- **Prove:** la sequenza della virata e della strambata chiamate, le proteste, la scadenza e i testi.
+  - Un pilota che obbedisce solo a ciò che sente, con mezzo secondo di reazione, prende il gavitello con 10 nodi (orza a 24 m) e con 20 nodi e una mano (orza a 11 m), negli stessi tempi del pilota che legge i consigli.
+  - Prima che i comandi urgenti si dicessero subito, con 20 nodi orzava 2-3 m troppo tardi.
 
 ## Fiocco in cappa
 - **Comandi:**
@@ -231,9 +259,10 @@ L'esercizio di fine lezione: si rientra e si prende il gavitello della scuola a 
 ## Telefono e tablet
 Si riconoscono da soli (schermo touch) e si usano in orizzontale; in verticale compare l'invito a girare il dispositivo.
 - **Barra del timone** in basso a sinistra: si trascina il dito e la barra resta dove la si lascia; il centro la raddrizza. Con "barra reale" si spinge al contrario, come sulla barca.
+- **PRONTI A VIRARE?** (o A STRAMBARE?) sopra i pulsanti delle manovre in basso a destra: vedi "Voci a bordo".
 - **CAZZA / LASCA** in basso a destra, per randa e fiocco, si tengono premuti. Compaiono solo con le vele manuali; la barretta arancione mostra quanto è cazzata la scotta e la tacca verde la regolazione giusta.
 - **Pulsanti in alto:**
-  - ☰ apre il menu (vento, raffiche, Ora o Sover, timone, barca, aiuti);
+  - ☰ apre il menu (vento, raffiche, Ora o Sover, timone, barca, aiuti, voci);
   - VISTA, VELE AUTO/MAN., RIDUCI/AUMENTA, UOMO A MARE, MOVIOLA, PAUSA.
 - **Scena:** un dito gira intorno alla barca, due dita avvicinano o allontanano.
 - **Telefono:** gli strumenti sono ridotti; toccandoli si vedono tutti i dati.
@@ -271,7 +300,7 @@ Non usa servizi esterni.
 ```
 node test/selftest.mjs
 ```
-Controlla polare, virata, prua al vento, strambata, bilanciamento, secche, giro delle boe, moviola, uomo a mare e gavitello.
+Controlla polare, virata, prua al vento, strambata, bilanciamento, secche, giro delle boe, moviola, uomo a mare, gavitello, chiamata delle manovre e voci.
 
 ## Dati
 Sono preparati da `Gaming/Mac/Scuola Vela/tools/export_web.py`, a partire da quelli della versione Mac.

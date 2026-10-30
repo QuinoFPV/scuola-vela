@@ -4,6 +4,7 @@ import { rad, clamp, len, sub, bearing, idealSheets, speedKn, twaOf, leeway, vmg
 import { Coach, WINDS, DIRECTIONS, STEERING, MARK_NAMES, MARK_NEAR, MARK_FAR } from './sim.js';
 import { CAMERAS } from './world.js';
 import { BOATS } from './textures.js';
+import { VOICE_MODES } from './voice.js';
 
 const COLORS = { good: '#73ff80', warn: '#ffd94d', bad: '#ff6b61', info: '#ffffff' };
 const $ = (id) => document.getElementById(id);
@@ -120,7 +121,7 @@ export class HUD {
     if (sim.replay !== null) st.textContent = `◀◀  MOVIOLA  ${(sim.historySpan[1] - sim.replay).toFixed(1)} s fa  ·  ${this.touch ? 'DIRETTA per tornare in mare' : 'R per tornare in diretta, P pausa'}`;
     else if (sim.paused) st.textContent = this.touch ? 'PAUSA  ·  trascina col dito per girare intorno alla barca' : 'PAUSA  ·  trascina col tasto destro per girare intorno alla barca  ·  P per ripartire';
     else st.textContent = '';
-    if (!this.touch) $('footer').textContent = `Vista: ${CAMERAS[world.mode]} (C)   ·   INVIO uomo a mare   ·   0 gavitello   ·   H comandi   ·   ESC menu`;
+    if (!this.touch) $('footer').textContent = `Vista: ${CAMERAS[world.mode]} (C)   ·   9 pronti a virare   ·   INVIO uomo a mare   ·   0 gavitello   ·   H comandi   ·   ESC menu`;
   }
 
   /** Freccione giallo verso la prossima boa (con gli aiuti). Da lontano sta sopra la boa e la indica; se la boa e'
@@ -208,7 +209,7 @@ export class HUD {
   /** Sui telefoni i tasti diventano i nomi dei pulsanti. */
   keyless(t) {
     if (!this.touch) return t;
-    return t.replace(/ \(Z\)/i, ' (RIDUCI)').replace(/ \(X\)/i, ' (AUMENTA)').replace(/ \(SPAZIO\)/i, '').replace(/ \(K\)/i, '').replace(/ \(Y\)/i, '').replace(/ \(E\)/i, '').replace(/ \(U\)/i, '').replace(/ \(0\)/, '');
+    return t.replace(/ \(Z\)/i, ' (RIDUCI)').replace(/ \(X\)/i, ' (AUMENTA)').replace(/ \(SPAZIO\)/i, '').replace(/ \(K\)/i, '').replace(/ \(Y\)/i, '').replace(/ \(E\)/i, '').replace(/ \(U\)/i, '').replace(/ \(0\)/, '').replace(/ \(9\)/, '').replace(/ \(Q\)/, '');
   }
 
   /** Comandi a dito: posizione della barra, scotte, pulsanti che cambiano scritta, dati essenziali. */
@@ -243,6 +244,12 @@ export class HUD {
     cappa.classList.toggle('on', !!s.cappa);
     cappa.style.display = s.cappa || (twa < 130 && !s.spi && !s.backMain) ? '' : 'none';
     HUD.put('tPause', sim.paused ? 'RIPARTI' : 'PAUSA').classList.toggle('on', sim.paused);
+    // la chiamata della manovra: si vira di bolina e al traverso, si stramba dal lasco in giu'
+    const call = sim.call, gybe = call ? call.kind === 'gybe' : twa >= 90;
+    const callB = HUD.put('tCall', !call ? (gybe ? 'PRONTI A STRAMBARE?' : 'PRONTI A VIRARE?')
+      : call.ready ? (gybe ? 'PRONTI! ORA STRAMBA' : 'PRONTI! ORA VIRA') : (gybe ? '«PRONTI A STRAMBARE?»' : '«PRONTI A VIRARE?»'));
+    callB.classList.toggle('on', !!call);
+    callB.style.display = sim.gav?.moored || sim.replay !== null ? 'none' : '';
     $('tMob').classList.toggle('on', !!sim.mob);
     const gavB = HUD.put('tGav', sim.gav?.moored ? 'MOLLA GAVITELLO' : 'GAVITELLO');
     gavB.classList.toggle('on', !!sim.gav);
@@ -430,6 +437,7 @@ export class HUD {
       ['AIUTI ISTRUTTORE', st.aids ? 'SÌ' : 'NO'],
       ['TRIANGOLO DEI VENTI', st.triangle ? 'SÌ (frecce sull\'acqua)' : 'NO'],
       ['ARIA SPORCA', st.dirtyAir ? 'SÌ (scia sottovento)' : 'NO'],
+      ['VOCI A BORDO', VOICE_MODES[st.voices ?? 0]],
     ];
   }
   showMenu(st, onChange) {

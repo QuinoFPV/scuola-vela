@@ -119,6 +119,13 @@ body.touch #touchUI { display: block; position: fixed; inset: 0; pointer-events:
 #sheets .acts button { flex: 1; pointer-events: auto; height: 36px; padding: 0 10px; border-radius: 9px; font-size: 11px; font-weight: 700; letter-spacing: .3px;
   line-height: 1.05; background: rgba(8, 18, 31, .72); border: 1px solid rgba(255, 255, 255, .22); }
 #sheets .acts button.on { background: rgba(242, 140, 26, .95); }
+/* la chiamata della manovra: un pulsante largo per il pollice, sopra quelli delle manovre */
+#sheets .calls { display: flex; justify-content: flex-end; }
+#sheets .calls button { pointer-events: auto; min-width: 170px; height: 36px; padding: 0 14px; border-radius: 9px; font-size: 11px; font-weight: 700;
+  letter-spacing: .3px; background: rgba(20, 70, 120, .8); border: 1px solid rgba(140, 200, 255, .4); }
+#sheets .calls button.on { background: rgba(242, 140, 26, .95); }
+/* con le vele manuali sopra c'e' poco posto (filetti): va in basso a sinistra, accanto a CAZZA e LASCA */
+body:not(.auto-trim) #sheets .calls { position: absolute; left: 0; bottom: 0; }
 .sheet { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 90px; padding: 6px;
   background: rgba(8, 18, 31, .62); border: 1px solid rgba(255, 255, 255, .14); border-radius: 12px; }
 .sheet button { pointer-events: auto; width: 100%; height: 42px; border-radius: 9px; font-size: 12px; font-weight: 700;
@@ -176,14 +183,15 @@ body.touch #markPtr { width: 58px; height: 58px; }
   .sheet { width: 80px; padding: 5px; gap: 3px; }
   .sheet button { height: 34px; font-size: 11px; }
   #sheets .acts button { height: 30px; padding: 0 6px; font-size: 10px; }
+  #sheets .calls button { height: 30px; min-width: 150px; font-size: 10px; }
 
   .card h1 { font-size: 30px; }
   .card .sub { font-size: 12px; margin: 2px 0 8px; }
   #menuRows { padding: 4px 16px; }
-  #menuRows .row { font-size: 13px; padding: 4px 0; }
+  #menuRows .row { font-size: 13px; padding: 3px 0; }
   #menuRows b { padding: 0 12px; }
   .card button { margin-top: 8px; font-size: 17px; }
-  .card .hint { font-size: 12px; margin: 6px 0 0; }
+  .card .hint { font-size: 12px; margin: 4px 0 0; }
   .help { padding: 12px 18px; }
   .help h2 { font-size: 18px; margin-bottom: 8px; }
   .help dl { font-size: 12px; gap: 5px 12px; }

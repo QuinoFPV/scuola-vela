@@ -71,6 +71,12 @@ export function gavPlan(tws) {
   const luff = Math.round(a[1] + (b[1] - a[1]) * k);
   return { luff, start: luff + 40 };
 }
+/** Le chiamate della manovra: dopo quanti secondi l'equipaggio risponde "pronti!"; per quanti secondi la chiamata vale
+ *  se poi non si manovra; da quanti gradi al secondo la prua che gira vuol dire che la manovra e' cominciata ("viro!");
+ *  sotto quanti nodi le vele che passano dall'altra parte da sole (prua al vento quasi fermi) non sono una manovra;
+ *  fin dove chi sta alla randa la cazza prima di una strambata chiamata, con le vele automatiche (sopra 0,45 il boma
+ *  passa di colpo). */
+export const CALL = { answer: 1.2, wait: 20, turn: 5, slow: 1, haul: 0.15 };
 
 export class Simulation {
   constructor(lake) {
@@ -83,6 +89,7 @@ export class Simulation {
     this.replaySpeed = 0.5;
     this.message = ''; this.tone = 'info'; this.messageTime = -100;
     this.events = [];
+    this.lines = [];
     this.reset();
   }
   get windKn() { return WINDS[this.settings.windIndex][1]; }
@@ -107,6 +114,7 @@ export class Simulation {
     this.courseStep = 0; this.lapStart = null; this.lastLap = null; this.buoyTouch = -100;
     this.mob = null; this.lastMob = null;
     this.gav = null; this.lastGav = null; this.gavPos = { ...lake.base.gav };
+    this.call = null; this.lastTurn = -100; this.lines.length = 0;
     this.sweep = 0; this.sweepAngle = null; this.wrongWay = false; this.approachSaid = false;
     this.replay = null;
     this.time = 0;
@@ -114,7 +122,7 @@ export class Simulation {
     this.ironsTimer = 0;
     this.waves.amp = Waves.amplitude(this.windKn) * 0.55;
     this.waves.dirRad = rad(this.wind.baseDir + 180);
-    this.say(`${DIRECTIONS[this.settings.windFrom][0]} ${this.windKn} NODI · SI ESCE DALLA BASE: TRAVERSO ${lee > 0 ? 'MURE A SINISTRA' : 'MURE A DRITTA'}`, 'info');
+    this.say(`${DIRECTIONS[this.settings.windFrom][0]} ${this.windKn} NODI · SI ESCE DALLA BASE: TRAVERSO ${lee > 0 ? 'MURE A SINISTRA' : 'MURE A DRITTA'}`, 'info', true);
   }
 
   /** Boe allineate al vento: bolina a 300 m sopravento del centro, poppa a 250 m sottovento, una di traverso.
@@ -136,7 +144,17 @@ export class Simulation {
     this.waves.amp = Waves.amplitude(this.windKn) * 0.55;
   }
 
-  say(text, tone) { this.message = text; this.tone = tone; this.messageTime = this.time; }
+  /** Messaggio sullo schermo; con voice l'istruttore lo dice anche a voce (solo cio' che griderebbe dal gommone). */
+  say(text, tone, voice = false) {
+    this.message = text; this.tone = tone; this.messageTime = this.time;
+    if (voice) this.talk('istruttore', text);
+  }
+  /** Una frase detta a bordo da timoniere, randista, prodiere (il terzo uomo: fiocco e prua) o istruttore. La legge
+   *  voice.js a ogni fotogramma; qui ne restano solo le ultime, cosi' senza voci (prove, menu) non si accumulano. */
+  talk(who, text) {
+    this.lines.push({ who, text, time: this.time });
+    if (this.lines.length > 10) this.lines.shift();
+  }
 
   /** Riduce (+1) o aumenta (-1) la tela: 1 mano, 2 mani, 2 mani + tormentina. Durante la manovra
    *  la vela interessata sbatte (la randa per i terzaroli, il fiocco per la tormentina). */
@@ -213,8 +231,8 @@ export class Simulation {
       this.say('FIOCCO LIBERATO DALLA CAPPA: CAZZA LA RANDA E RIPARTI', 'info');
       return;
     }
-    if (b.spiUp > 0) { this.say('PRIMA AMMAINA LO SPI (E)', 'warn'); return; }
-    if (Math.abs(twaOf(b)) > 130) { this.say('LA CAPPA SI FA DI BOLINA O AL TRAVERSO: PRIMA ORZA', 'warn'); return; }
+    if (b.spiUp > 0) { this.say('PRIMA AMMAINA LO SPI (E)', 'warn', true); return; }
+    if (Math.abs(twaOf(b)) > 130) { this.say('LA CAPPA SI FA DI BOLINA O AL TRAVERSO: PRIMA ORZA', 'warn', true); return; }
     b.cappa = b.awa >= 0 ? 1 : -1; b.farfalla = false;
     this.say(this.autoTrim ? "FIOCCO IN CAPPA. ORA VELE MANUALI (T), LASCA LA RANDA E TIMONE ALL'ORZA" : "FIOCCO IN CAPPA. ORA LASCA LA RANDA E METTI IL TIMONE ALL'ORZA", 'info');
   }
@@ -223,7 +241,7 @@ export class Simulation {
   toggleSpi() {
     const b = this.boat;
     if (b.spi) { b.spi = 0; this.say('SI AMMAINA LO SPI E SI SROTOLA IL FIOCCO', 'info'); return; }
-    if (Math.abs(twaOf(b)) < 80) { this.say('LO SPI SI ISSA DAL TRAVERSO IN GIÙ: PRIMA POGGIA', 'warn'); return; }
+    if (Math.abs(twaOf(b)) < 80) { this.say('LO SPI SI ISSA DAL TRAVERSO IN GIÙ: PRIMA POGGIA', 'warn', true); return; }
     b.spi = 1; b.spiSide = b.awa >= 0 ? 1 : -1; b.farfalla = false;
     this.say('SI ISSA LO SPI: TANGONE SOPRAVENTO, IL FIOCCO SI AVVOLGE', 'good');
   }
@@ -237,7 +255,7 @@ export class Simulation {
       this.say('FIOCCO RIPORTATO DALLA PARTE DELLA RANDA', 'info');
       return;
     }
-    if (Math.abs(twaOf(b)) < 150) { this.say('LA FARFALLA SI FA IN POPPA: POGGIA FINO A 165-180° DAL VENTO', 'warn'); return; }
+    if (Math.abs(twaOf(b)) < 150) { this.say('LA FARFALLA SI FA IN POPPA: POGGIA FINO A 165-180° DAL VENTO', 'warn', true); return; }
     b.farfalla = true; b.jibSide = -b.mainSide;
     this.say("ANDATURA A FARFALLA: RANDA DA UNA PARTE, FIOCCO DALL'ALTRA SUL TANGONE", 'good');
   }
@@ -251,7 +269,10 @@ export class Simulation {
     const b = this.boat, fwd = dirVec(b.heading), side = dirVec(b.heading + 90), k = Math.random() < 0.5 ? -1 : 1;
     const from = sub(b.pos, mul(fwd, 3.4));
     this.mob = { from, pos: add(from, add(mul(fwd, -3), mul(side, 2 * k))), t0: this.time, fly: MOB.fly, hit: -100, miss: -100, away: false, far: false };
+    // a bordo lo grida chi lo vede cadere; l'istruttore ricorda la prima regola
+    this.talk('prodiere', 'Uomo a mare!');
     this.say('UOMO A MARE! NON PERDERE DI VISTA IL SALVAGENTE', 'bad');
+    this.talk('istruttore', 'Non perdere di vista il salvagente');
   }
   /** Dove si vede il salvagente, anche in moviola; null se non e' in acqua. */
   get mobShown() { return this.replay !== null ? this.shown.mobPos ?? null : this.mob ? this.mob.pos : null; }
@@ -268,11 +289,66 @@ export class Simulation {
     }
     this.mob = null;
     this.gav = { pos: this.gavPos, t0: this.time, hit: -100, miss: -100, aft: -100, moored: false };
-    this.say('RIENTRO: PRENDI IL GAVITELLO DELLA SCUOLA ARRIVANDO PRUA AL VENTO', 'info');
+    this.say('RIENTRO: PRENDI IL GAVITELLO DELLA SCUOLA ARRIVANDO PRUA AL VENTO', 'info', true);
   }
   /** Dove si vede il gavitello (anche in moviola) e se la barca e' ormeggiata. */
   get gavShown() { return this.replay !== null ? this.shown.gavPos ?? this.gavPos : this.gavPos; }
   get mooredShown() { return this.replay !== null ? !!this.shown.moored : !!this.gav?.moored; }
+
+  /** "Pronti a virare?" di bolina e al traverso, "pronti a strambare?" dal lasco in giu': il timoniere avvisa,
+   *  l'equipaggio risponde "pronti!" e poi si manovra. Chi vira o stramba senza avvisare se lo sente dire. */
+  announce() {
+    if (this.replay !== null) return;
+    if (this.gav?.moored) { this.say('ORMEGGIATI: PRIMA SI MOLLA IL GAVITELLO (0)', 'warn'); return; }
+    const kind = Math.abs(twaOf(this.boat)) < 90 ? 'tack' : 'gybe';
+    if (this.call?.kind === kind) return;                // gia' chiamata: si aspetta la risposta o la manovra
+    this.call = { kind, t: this.time, ready: false, go: false };
+    this.talk('timoniere', kind === 'tack' ? 'Pronti a virare?' : 'Pronti a strambare?');
+    this.say(kind === 'tack' ? '«PRONTI A VIRARE?»' : '«PRONTI A STRAMBARE?»', 'info');
+  }
+
+  /** La chiamata della manovra: la risposta dell'equipaggio (in virata chi sta al fiocco, in strambata chi sta alla
+   *  randa), il "viro!" quando la prua comincia a girare e, alla virata o strambata, se era stata chiamata bene. */
+  checkCall() {
+    const b = this.boat, c = this.call, tack = c?.kind === 'tack';
+    if (c && !c.ready && this.time - c.t >= CALL.answer) {
+      c.ready = true;
+      this.talk(tack ? 'prodiere' : 'randista', 'Pronti!');
+      this.say(tack ? '«PRONTI!» · ORA VIRA' : this.autoTrim ? '«PRONTI!» · LA RANDA SI CAZZA AL CENTRO: ORA STRAMBA'
+        : '«PRONTI!» · CAZZA LA RANDA AL CENTRO (Q), POI STRAMBA', 'good');
+    }
+    if (c?.ready && !c.go) {
+      const twa = twaOf(b), into = b.r * Math.sign(twa);  // > 0: la prua va verso il vento
+      if (tack ? into > CALL.turn || Math.abs(twa) < 20 : into < -CALL.turn || Math.abs(twa) > 170) {
+        c.go = true;
+        this.talk('timoniere', tack ? 'Viro!' : 'Strambo!');
+        this.say(tack ? '«VIRO!»' : '«STRAMBO!»', 'info');
+      }
+    }
+    for (const e of this.events) {
+      if (e.type !== 'tack' && e.type !== 'gybe') continue;
+      const call = this.call, crew = e.type === 'tack' ? 'prodiere' : 'randista';
+      if (call?.kind === e.type) this.call = null;
+      // quasi fermi, in bando, arrivando sul gavitello o in cappa le vele passano dall'altra parte da sole: non e' una
+      // manovra (lastTurn: l'ultima vera, per far tacere l'istruttore qualche secondo)
+      if (Math.abs(speedKn(b)) < CALL.slow || b.bando || (this.gav && len(sub(this.gavPos, b.pos)) < 30)
+        || this.events.some((x) => x.type === 'cappaEnd')) continue;
+      this.call = null; this.lastTurn = this.time;
+      if (call?.kind === e.type && call.ready) {
+        if (!call.go) this.talk('timoniere', e.type === 'tack' ? 'Viro!' : 'Strambo!');
+      } else if (call?.kind === e.type) {
+        this.talk(crew, 'Aspetta, non eravamo pronti!');
+        this.say("PRIMA DI MANOVRARE SI ASPETTA IL «PRONTI!» DELL'EQUIPAGGIO", 'warn');
+      } else if (e.type === 'gybe' && e.violent) {
+        this.talk('randista', 'Attenti al boma!');
+      } else {
+        this.talk(crew, e.type === 'tack' ? 'Ehi, avvisa quando viri!' : 'Ehi, avvisa quando strambi!');
+        if (this.settings.aids) this.say(e.type === 'tack' ? 'VIRATA SENZA AVVISARE: PRIMA SI CHIAMA «PRONTI A VIRARE?» (9)'
+          : 'STRAMBATA SENZA AVVISARE: PRIMA SI CHIAMA «PRONTI A STRAMBARE?» (9)', 'warn');
+      }
+    }
+    if (this.call && this.time - this.call.t > CALL.wait) this.call = null;   // nessuna manovra: la chiamata scade
+  }
 
   startReplay() {
     if (this.history.length < 30) return;
@@ -303,11 +379,12 @@ export class Simulation {
     for (const e of this.events) {
       if (e.type === 'cappaEnd') this.say('LA BARCA HA VIRATO: IL FIOCCO NON È PIÙ IN CAPPA', 'info');
       if (e.type === 'spiGybe') this.say("STRAMBATA CON LO SPI: SI PASSA IL TANGONE DALL'ALTRA PARTE", 'info');
-      if (e.type === 'broach') this.say('STRAORZATA! TROPPO VENTO PER LO SPI: POGGIA, LASCA LA RANDA O AMMAINA (E)', 'bad');
-      if (e.type === 'wingEnd') this.say("TROPPO ALL'ORZA PER LA FARFALLA: IL FIOCCO SI CHIUDE E TORNA SOTTOVENTO", 'warn');
-      if (e.type === 'gybe') this.say(e.violent ? 'STRAMBATA INVOLONTARIA! IL BOMA HA ATTRAVERSATO DI COLPO' : 'STRAMBATA', e.violent ? 'bad' : 'good');
+      if (e.type === 'broach') this.say('STRAORZATA! TROPPO VENTO PER LO SPI: POGGIA, LASCA LA RANDA O AMMAINA (E)', 'bad', true);
+      if (e.type === 'wingEnd') this.say("TROPPO ALL'ORZA PER LA FARFALLA: IL FIOCCO SI CHIUDE E TORNA SOTTOVENTO", 'warn', true);
+      if (e.type === 'gybe') this.say(e.violent ? 'STRAMBATA INVOLONTARIA! IL BOMA HA ATTRAVERSATO DI COLPO' : 'STRAMBATA', e.violent ? 'bad' : 'good', e.violent);
       if (e.type === 'tack') this.say(twaOf(this.boat) > 0 ? 'VIRATA: ORA MURE A DRITTA' : 'VIRATA: ORA MURE A SINISTRA', 'good');
     }
+    this.checkCall();
     this.checkCourse(dt);
     this.checkMob(dt);
     this.checkGav(dt);
@@ -322,8 +399,12 @@ export class Simulation {
     }
     if (Math.abs(twaOf(this.boat)) < 30 && Math.abs(speedKn(this.boat)) < 0.4 && !this.gav?.moored) {
       this.ironsTimer += dt;
-      if (this.ironsTimer > 4 && this.time - this.messageTime > 6) this.say('FERMI PRUA AL VENTO: SCONTRA LA RANDA (K) O METTI LA BARRA DA UN LATO E ASPETTA CHE LA PRUA CADA', 'warn');
-    } else this.ironsTimer = 0;
+      if (this.ironsTimer > 4 && this.time - this.messageTime > 6) {
+        // sullo schermo torna ogni 6 s, a voce l'istruttore lo dice una volta
+        this.say('FERMI PRUA AL VENTO: SCONTRA LA RANDA (K) O METTI LA BARRA DA UN LATO E ASPETTA CHE LA PRUA CADA', 'warn', !this.ironsSaid);
+        this.ironsSaid = true;
+      }
+    } else { this.ironsTimer = 0; this.ironsSaid = false; }
   }
 
   /** Giro delle boe, urti contro le boe e scia sulla mappa. */
@@ -340,7 +421,7 @@ export class Simulation {
         this.buoyTouch = this.time;
         b.u *= 0.4;
         b.r += b.r > 0 ? -6 : 6;
-        this.say("HAI TOCCATO LA BOA! IN REGATA SAREBBE UN GIRO DI PENALITA'", 'bad');
+        this.say("HAI TOCCATO LA BOA! IN REGATA SAREBBE UN GIRO DI PENALITA'", 'bad', true);
       }
     }
     for (const m of this.lake.base.moorings) {
@@ -349,7 +430,7 @@ export class Simulation {
         this.buoyTouch = this.time;
         b.u *= 0.25;
         b.r += b.r > 0 ? -8 : 8;
-        this.say("HAI URTATO UNA BARCA ALL'ORMEGGIO! ATTENZIONE IN USCITA DALLA BASE", 'bad');
+        this.say("HAI URTATO UNA BARCA ALL'ORMEGGIO! ATTENZIONE IN USCITA DALLA BASE", 'bad', true);
         this.events.push({ type: 'ground' });
       }
     }
@@ -360,7 +441,7 @@ export class Simulation {
       this.approachSaid = true;
       // dopo la boa di poppa si risale di bolina: lo spi va ammainato prima
       const douse = this.boat.spi && this.nextMark === 1 ? ' · AMMAINA LO SPI PRIMA (E)' : '';
-      this.say(`${MARK_NAMES[this.nextMark]}: LASCIALA A SINISTRA, GIRA IN SENSO ANTIORARIO${douse}`, 'info');
+      this.say(`${MARK_NAMES[this.nextMark]}: LASCIALA A SINISTRA, GIRA IN SENSO ANTIORARIO${douse}`, 'info', true);
     } else if (dist > 110) this.approachSaid = false;
     if (dist > 45) { this.sweep = 0; this.sweepAngle = null; this.wrongWay = false; return; }
     const a = deg(Math.atan2(rel.y, rel.x));
@@ -368,7 +449,7 @@ export class Simulation {
     this.sweepAngle = a;
     if (this.sweep < -90 && !this.wrongWay) {
       this.wrongWay = true;
-      this.say('BOA GIRATA AL CONTRARIO! VA LASCIATA A SINISTRA: TORNA INDIETRO E GIRALA IN SENSO ANTIORARIO', 'bad');
+      this.say('BOA GIRATA AL CONTRARIO! VA LASCIATA A SINISTRA: TORNA INDIETRO E GIRALA IN SENSO ANTIORARIO', 'bad', true);
     }
     if (this.sweep < 90) return;
     this.sweep = 0; this.sweepAngle = null; this.wrongWay = false; this.approachSaid = false;
@@ -376,13 +457,13 @@ export class Simulation {
       if (this.lapStart !== null) {
         this.lastLap = this.time - this.lapStart;
         const t = this.lastLap | 0;
-        this.say(`GIRO COMPLETO IN ${(t / 60) | 0}:${String(t % 60).padStart(2, '0')} · SI RIPARTE DALLA BOLINA`, 'good');
+        this.say(`GIRO COMPLETO IN ${(t / 60) | 0}:${String(t % 60).padStart(2, '0')} · SI RIPARTE DALLA BOLINA`, 'good', true);
       } else {
-        this.say('BOA DI BOLINA PRESA: PARTE IL CRONOMETRO · ORA LA BOA DI TRAVERSO', 'good');
+        this.say('BOA DI BOLINA PRESA: PARTE IL CRONOMETRO · ORA LA BOA DI TRAVERSO', 'good', true);
       }
       this.lapStart = this.time;
     } else {
-      this.say(`${MARK_NAMES[this.nextMark]} PRESA · ORA ${MARK_NAMES[COURSE[(this.courseStep + 1) % 3]]}`, 'good');
+      this.say(`${MARK_NAMES[this.nextMark]} PRESA · ORA ${MARK_NAMES[COURSE[(this.courseStep + 1) % 3]]}`, 'good', true);
     }
     this.courseStep = (this.courseStep + 1) % 3;
   }
@@ -406,7 +487,7 @@ export class Simulation {
       mob.pos = add(mob.pos, mul(stb, (across >= 0 ? 1 : -1) * (half + 0.35) - across));
       if (kn > 2 && this.time - mob.hit > 5) {
         mob.hit = this.time;
-        this.say('SALVAGENTE INVESTITO! CON UNA PERSONA SAREBBE GRAVISSIMO', 'bad');
+        this.say('SALVAGENTE INVESTITO! CON UNA PERSONA SAREBBE GRAVISSIMO', 'bad', true);
       }
       if (kn > MOB.slow) return;
     }
@@ -414,7 +495,7 @@ export class Simulation {
     if (kn > MOB.slow) {
       if (this.time - mob.miss > 6 && this.time - mob.hit > 3) {
         mob.miss = this.time;
-        this.say('TROPPO VELOCE PER AFFERRARLO: RIPROVA ARRIVANDO PIANO', 'warn');
+        this.say('TROPPO VELOCE PER AFFERRARLO: RIPROVA ARRIVANDO PIANO', 'warn', true);
       }
       return;
     }
@@ -422,7 +503,8 @@ export class Simulation {
     const t = (this.time - mob.t0) | 0, lee = across * twaOf(b) < 0;
     this.lastMob = this.time - mob.t0;
     this.mob = null;
-    this.say(`RECUPERATO IN ${(t / 60) | 0}:${String(t % 60).padStart(2, '0')} · ${lee ? 'SOTTOVENTO' : 'SOPRAVENTO'}`, 'good');
+    this.talk('prodiere', 'Preso!');
+    this.say(`RECUPERATO IN ${(t / 60) | 0}:${String(t % 60).padStart(2, '0')} · ${lee ? 'SOTTOVENTO' : 'SOPRAVENTO'}`, 'good', true);
   }
 
   /** Il gavitello: lo scafo lo scosta (la catena lo lascia spostare un poco, poi lo riporta sul corpo morto); chi e' a
@@ -444,7 +526,7 @@ export class Simulation {
       if (kn > 2 && this.time - (gav?.hit ?? this.buoyTouch) > 5) {
         if (gav) gav.hit = this.time; else this.buoyTouch = this.time;
         b.u *= 0.8;
-        this.say(gav ? 'GAVITELLO URTATO: SI ARRIVA PRUA AL VENTO, QUASI FERMI' : 'HAI URTATO IL GAVITELLO DELLA SCUOLA', 'bad');
+        this.say(gav ? 'GAVITELLO URTATO: SI ARRIVA PRUA AL VENTO, QUASI FERMI' : 'HAI URTATO IL GAVITELLO DELLA SCUOLA', 'bad', true);
       }
     }
     if (!gav || gav.moored) return;
@@ -454,14 +536,14 @@ export class Simulation {
     if (!atBow) {
       if (along > -3.75 && along <= 1.5 && Math.abs(across) < half + 1.5 && kn <= GAV.slow && this.time - gav.aft > 6) {
         gav.aft = this.time;
-        this.say('IL GAVITELLO SI PRENDE A PRUA: COSÌ LA BARCA RESTA PRUA AL VENTO', 'warn');
+        this.say('IL GAVITELLO SI PRENDE A PRUA: COSÌ LA BARCA RESTA PRUA AL VENTO', 'warn', true);
       }
       return;
     }
     if (kn > GAV.slow) {
       if (this.time - gav.miss > 6 && this.time - gav.hit > 3) {
         gav.miss = this.time;
-        this.say('TROPPO VELOCE: IL GAVITELLO SI PRENDE CON LA BARCA QUASI FERMA', 'warn');
+        this.say('TROPPO VELOCE: IL GAVITELLO SI PRENDE CON LA BARCA QUASI FERMA', 'warn', true);
       }
       return;
     }
@@ -469,7 +551,8 @@ export class Simulation {
     gav.moored = true;
     this.lastGav = this.time - gav.t0;
     if (!b.bando) b.bando = true;
-    this.say(`GAVITELLO PRESO IN ${(t / 60) | 0}:${String(t % 60).padStart(2, '0')} · ORMEGGIATI: SCOTTE LIBERE`, 'good');
+    this.talk('prodiere', 'Preso!');
+    this.say(`GAVITELLO PRESO IN ${(t / 60) | 0}:${String(t % 60).padStart(2, '0')} · ORMEGGIATI: SCOTTE LIBERE`, 'good', true);
   }
 
   /** Ormeggiati: la cima dalla prua al gavitello non lascia allontanare la barca e tira la prua verso di lui, cosi' col
@@ -496,7 +579,7 @@ export class Simulation {
     const keel = lake.depth(b.pos), bow = lake.depth(add(b.pos, mul(fwd, 3.6))), stern = lake.depth(sub(b.pos, mul(fwd, 3.6)));
     const hit = keel < 1.9 || (b.u > 0 && bow < 0.6) || (b.u < 0 && stern < 0.6);
     if (hit) {
-      if (!this.aground) { this.say('IN SECCA! LA CHIGLIA HA TOCCATO IL FONDO', 'bad'); this.events.push({ type: 'ground' }); }
+      if (!this.aground) { this.say('IN SECCA! LA CHIGLIA HA TOCCATO IL FONDO', 'bad', true); this.events.push({ type: 'ground' }); }
       this.aground = true;
       if (keel < 1.9) b.u = bow > stern ? Math.max(b.u, 0) * 0.97 : Math.min(b.u, 0) * 0.97;
       else b.u = 0;
@@ -516,7 +599,9 @@ export class Simulation {
       if ((c.main || 0) > 0 || (c.jib || 0) > 0) { this.autoTrim = false; this.toggleBando(); }
     } else if (this.autoTrim) {
       const id = idealSheets(b);
-      b.mainSheet += clamp(id.main - b.mainSheet, -0.4 * dt, 0.4 * dt);
+      // strambata chiamata: al "pronti!" chi sta alla randa la cazza al centro, cosi' il boma passa piano
+      const gybe = this.call?.kind === 'gybe' && this.call.ready && Math.abs(twaOf(b)) > 120;
+      b.mainSheet += clamp((gybe ? Math.min(id.main, CALL.haul) : id.main) - b.mainSheet, -0.4 * dt, 0.4 * dt);
       b.jibSheet += clamp(id.jib - b.jibSheet, -0.4 * dt, 0.4 * dt);
     } else {
       b.mainSheet = clamp(b.mainSheet - (c.main || 0) * 0.22 * dt, 0, 1);
@@ -601,12 +686,13 @@ export const Coach = {
     const twa = Math.abs(twaOf(s)), plan = gavPlan(s.tws);
     if (s.spi) return ['Rientro con lo spi: ammainalo (E), al gavitello si arriva di bolina', 'warn'];
     if (d > 350) return ['Rientro alla base: vai verso il gavitello della scuola, il freccione lo indica', 'info'];
-    if (twa < 30 && along > -1 && d < plan.luff + 15) {
+    // lat < 12: il gavitello e' davvero sopravento, non e' una virata che passa vicino
+    if (twa < 30 && along > -1 && d < plan.luff + 15 && lat < 12) {
       // prua al vento, per abbrivio: quanto manca alla prua e quanto scorre ancora la barca, con le scotte come sono e
       // libere (le vele che sbattono libere frenano quasi il doppio)
       const ahead = along - 3.6, stop = gavStop(s), loose = s.bando ? stop : gavStop({ ...s, bando: true });
       if (kn < 0.5 && ahead > 3) return ['Fermi prima del gavitello: lascia cadere la prua, allontanati e riprova orzando più vicino', 'warn'];
-      if (across > 3 && along > 3) return ['Il gavitello è di lato: finché hai abbrivio porta la prua su di lui col timone', 'warn'];
+      if (across > 3 && along > 3 && Math.abs(s.r) < 10) return ['Il gavitello è di lato: finché hai abbrivio porta la prua su di lui col timone', 'warn'];
       if (stop < ahead - 2.5 && ahead > 6) return ['Così ti fermi prima del gavitello: poggia, allontanati e riprova orzando più vicino', 'warn'];
       if (loose > ahead + 3 && ahead < 8) return ['Arrivi troppo forte: poggia, allontanati e riprova orzando più lontano', 'warn'];
       // il momento di liberarle: da qui con le scotte libere la barca si ferma proprio sul gavitello
