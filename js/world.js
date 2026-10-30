@@ -210,6 +210,11 @@ export class World {
     this.lifebuoy = this.buildLifebuoy();
     this.lifebuoy.visible = false;
     this.scene.add(this.lifebuoy);
+    this.gav = this.buildGav();
+    // cima d'ormeggio dalla prua al gavitello, quando si e' ormeggiati
+    this.gavLine = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 1, 6), std(0xe8e0c8, 0.8));
+    this.gavLine.visible = false;
+    this.scene.add(this.gav, this.gavLine);
     this.rib = this.buildRib();
     this.ribWake = new Wake();
     this.scene.add(this.rib, this.ribWake.mesh);
@@ -247,7 +252,7 @@ export class World {
   captureEnvironment() {
     const c = this.lake.center;
     this.cubeCam.position.set(c.x, 3, -c.y);
-    const hide = [this.water, this.boat.root, this.wake.mesh, this.rib, this.ribWake.mesh, this.boat.sprayPoints, ...this.buoys, this.lifebuoy,
+    const hide = [this.water, this.boat.root, this.wake.mesh, this.rib, this.ribWake.mesh, this.boat.sprayPoints, ...this.buoys, this.lifebuoy, this.gav, this.gavLine,
                   this.triangle.root, this.dirtyAir.root, this.rounding.root];
     const vis = hide.map((o) => o.visible);
     hide.forEach((o) => { o.visible = false; });
@@ -454,6 +459,19 @@ export class World {
     return root;
   }
 
+  /** Gavitello della scuola: palla arancione di 65 cm, mezza fuori dall'acqua, con la fascia bianca e l'anello d'acciaio
+   *  in cima, dove chi e' a prua aggancia il mezzo marinaio e passa la cima d'ormeggio. */
+  buildGav() {
+    const root = new THREE.Group(), steel = std(0xb8bcc0, 0.3, 0.8);
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.33, 28, 18), std(0xff6a14, 0.5)); ball.position.y = 0.08; root.add(ball);
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.335, 0.035, 8, 40), std(0xf0f0f0, 0.35));
+    band.rotation.x = Math.PI / 2; band.position.y = 0.14; root.add(band);
+    const eye = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.08, 8), steel); eye.position.y = 0.44; root.add(eye);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.013, 8, 20), steel); ring.position.y = 0.52; root.add(ring);
+    root.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    return root;
+  }
+
   /** Il gommone dell'istruttore. */
   buildRib() {
     const root = new THREE.Group(), tube = std(0x5c6166, 0.55), orange = std(0xf2730f, 0.6);
@@ -480,7 +498,16 @@ export class World {
     this.setSun(sim.settings.windFrom === 1);
     this.boat.wheel = sim.settings.steering === 2;
     this.boat.crewHidden = this.mode === 1;
+    // gavitello sulle onde; avvicinandosi, chi e' a prua lo cerca col mezzo marinaio
+    const gp = sim.gavShown, gs = waves.sample(gp.x, -gp.y), moored = sim.mooredShown;
+    this.gav.position.set(gp.x, gs.h, -gp.y);
+    this.gav.rotation.set(-gs.gz * 0.8, 0, gs.gx * 0.8);
+    this.gavTop ??= new THREE.Vector3();
+    this.gavTop.set(gp.x, gs.h + 0.52, -gp.y);
+    this.boat.hook = sim.gav && !moored && len(sub(gp, s.pos)) < 40 ? this.gavTop : null;
     this.boat.update(s, waves, s.time, dt);
+    this.gavLine.visible = moored;
+    if (moored) this.boat.setLine(this.gavLine, this.boat.bowEye(), this.gavTop);
     const x = s.pos.x, z = -s.pos.y;
     // acqua
     const u = this.waterMat.uniforms;

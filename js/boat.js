@@ -19,6 +19,8 @@ const TILLER_L = 1.697, TILLER_Y = 0.552, EXT_L = 1.2;
 const MS_BOOM = 2.1, MS_Z = 1.3;
 // winch delle scotte del fiocco sui passavanti; il carrello del fiocco e' a z = 0.75
 const WINCH_Z = 1.45, WINCH_TOP = 0.115;
+// gavitello: chi e' a prua sta in piedi tra l'albero e il pulpito, col mezzo marinaio lungo 2,2 m
+const BOW_Z = -2.35, HOOK_L = 2.2;
 const winchAt = (side) => { const t = tAt(WINCH_Z), x = side * (halfBeam(t) - 0.2); return V(x, deckY(t, x) + 0.07, WINCH_Z); };
 
 export const halfBeam = (t) => t < 0.6 ? BEAM / 2 * Math.pow(Math.sin(t / 0.6 * Math.PI / 2), 0.82) : BEAM / 2 * (1 - 0.08 * ((t - 0.6) / 0.4) ** 2);
@@ -412,7 +414,16 @@ export class BoatModel {
     this.pole = mesh(new THREE.CylinderGeometry(0.028, 0.028, 1, 8), std(0xc8ccd0, 0.3, 0.8));
     this.pole.visible = false;
     this.tilt.add(this.pole);
+    // mezzo marinaio: asta d'alluminio col gancio nero in punta, in mano a chi e' a prua per prendere il gavitello
+    this.hookPole = mesh(new THREE.CylinderGeometry(0.016, 0.016, 1, 8), std(0xc8ccd0, 0.3, 0.8));
+    this.hookTip = mesh(new THREE.CylinderGeometry(0.022, 0.022, 1, 8), std(0x151515, 0.5));
+    this.hookPole.visible = this.hookTip.visible = false;
+    this.tilt.add(this.hookPole, this.hookTip);
+    this.hook = null;                                       // dove sta il gavitello (nel mondo), se lo si sta prendendo
   }
+
+  /** La bitta di prua nel mondo: da li' parte la cima d'ormeggio. */
+  bowEye() { return this.tilt.localToWorld(V(0, sheer(0) + 0.03, -HL + 0.15)); }
 
   buildCrew() {
     this.crew = [new Sailor(0xe62619, 0x26385f, 0xf2f2f2), new Sailor(0xffb80d, 0xebebeb, 0x1a4db3), new Sailor(0x2a9fd8, 0x2b2b2b, 0xff6a00)];
@@ -638,20 +649,25 @@ export class BoatModel {
   }
 
   jibCrew(p, s, hike, crew, sideK, dt) {
-    const J = this.jibJob, { t, pull, busy } = J;
-    // dove deve stare: al winch dalla parte del fiocco, o seduto sopravento
-    const lee = s.jibSide, ts = tAt(busy ? 1.15 : 0.62);
-    const sx = busy ? lee * (halfBeam(ts) - 0.2) : crew * (halfBeam(ts) - 0.2);
-    const seat = V(sx, deckY(ts, sx) + 0.07, busy ? 1.15 : 0.62), rot = Math.PI / 2 * (busy ? lee : sideK);
-    if (!J.pos || J.pos.distanceTo(seat) > 3) J.pos = seat.clone();
+    const J = this.jibJob, { t, pull } = J;
+    // dove deve stare: in piedi a prua col mezzo marinaio (arrivando prua al vento il fiocco passa di qua e di la', ma le
+    // scotte sono libere e il winch puo' aspettare), al winch dalla parte del fiocco, o seduto sopravento
+    const lee = s.jibSide, bow = !!this.hook && !this.crewHidden;
+    const busy = J.busy && !bow, ts = tAt(busy ? 1.15 : bow ? BOW_Z : 0.62);
+    const sx = busy ? lee * (halfBeam(ts) - 0.2) : bow ? 0.18 : crew * (halfBeam(ts) - 0.2);
+    const seat = V(sx, deckY(ts, sx) + (bow ? 0.92 : 0.07), busy ? 1.15 : bow ? BOW_Z : 0.62);
+    const rot = bow ? 0 : Math.PI / 2 * (busy ? lee : sideK);
+    if (!J.pos || J.pos.distanceTo(seat) > 4.5) J.pos = seat.clone();
     // si sposta in fretta, come gli altri quando cambiano lato
-    J.pos.lerp(seat, Math.min(1, dt * 5));
+    J.pos.lerp(seat, Math.min(1, dt * (bow ? 2.5 : 5)));
     J.rot += (rot - J.rot) * Math.min(1, dt * 6);
     p.root.position.copy(J.pos);
     p.root.rotation.set(0, J.rot, 0);
     const tail = this.jibTail;
     this.winchHandle.visible = false;
+    this.hookPole.visible = this.hookTip.visible = false;
     for (const m of tail) m.visible = false;
+    if (bow) { this.boathook(p); return; }
     if (!busy || J.pos.distanceTo(seat) > 0.25) {
       p.sit(hike, 0.5);
       for (const i of [0, 1]) p.reach(i, V(0, 0.1, 0.03).applyMatrix4(p.chain(p.knees[i])));
@@ -683,6 +699,25 @@ export class BoatModel {
       b = p.reach(fwdHand, chest.clone().addScaledVector(dir, 0.2).add(V(0, -0.22, 0)));
       show(tail[0], top, b); show(tail[1], b, b.clone().add(V(0, -0.4, 0)));
     }
+  }
+
+  /** Chi e' a prua col mezzo marinaio, in piedi davanti all'albero e piegato in avanti: se il gavitello e' a portata
+   *  l'asta lo aggancia per l'anello, altrimenti e' pronta, puntata avanti e in basso oltre la prua. */
+  boathook(p) {
+    p.stand(0.9);
+    p.torso.rotation.x = -0.35;
+    const o = V(0.12, 0.25, -0.12).applyMatrix4(p.chain(p.torso));        // le mani davanti alla pancia
+    const ready = V(0.15, 0.3, -HL - 0.9);
+    const target = this.tilt.worldToLocal(this.hook.clone());
+    const reach = target.distanceTo(o) < HOOK_L - 0.3;
+    const dir = (reach ? target : ready).clone().sub(o).normalize();
+    const tip = reach ? target : o.clone().addScaledVector(dir, HOOK_L - 0.3);
+    p.reach(0, o.clone().addScaledVector(dir, 0.1));
+    p.reach(1, o.clone().addScaledVector(dir, 0.55));
+    const neck = tip.clone().addScaledVector(dir, -0.14);
+    this.setLine(this.hookPole, tip.clone().addScaledVector(dir, -HOOK_L), neck);
+    this.setLine(this.hookTip, neck, tip);
+    this.hookPole.visible = this.hookTip.visible = true;
   }
 
   setLine(m, a, b) {

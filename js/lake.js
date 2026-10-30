@@ -189,6 +189,10 @@ export class Lake {
       const motor = rng.unit() < 0.3;
       B.moorings.push({ x: p.x, y: p.y, motor, len: motor ? rng.range(5, 7) : rng.range(6.5, 9), turn: rng.range(-14, 14) });
     }
+    // gavitello della scuola, fuori dal campo d'ormeggio a sud del pontile: sottovento, sia con l'Ora sia col Sover,
+    // c'e' acqua libera per risalire di bolina e arrivarci prua al vento senza passare tra le barche
+    const g = this.basePoint(-75, 215);
+    B.gav = { x: g.x, y: g.y };
     this.base = B;
   }
 

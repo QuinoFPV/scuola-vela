@@ -49,6 +49,28 @@ export function mobPlan(tws) {
   const stop = Math.round(36 * Math.pow(10 / Math.max(4, tws), 0.7) / 5) * 5;
   return { stop, start: stop + 20, away: Math.max(60, stop + 35) };
 }
+/** Gavitello della scuola: velocita' massima (nodi) a cui chi e' a prua lo prende col mezzo marinaio; fin dove arriva
+ *  il mezzo marinaio oltre la prua (m); cima d'ormeggio dalla prua (m); quanto la catena lascia spostare il gavitello
+ *  quando lo scafo lo scosta (m). */
+export const GAV = { slow: 1.5, reach: 2.5, line: 3, swing: 1.5 };
+/** Quanti metri scorre ancora la barca prua al vento prima di fermarsi. La frenata e' a + b v^2: a dalle vele che
+ *  sbattono, che prua al vento sentono circa il vento reale (di piu' con le scotte libere), b dallo scafo. Numeri
+ *  ricavati dalle planate prua al vento da bolina stretta con 6-20 nodi (con 10 nodi da 5,7 nodi la barca scorre 26 m
+ *  con le vele regolate, 14 con le scotte libere). */
+export function gavStop(s) {
+  const v = Math.max(0, s.u), a = (s.bando ? 0.00238 : 0.00101) * Math.pow(s.tws, s.bando ? 1.76 : 1.69), b = s.bando ? 0.036 : 0.024;
+  return Math.log(1 + b * v * v / Math.max(1e-4, a)) / (2 * b);
+}
+/** Le distanze del gavitello per il vento che c'e', misurate col pilota automatico delle prove: luff e' dove orzare prua
+ *  al vento, col gavitello dritto sopravento (dal centro della barca); start da dove cominciare a risalire di bolina. */
+const GAV_LUFF = [[6, 33], [10, 24], [15, 10], [20, 9], [30, 7]];
+export function gavPlan(tws) {
+  let i = 1;
+  while (i < GAV_LUFF.length - 1 && GAV_LUFF[i][0] < tws) i++;
+  const [a, b] = [GAV_LUFF[i - 1], GAV_LUFF[i]], k = clamp((tws - a[0]) / (b[0] - a[0]), 0, 1);
+  const luff = Math.round(a[1] + (b[1] - a[1]) * k);
+  return { luff, start: luff + 40 };
+}
 
 export class Simulation {
   constructor(lake) {
@@ -84,6 +106,7 @@ export class Simulation {
     this.track = []; this.trackTimer = 0;
     this.courseStep = 0; this.lapStart = null; this.lastLap = null; this.buoyTouch = -100;
     this.mob = null; this.lastMob = null;
+    this.gav = null; this.lastGav = null; this.gavPos = { ...lake.base.gav };
     this.sweep = 0; this.sweepAngle = null; this.wrongWay = false; this.approachSaid = false;
     this.replay = null;
     this.time = 0;
@@ -224,6 +247,7 @@ export class Simulation {
   manOverboard() {
     if (this.replay !== null) return;
     if (this.mob) { this.mob = null; this.say('ESERCIZIO ANNULLATO, IL GOMMONE RIPRENDE IL SALVAGENTE', 'info'); return; }
+    this.gav = null;                                       // un esercizio alla volta
     const b = this.boat, fwd = dirVec(b.heading), side = dirVec(b.heading + 90), k = Math.random() < 0.5 ? -1 : 1;
     const from = sub(b.pos, mul(fwd, 3.4));
     this.mob = { from, pos: add(from, add(mul(fwd, -3), mul(side, 2 * k))), t0: this.time, fly: MOB.fly, hit: -100, miss: -100, away: false, far: false };
@@ -231,6 +255,24 @@ export class Simulation {
   }
   /** Dove si vede il salvagente, anche in moviola; null se non e' in acqua. */
   get mobShown() { return this.replay !== null ? this.shown.mobPos ?? null : this.mob ? this.mob.pos : null; }
+
+  /** Gavitello: l'esercizio di fine lezione. Si rientra alla base e si prende il gavitello della scuola a prua, arrivando
+   *  prua al vento quasi fermi; preso, la barca resta ormeggiata. Di nuovo per annullare o, da ormeggiati, per mollarlo. */
+  mooring() {
+    if (this.replay !== null) return;
+    if (this.gav) {
+      const moored = this.gav.moored;
+      this.gav = null;
+      this.say(moored ? 'GAVITELLO MOLLATO: RIPRENDI LE SCOTTE (SPAZIO) E RIPARTI' : 'ESERCIZIO DEL GAVITELLO ANNULLATO', 'info');
+      return;
+    }
+    this.mob = null;
+    this.gav = { pos: this.gavPos, t0: this.time, hit: -100, miss: -100, aft: -100, moored: false };
+    this.say('RIENTRO: PRENDI IL GAVITELLO DELLA SCUOLA ARRIVANDO PRUA AL VENTO', 'info');
+  }
+  /** Dove si vede il gavitello (anche in moviola) e se la barca e' ormeggiata. */
+  get gavShown() { return this.replay !== null ? this.shown.gavPos ?? this.gavPos : this.gavPos; }
+  get mooredShown() { return this.replay !== null ? !!this.shown.moored : !!this.gav?.moored; }
 
   startReplay() {
     if (this.history.length < 30) return;
@@ -253,6 +295,7 @@ export class Simulation {
       this.applyControls(c, h);
       this.wind.update(h, this.boat.pos);
       this.events.push(...step(this.boat, this.wind, h));
+      if (this.gav?.moored) this.holdMooring(h);
       this.time += h;
     }
     this.waves.time = this.time;
@@ -267,15 +310,17 @@ export class Simulation {
     }
     this.checkCourse(dt);
     this.checkMob(dt);
+    this.checkGav(dt);
     this.historyTimer -= dt;
     if (this.historyTimer <= 0) {
       const snap = copyBoat(this.boat);
       snap.mobPos = this.mob ? { ...this.mob.pos } : null;
+      snap.gavPos = { ...this.gavPos }; snap.moored = !!this.gav?.moored;
       this.history.push(snap);
       this.historyTimer = 1 / 30;
       while (this.history.length && this.time - this.history[0].time > 40) this.history.shift();
     }
-    if (Math.abs(twaOf(this.boat)) < 30 && Math.abs(speedKn(this.boat)) < 0.4) {
+    if (Math.abs(twaOf(this.boat)) < 30 && Math.abs(speedKn(this.boat)) < 0.4 && !this.gav?.moored) {
       this.ironsTimer += dt;
       if (this.ironsTimer > 4 && this.time - this.messageTime > 6) this.say('FERMI PRUA AL VENTO: SCONTRA LA RANDA (K) O METTI LA BARRA DA UN LATO E ASPETTA CHE LA PRUA CADA', 'warn');
     } else this.ironsTimer = 0;
@@ -308,7 +353,7 @@ export class Simulation {
         this.events.push({ type: 'ground' });
       }
     }
-    if (this.mob) return;                                 // durante l'uomo a mare le boe aspettano
+    if (this.mob || this.gav) return;                     // durante l'uomo a mare e il gavitello le boe aspettano
     // la boa si gira in senso antiorario, lasciandola a sinistra: si somma l'angolo percorso intorno a lei
     const rel = sub(b.pos, this.marks[this.nextMark]), dist = len(rel);
     if (dist < MARK_FAR && !this.approachSaid) {
@@ -380,6 +425,71 @@ export class Simulation {
     this.say(`RECUPERATO IN ${(t / 60) | 0}:${String(t % 60).padStart(2, '0')} · ${lee ? 'SOTTOVENTO' : 'SOPRAVENTO'}`, 'good');
   }
 
+  /** Il gavitello: lo scafo lo scosta (la catena lo lascia spostare un poco, poi lo riporta sul corpo morto); chi e' a
+   *  prua lo prende col mezzo marinaio solo con la barca quasi ferma. */
+  checkGav(dt) {
+    const b = this.boat, A = this.lake.base.gav, g = this.gavPos;
+    const back = sub(A, g), dl = len(back);
+    if (dl > 0.01) { const k = Math.min(dl, 0.3 * dt) / dl; g.x += back.x * k; g.y += back.y * k; }
+    const rel = sub(g, b.pos), fwd = dirVec(b.heading), stb = dirVec(b.heading + 90);
+    const along = rel.x * fwd.x + rel.y * fwd.y, across = rel.x * stb.x + rel.y * stb.y;
+    if (Math.abs(along) > 12 || Math.abs(across) > 8) return;
+    const kn = Math.hypot(b.u, b.v) / KNOT, gav = this.gav;
+    // come per il salvagente: la prua e' stretta, da meta' barca in giu' lo scafo e' largo quasi uguale
+    const half = along > 0.5 ? MOB.halfBeam * clamp((3.75 - along) / 3.25, 0, 1) : MOB.halfBeam;
+    if (Math.abs(along) < 3.75 && Math.abs(across) < half + 0.3) {
+      const push = mul(stb, (across >= 0 ? 1 : -1) * (half + 0.3) - across), off = sub(add(g, push), A), o = len(off);
+      const p = o > GAV.swing ? add(A, mul(off, GAV.swing / o)) : add(g, push);
+      g.x = p.x; g.y = p.y;
+      if (kn > 2 && this.time - (gav?.hit ?? this.buoyTouch) > 5) {
+        if (gav) gav.hit = this.time; else this.buoyTouch = this.time;
+        b.u *= 0.8;
+        this.say(gav ? 'GAVITELLO URTATO: SI ARRIVA PRUA AL VENTO, QUASI FERMI' : 'HAI URTATO IL GAVITELLO DELLA SCUOLA', 'bad');
+      }
+    }
+    if (!gav || gav.moored) return;
+    // il mezzo marinaio arriva un paio di metri oltre la prua, o di fianco sulla parte di prua
+    const bow = len(sub(rel, mul(fwd, 3.6)));
+    const atBow = bow < GAV.reach || (along > 1.5 && along < 3.75 && Math.abs(across) < half + 1.4);
+    if (!atBow) {
+      if (along > -3.75 && along <= 1.5 && Math.abs(across) < half + 1.5 && kn <= GAV.slow && this.time - gav.aft > 6) {
+        gav.aft = this.time;
+        this.say('IL GAVITELLO SI PRENDE A PRUA: COSÌ LA BARCA RESTA PRUA AL VENTO', 'warn');
+      }
+      return;
+    }
+    if (kn > GAV.slow) {
+      if (this.time - gav.miss > 6 && this.time - gav.hit > 3) {
+        gav.miss = this.time;
+        this.say('TROPPO VELOCE: IL GAVITELLO SI PRENDE CON LA BARCA QUASI FERMA', 'warn');
+      }
+      return;
+    }
+    const t = (this.time - gav.t0) | 0;
+    gav.moored = true;
+    this.lastGav = this.time - gav.t0;
+    if (!b.bando) b.bando = true;
+    this.say(`GAVITELLO PRESO IN ${(t / 60) | 0}:${String(t % 60).padStart(2, '0')} · ORMEGGIATI: SCOTTE LIBERE`, 'good');
+  }
+
+  /** Ormeggiati: la cima dalla prua al gavitello non lascia allontanare la barca e tira la prua verso di lui, cosi' col
+   *  vento la barca si mette prua al vento. */
+  holdMooring(dt) {
+    const b = this.boat, g = this.gavPos, fwd = dirVec(b.heading), stb = dirVec(b.heading + 90);
+    const rel = sub(add(b.pos, mul(fwd, 3.6)), g), d = len(rel);
+    if (d <= GAV.line) return;
+    const n = mul(rel, 1 / d);
+    b.pos = sub(b.pos, mul(n, d - GAV.line));
+    // dalla velocita' si toglie la parte che allontana dal gavitello
+    const vx = fwd.x * b.u + stb.x * b.v, vy = fwd.y * b.u + stb.y * b.v, away = vx * n.x + vy * n.y;
+    if (away > 0) {
+      const wx = vx - n.x * away, wy = vy - n.y * away;
+      b.u = wx * fwd.x + wy * fwd.y; b.v = wx * stb.x + wy * stb.y;
+    }
+    const turn = norm180(bearing(sub(g, b.pos)) - b.heading);
+    b.r += (clamp(turn * 1.5, -25, 25) - b.r) * Math.min(1, dt * 2);
+  }
+
   /** Chiglia (1,9 m) sul fondo o prua sulla riva: la barca si ferma. */
   checkGround() {
     const b = this.boat, lake = this.lake, fwd = dirVec(b.heading);
@@ -428,7 +538,9 @@ export const Coach = {
     return 'POPPA';
   },
   tack(twa) { return Math.abs(twa) > 177 ? '' : (twa > 0 ? 'MURE A DRITTA' : 'MURE A SINISTRA'); },
-  telltales(s) {
+  telltales(s, gav = null) {
+    if (gav?.moored) return ['Ormeggiati: le vele sbattono, le scotte sono libere', 'info'];
+    if (gav && Math.abs(twaOf(s)) < 35 && len(sub(gav.pos, s.pos)) < 60) return ['Prua al vento verso il gavitello: le vele sbattono apposta', 'info'];
     if (s.cappa) return ['Fiocco in cappa: preso dal vento dalla parte di fuori', 'info'];
     if (s.jibFurl > 0.5) return ['Fiocco avvolto: con lo spi i filetti non servono', 'info'];
     if (s.bando) return ['Vele in bando: i filetti non lavorano', 'info'];
@@ -480,9 +592,39 @@ export const Coach = {
     if (!mob.far) return [`Uomo a mare: chi è a prua indica il salvagente col braccio. Poggia al traverso e allontanati di ${plan.away} m (${Math.round(plan.away / 7.5)} lunghezze)`, 'info'];
     return [`Ora vira e scendi al gran lasco sotto al salvagente; a 50-60° dal vento e ad almeno ${plan.start} m orza in bolina larga verso di lui`, 'info'];
   },
-  tips(s, lake, mob = null) {
+  /** Gavitello: si scende sottovento, si risale di bolina stretta finche' e' dritto sopravento e a gavPlan().luff metri si
+   *  orza prua al vento: la barca arriva per abbrivio, quasi ferma, con la prua sul gavitello. */
+  gavTip(s, gav) {
+    const rel = sub(gav.pos, s.pos), d = len(rel), kn = Math.abs(speedKn(s)), up = dirVec(s.twd), fwd = dirVec(s.heading);
+    const above = rel.x * up.x + rel.y * up.y, lat = Math.abs(rel.x * up.y - rel.y * up.x);
+    const along = rel.x * fwd.x + rel.y * fwd.y, across = Math.abs(rel.x * fwd.y - rel.y * fwd.x);
+    const twa = Math.abs(twaOf(s)), plan = gavPlan(s.tws);
+    if (s.spi) return ['Rientro con lo spi: ammainalo (E), al gavitello si arriva di bolina', 'warn'];
+    if (d > 350) return ['Rientro alla base: vai verso il gavitello della scuola, il freccione lo indica', 'info'];
+    if (twa < 30 && along > -1 && d < plan.luff + 15) {
+      // prua al vento, per abbrivio: quanto manca alla prua e quanto scorre ancora la barca, con le scotte come sono e
+      // libere (le vele che sbattono libere frenano quasi il doppio)
+      const ahead = along - 3.6, stop = gavStop(s), loose = s.bando ? stop : gavStop({ ...s, bando: true });
+      if (kn < 0.5 && ahead > 3) return ['Fermi prima del gavitello: lascia cadere la prua, allontanati e riprova orzando più vicino', 'warn'];
+      if (across > 3 && along > 3) return ['Il gavitello è di lato: finché hai abbrivio porta la prua su di lui col timone', 'warn'];
+      if (stop < ahead - 2.5 && ahead > 6) return ['Così ti fermi prima del gavitello: poggia, allontanati e riprova orzando più vicino', 'warn'];
+      if (loose > ahead + 3 && ahead < 8) return ['Arrivi troppo forte: poggia, allontanati e riprova orzando più lontano', 'warn'];
+      // il momento di liberarle: da qui con le scotte libere la barca si ferma proprio sul gavitello
+      if (stop > ahead + 3 && loose >= ahead - 1.5 && loose <= ahead + 1) return ['Ora lascia andare le scotte (SPAZIO): così ti fermi sul gavitello', 'warn'];
+      return ['Prua al vento, arrivi per abbrivio: chi è a prua prende il gavitello col mezzo marinaio', 'good'];
+    }
+    if (above < 5) return [`Scendi sottovento al gavitello: ci si arriva risalendo il vento, da almeno ${plan.start} m sotto`, 'info'];
+    if (lat < 6 && above < plan.luff - 6 && kn > 1.6) return [`Troppo vicino per fermarti: poggia, allontanati e riprova da almeno ${plan.start} m sotto`, 'warn'];
+    // detto un paio di metri prima, il tempo di mettere la barra
+    if (lat < 6 && above <= plan.luff + 3) return ['Ora orza prua al vento: arrivi per abbrivio sul gavitello', 'warn'];
+    return [`Risali di bolina stretta: quando il gavitello è dritto sopravento a te, a circa ${plan.luff} m, orza prua al vento`, 'good'];
+  },
+  tips(s, lake, mob = null, gav = null) {
+    if (gav?.moored) return [['Ormeggiati al gavitello: la barca sta prua al vento. Per ripartire molla il gavitello (0)', 'good']];
     const out = [];
     const twa = Math.abs(twaOf(s)), ideal = idealSheets(s), kn = speedKn(s);
+    // arrivando al gavitello si va prua al vento apposta: niente consigli sull'angolo morto
+    const luffing = gav && len(sub(gav.pos, s.pos)) < 80;
     if (s.backMain) {
       // esercizio della randa scontrata: retromarcia e prua che cade dal lato del boma
       const side = s.backMain > 0 ? 'dritta' : 'sinistra';
@@ -490,7 +632,7 @@ export const Coach = {
       else if (s.u < -0.15) out.push([`Randa scontrata a ${side}: vai indietro e la prua cade a ${side}. Il timone lavora al contrario: correzioni dolci`, 'info']);
       else out.push([`Randa scontrata a ${side}: tieni il boma fuori finché la barca prende abbrivio all'indietro`, 'info']);
     }
-    if (twa < 33 && !s.backMain) out.push(Math.abs(kn) < 0.6
+    if (twa < 33 && !s.backMain && !luffing) out.push(Math.abs(kn) < 0.6
       ? ["Sei fermo nell'angolo morto: scontra la randa (K) o metti la barra e lascia cadere la prua", 'bad']
       : ['Troppo all\'orza: le vele non portano, poggia di qualche grado', 'bad']);
     if (s.cappa) {
@@ -525,11 +667,12 @@ export const Coach = {
     // spinnaker: quando issarlo, quando si chiude, quando e' troppo
     if (s.spi && s.spiUp > 0.8 && s.spiLuff > 0.5 && !s.bando) out.unshift(["Lo spi si chiude: sei troppo all'orza, poggia o ammainalo (E)", 'bad']);
     else if (s.spi && s.tws > 21 && twa < 125) out.push(['Vento forte al lasco con lo spi: rischio di straorzata, poggia o ammaina (E)', 'warn']);
-    else if (!s.spi && twa > 105 && s.tws < 21 && !s.bando && !s.backMain && !mob) out.push(['Andatura portante: issa lo spi (E)', 'info']);
+    else if (!s.spi && twa > 105 && s.tws < 21 && !s.bando && !s.backMain && !mob && !gav) out.push(['Andatura portante: issa lo spi (E)', 'info']);
     if (s.bando) { /* niente consigli sulle scotte: sono libere apposta */ }
     else if (Math.abs(s.heel) > 26) out.push(['Troppo sbandata: lasca la randa per scaricare', 'bad']);
     else if (Math.abs(s.rudder) > 9 && Math.abs(s.r) < 2 && Math.abs(s.heel) > 15) out.push(["Barca ardente (tira all'orza): lasca un po' di randa", 'warn']);
     if (mob) out.unshift(Coach.mobTip(s, mob));
+    if (gav) out.unshift(Coach.gavTip(s, gav));
     if (byLee(s) > 1) out.unshift(['False mure: la randa è dalla parte del vento, rischio di strambata involontaria. Orza un poco o stramba', 'bad']);
     if (Math.abs(s.rudder) > 22 && Math.abs(kn) > 1) out.push(['Tanto timone frena la barca: correzioni più dolci', 'info']);
     if (lake.depth(add(s.pos, mul(dirVec(s.heading), 25))) < 2.5 && s.u > 0.5) out.unshift(['Attenzione, bassofondale davanti: vira o poggia subito', 'bad']);

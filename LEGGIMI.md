@@ -163,6 +163,32 @@ Il test automatico confronta con la polare ORC:
   - vanno bene sia sottovento sia sopravento. Sottovento la barca scarroccia verso il salvagente; sopravento scarroccia via, e l'istruttore dice di afferrarlo subito. Recuperato, compare il tempo e il lato; il tempo dell'ultimo recupero resta negli strumenti.
 - **Prove:** nelle prove automatiche un pilota fa tutta la manovra con le distanze dell'istruttore e recupera il salvagente con 10 nodi in 1:15 circa; un secondo pilota fa l'ultimo avvicinamento con 10 e 20 nodi. A parte la manovra completa è stata provata da 6 a 20 nodi. Con 20-25 nodi e la randa piena il pilota non riesce a virare: con quel vento si prendono prima i terzaroli.
 
+## Gavitello (rientro alla base)
+L'esercizio di fine lezione: si rientra e si prende il gavitello della scuola a prua, arrivando prua al vento quasi fermi.
+- **Comandi:** 0 sul computer, GAVITELLO in basso a destra sul telefono; di nuovo per annullare. Ormeggiati, lo stesso tasto (MOLLA GAVITELLO sul telefono) lo molla, e si riparte riprendendo le scotte.
+- **Il gavitello:** palla arancione di 65 cm con la fascia bianca e l'anello d'acciaio in cima, 215 m al largo e 75 m a sud del pontile, fuori dal campo d'ormeggio. Sottovento, sia con l'Ora sia col Sover, c'è acqua libera per risalire di bolina senza passare tra le barche; dista 55 m dalla rotta di uscita.
+  - Si vede sempre; sulla mappa è un pallino bianco col centro arancione.
+  - Durante l'esercizio il freccione lo indica (anche con gli aiuti spenti), negli strumenti ci sono il tempo e la distanza, e le boe del percorso aspettano.
+  - Lo scafo lo scosta un poco (la catena lo lascia spostare di 1,5 m) e poi torna sul corpo morto; urtato a più di 2 nodi, l'istruttore avvisa.
+- **La manovra**, guidata dall'istruttore:
+  1. scendere sottovento al gavitello e risalire di bolina stretta;
+  2. quando il gavitello è dritto sopravento, alla distanza che dice l'istruttore, orzare prua al vento;
+  3. arrivare per abbrivio. L'istruttore calcola quanto scorre ancora la barca: se si arriva forte dice il momento di lasciare andare le scotte (le vele che sbattono libere frenano quasi il doppio) e la barca si ferma sul gavitello; se ci si fermerebbe prima, o si arriva troppo forte anche con le scotte libere, dice di poggiare, allontanarsi e riprovare.
+
+  | Vento | Orzare prua al vento a |
+  |---|---|
+  | 6 nodi | 33 m |
+  | 10 nodi | 24 m |
+  | 15 nodi | 10 m |
+  | 20 nodi (con una mano di terzaroli) | 9 m |
+
+  Con più vento le vele che sbattono frenano molto di più: prua al vento, da bolina stretta con 10 nodi, la barca scorre 26 m con le vele regolate e 14 con le scotte libere.
+- **La presa:** a meno di 40 m chi è a prua (il terzo uomo) va in piedi davanti all'albero col mezzo marinaio, un'asta di 2,2 m col gancio nero, puntata avanti oltre la prua; quando il gavitello è a portata lo aggancia per l'anello.
+  - Si prende fino a 2,5 m oltre la prua, o di fianco sulla parte di prua, con la barca sotto 1,5 nodi. Più veloci: "troppo veloce".
+  - Di fianco verso poppa non vale: il gavitello si prende a prua, così la barca resta prua al vento.
+- **Ormeggiati:** le scotte vanno libere e la cima di 3 m dalla bitta di prua tiene la barca, che si mette prua al vento (dopo un minuto con 10 nodi è a 10° dal vento). Il tempo della presa resta negli strumenti.
+- **Prove:** un pilota automatico che fa quello che dice l'istruttore (orza quando lo dice, libera le scotte quando lo dice) prende il gavitello partendo dai due lati con 6 e 10 nodi, e con 15 e 20 nodi con una mano di terzaroli. A parte è stato provato che basta orzare entro 2 m dal punto indicato.
+
 ## Fiocco in cappa
 - **Comandi:**
   - U sul computer, FIOCCO IN CAPPA sul telefono (di bolina e al traverso, non con lo spi su);
@@ -245,7 +271,7 @@ Non usa servizi esterni.
 ```
 node test/selftest.mjs
 ```
-Controlla polare, virata, prua al vento, strambata, bilanciamento, secche, giro delle boe e moviola.
+Controlla polare, virata, prua al vento, strambata, bilanciamento, secche, giro delle boe, moviola, uomo a mare e gavitello.
 
 ## Dati
 Sono preparati da `Gaming/Mac/Scuola Vela/tools/export_web.py`, a partire da quelli della versione Mac.

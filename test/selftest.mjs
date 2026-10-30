@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { Wind, newBoat, step, idealSheets, norm180, norm360, clamp, speedKn, twaOf, dirVec, len, sub, add, mul, bearing, SAIL_PLANS, byLee } from '../js/physics.js';
 import { Lake } from '../js/lake.js';
-import { Simulation, Coach, COURSE, WINDS, MOB, mobPlan } from '../js/sim.js';
+import { Simulation, Coach, COURSE, WINDS, MOB, mobPlan, GAV, gavPlan } from '../js/sim.js';
 
 const dataDir = fileURLToPath(new URL('../data/', import.meta.url));
 let failures = 0;
@@ -443,6 +443,73 @@ check(held < 40 && fastest > -1.8, `con 20 nodi chi spinge il boma cede (tenuto 
     }
     check(advised && !ap.mob && ap.message.includes('RECUPERATO'), `${kn} nodi: di bolina larga, vele in bando a ${said} m, recuperato in ${f0(t)} s`);
   }
+}
+
+// gavitello: si risale di bolina, si orza prua al vento dove dice l'istruttore, si arriva per abbrivio e lo si prende a prua
+{
+  const g0 = lake.base.gav, st = lake.startPoint(), out = dirVec(lake.shoreOut), r0 = sub(g0, st);
+  const fromStart = Math.abs(r0.x * out.y - r0.y * out.x);
+  const moored = Math.min(...lake.base.moorings.map((m) => len(sub(m, g0))));
+  check(lake.depth(g0) > 8 && fromStart > 40 && moored > 60, `gavitello in acqua libera: ${f0(lake.depth(g0))} m di fondo, ${f0(fromStart)} m dalla rotta di uscita, barca all'ormeggio più vicina a ${f0(moored)} m`);
+  const make = (kn = 10, reef = 0) => {
+    const sm = new Simulation(lake);
+    sm.settings.gusts = false; sm.settings.windIndex = WINDS.findIndex((x) => x[1] === kn); sm.reset(); sm.wind.shifts = false;
+    sm.autoTrim = true; sm.boat.reef = reef;
+    sm.mooring();
+    return sm;
+  };
+  // mette la barca vicino al gavitello: along metri avanti, across di lato (positivo a dritta), velocita' u
+  const near = (sm, along, across, u, twa = 20) => {
+    const b = sm.boat, W = sm.wind.baseDir;
+    Object.assign(b, { heading: norm360(W - twa), u, v: 0, r: 0, twd: W, tws: sm.windKn });
+    const f = dirVec(b.heading), s9 = dirVec(b.heading + 90);
+    b.pos = sub(sm.gavPos, add(mul(f, along), mul(s9, across)));
+  };
+  const fast = make(); near(fast, 4.5, 0.6, 1.6); fast.update(1 / 60, {});
+  check(!fast.gav.moored && fast.message.includes('TROPPO VELOCE'), 'a 3 nodi chi è a prua non riesce a prenderlo');
+  const aft = make(); near(aft, -1, 2.4, 0.3); aft.update(1 / 60, {});
+  check(!aft.gav.moored && aft.message.includes('A PRUA'), 'di fianco a poppa non si prende: si prende a prua');
+  const off = make(); off.mooring();
+  check(!off.gav && off.message.includes('ANNULLATO'), 'di nuovo per annullare');
+  // il pilota fa come dice l'istruttore: bolina stretta fino alla linea del vento del gavitello (virando se la incrocia
+  // troppo sotto), orza quando lo dice e libera le scotte quando lo dice
+  const approach = (sm, side) => {
+    const g = sm.gavPos, W = sm.wind.baseDir, plan = gavPlan(sm.windKn);
+    sm.boat.pos = add(sub(g, mul(dirVec(W), plan.luff + 70)), mul(dirVec(W + 90), side * 45));
+    let twa0 = side * 42, phase = 'bolina', tTack = -100, t = 0, luffAt = null, released = false;
+    Object.assign(sm.boat, { heading: norm360(W - twa0), u: 2.5, mainSide: -side, jibSide: -side });
+    sm.update(1 / 30, { tillerTarget: 0 });
+    while (!sm.gav.moored && t < 150) {
+      const b = sm.boat, U = dirVec(b.twd), P = dirVec(b.twd + 90), rel = sub(g, b.pos);
+      const above = rel.x * U.x + rel.y * U.y, lat = rel.x * P.x + rel.y * P.y, coming = twa0 > 0 ? lat < 0 : lat > 0;
+      const tip = Coach.gavTip(b, sm.gav)[0];
+      if (phase === 'bolina' && t - tTack > 8) {
+        if (tip.startsWith('Ora orza') && coming && Math.abs(lat) < 3.5) { phase = 'orza'; luffAt = len(rel); }
+        else if (!coming && Math.abs(lat) > Math.max(6, (above - plan.luff) / 1.9)) { twa0 = -twa0; tTack = t; }
+      }
+      if (phase === 'orza' && tip.includes('lascia andare le scotte') && !b.bando) { sm.toggleBando(); released = true; }
+      const hd = phase === 'orza' ? b.twd + clamp(norm180(bearing(rel) - b.twd), -15, 15) : b.twd - twa0;
+      sm.update(1 / 30, { tillerTarget: clamp(norm180(hd - b.heading) * 1.2 - b.r * 0.8, -25, 25) });
+      t += 1 / 30;
+    }
+    return { luffAt, released, t };
+  };
+  for (const [kn, reef] of [[6, 0], [10, 0], [15, 1], [20, 1]]) {
+    const res = [-1, 1].map((side) => { const sm = make(kn, reef); return { ...approach(sm, side), sm }; });
+    const ok = res.every((r) => r.sm.gav.moored && r.sm.message.includes('GAVITELLO PRESO'));
+    check(ok, `${kn} nodi${reef ? ' con una mano' : ''}: orza a ${res.map((r) => f0(r.luffAt ?? 0)).join(' e ')} m (piano ${gavPlan(kn).luff}), ${res.some((r) => r.released) ? 'scotte libere quando lo dice, ' : ''}preso in ${res.map((r) => f0(r.t)).join(' e ')} s`);
+  }
+  // ormeggiati: la cima tiene la prua e la barca si mette prua al vento; mollato il gavitello la barca scade
+  const mo = make(10); near(mo, 4.2, 0.4, 0.4, 25); mo.update(1 / 60, {});
+  const tookIt = mo.gav.moored && mo.boat.bando;
+  for (let i = 0; i < 60 * 30; i++) mo.update(1 / 30, {});
+  const bowGap = len(sub(add(mo.boat.pos, mul(dirVec(mo.boat.heading), 3.6)), mo.gavPos));
+  check(tookIt && bowGap < GAV.line + 0.3 && Math.abs(twaOf(mo.boat)) < 25 && Math.abs(speedKn(mo.boat)) < 0.5 && Coach.tips(mo.boat, lake, null, mo.gav)[0][0].includes('Ormeggiati'),
+    `ormeggiati: dopo un minuto la prua è a ${f1(bowGap)} m dal gavitello, ${f0(Math.abs(twaOf(mo.boat)))}° dal vento`);
+  mo.mooring();
+  for (let i = 0; i < 15 * 30; i++) mo.update(1 / 30, {});
+  const gone = len(sub(add(mo.boat.pos, mul(dirVec(mo.boat.heading), 3.6)), mo.gavPos));
+  check(!mo.gav && mo.message.includes('MOLLATO') && gone > GAV.line + 1, `mollato il gavitello la barca scade (${f1(gone)} m dopo 15 s)`);
 }
 
 console.log(failures === 0 ? 'TUTTO OK' : `${failures} ERRORI`);

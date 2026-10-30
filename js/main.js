@@ -119,6 +119,7 @@ async function main() {
       case 'KeyE': sim.toggleSpi(); break;             // spinnaker: issa / ammaina
       case 'KeyU': sim.toggleCappa(); break;           // fiocco in cappa / libero
       case 'Enter': case 'NumpadEnter': sim.manOverboard(); break;   // uomo a mare: salvagente in acqua, di nuovo per annullare
+      case 'Digit0': case 'Numpad0': sim.mooring(); break;          // gavitello: rientro e ormeggio, di nuovo per annullare o mollarlo
       case 'ArrowDown': case 'ArrowUp': centering = true; break;
       case 'KeyJ': sim.toggleBackMain(-1); break;      // ... a sinistra
       case 'KeyL': sim.toggleBackMain(1); break;       // ... a dritta

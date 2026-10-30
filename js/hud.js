@@ -65,10 +65,11 @@ export class HUD {
       if (sim.lastLap !== null) lap += `   ultimo ${(sim.lastLap / 60) | 0}:${String((sim.lastLap | 0) % 60).padStart(2, '0')}`;
     }
     const clock = (t) => `${(t / 60) | 0}:${String((t | 0) % 60).padStart(2, '0')}`;
-    const mob = sim.mobShown;
-    const next = mob
-      ? `<b style="color:#ff9a4d">UOMO A MARE${sim.mob ? ' ' + clock(sim.time - sim.mob.t0) : ''}</b> · ${len(sub(mob, s.pos)).toFixed(0)} m a ${String(bearing(sub(mob, s.pos)).toFixed(0)).padStart(3, '0')}°`
-      : `Prossima: ${MARK_NAMES[sim.nextMark].toLowerCase()}  ${len(sub(m, s.pos)).toFixed(0)} m a ${String(bearing(sub(m, s.pos)).toFixed(0)).padStart(3, '0')}°`;
+    const mob = sim.mobShown, gav = sim.gavShown, where = (p) => `${len(sub(p, s.pos)).toFixed(0)} m a ${String(bearing(sub(p, s.pos)).toFixed(0)).padStart(3, '0')}°`;
+    const next = mob ? `<b style="color:#ff9a4d">UOMO A MARE${sim.mob ? ' ' + clock(sim.time - sim.mob.t0) : ''}</b> · ${where(mob)}`
+      : sim.mooredShown ? '<b style="color:#4dff66">ORMEGGIATI AL GAVITELLO</b>'
+      : sim.gav ? `<b style="color:#ffd23f">GAVITELLO ${clock(sim.time - sim.gav.t0)}</b> · ${where(gav)}`
+      : `Prossima: ${MARK_NAMES[sim.nextMark].toLowerCase()}  ${where(m)}`;
     if (text) $('lines').innerHTML = [
       `Vento reale  ${s.tws.toFixed(0)} nodi · ${Math.abs(twa).toFixed(0)}° dalla prua`,
       `Vento apparente  ${s.aws.toFixed(0)} nodi · ${Math.abs(s.awa).toFixed(0)}°`,
@@ -78,6 +79,7 @@ export class HUD {
       next,
       lap,
       ...(sim.lastMob !== null ? [`Uomo a mare: recuperato in ${clock(sim.lastMob)}`] : []),
+      ...(sim.lastGav !== null ? [`Gavitello: preso in ${clock(sim.lastGav)}`] : []),
     ].map((l) => `<div>${l}</div>`).join('');
 
     this.drawDial(s, aids);
@@ -100,10 +102,10 @@ export class HUD {
     $('tell').style.display = aids ? 'block' : 'none';
     if (aids && text) {
       // sui telefoni i tasti Z e X sono i pulsanti RIDUCI e AUMENTA
-      HUD.put('tipList', Coach.tips(s, this.lake, sim.mob).map(([t, tone]) => `<li style="color:${COLORS[tone]}">${this.keyless(t)}</li>`).join(''), 'innerHTML');
+      HUD.put('tipList', Coach.tips(s, this.lake, sim.mob, sim.gav).map(([t, tone]) => `<li style="color:${COLORS[tone]}">${this.keyless(t)}</li>`).join(''), 'innerHTML');
     }
     if (aids) {
-      const [t, tone] = Coach.telltales(s);
+      const [t, tone] = Coach.telltales(s, sim.gav);
       const verdict = $('tellVerdict');
       verdict.textContent = t; verdict.style.color = COLORS[tone];
       this.drawTelltales(s, time);
@@ -118,17 +120,19 @@ export class HUD {
     if (sim.replay !== null) st.textContent = `◀◀  MOVIOLA  ${(sim.historySpan[1] - sim.replay).toFixed(1)} s fa  ·  ${this.touch ? 'DIRETTA per tornare in mare' : 'R per tornare in diretta, P pausa'}`;
     else if (sim.paused) st.textContent = this.touch ? 'PAUSA  ·  trascina col dito per girare intorno alla barca' : 'PAUSA  ·  trascina col tasto destro per girare intorno alla barca  ·  P per ripartire';
     else st.textContent = '';
-    if (!this.touch) $('footer').textContent = `Vista: ${CAMERAS[world.mode]} (C)   ·   INVIO uomo a mare   ·   H comandi   ·   ESC menu`;
+    if (!this.touch) $('footer').textContent = `Vista: ${CAMERAS[world.mode]} (C)   ·   INVIO uomo a mare   ·   0 gavitello   ·   H comandi   ·   ESC menu`;
   }
 
   /** Freccione giallo verso la prossima boa (con gli aiuti). Da lontano sta sopra la boa e la indica; se la boa e'
    *  fuori dallo schermo scivola su un ovale intorno al centro e punta verso di lei. Avvicinandosi sfuma e lascia
    *  il posto alla freccia antioraria sull'acqua. Con l'uomo a mare diventa arancione e indica il salvagente anche
-   *  senza aiuti: e' il braccio di chi a prua non lo perde di vista. */
+   *  senza aiuti: e' il braccio di chi a prua non lo perde di vista. Nell'esercizio del gavitello indica il gavitello. */
   drawPointer(sim, s, world, time) {
-    const P = this.ptr, mob = sim.mobShown, m = mob ?? sim.marks[sim.nextMark], dist = len(sub(m, s.pos));
-    const [near, far] = mob ? [12, 20] : [MARK_NEAR, MARK_FAR];
-    const k = mob || sim.settings.aids ? clamp((dist - near) / (far - near), 0, 1) : 0;
+    const P = this.ptr, mob = sim.mobShown, gav = sim.gav && !sim.mooredShown ? sim.gavShown : null;
+    const m = mob ?? gav ?? sim.marks[sim.nextMark], dist = len(sub(m, s.pos));
+    const [near, far] = mob || gav ? [12, 20] : [MARK_NEAR, MARK_FAR];
+    // ormeggiati al gavitello non c'e' niente da indicare
+    const k = sim.mooredShown && !mob ? 0 : mob || gav || sim.settings.aids ? clamp((dist - near) / (far - near), 0, 1) : 0;
     if (!!mob !== P.mob) {
       P.mob = !!mob;
       P.el.classList.toggle('mob', P.mob); P.tag.classList.toggle('mob', P.mob);
@@ -142,7 +146,7 @@ export class HUD {
     const dt = clamp(time - P.t, 0, 0.1);
     P.t = time;
     if (!P.size) P.size = P.el.offsetWidth;
-    const text = `${mob ? 'SALVAGENTE' : MARK_NAMES[sim.nextMark]}|${dist < 1000 ? `${Math.round(dist / 5) * 5} m` : `${(dist / 1000).toFixed(1)} km`}`;
+    const text = `${mob ? 'SALVAGENTE' : gav ? 'GAVITELLO' : MARK_NAMES[sim.nextMark]}|${dist < 1000 ? `${Math.round(dist / 5) * 5} m` : `${(dist / 1000).toFixed(1)} km`}`;
     if (text !== P.text) {
       const [name, d] = text.split('|');
       $('markName').textContent = name;
@@ -152,7 +156,7 @@ export class HUD {
     }
     const W = innerWidth, H = innerHeight, A = P.size || 50;
     // la cima della boa sullo schermo; se e' dietro la telecamera la proiezione si capovolge
-    const v = P.v.set(m.x, mob ? 0.8 : 2.4, -m.y).project(world.camera), behind = v.z > 1;
+    const v = P.v.set(m.x, mob ? 0.8 : gav ? 0.6 : 2.4, -m.y).project(world.camera), behind = v.z > 1;
     const sx = (1 + (behind ? -v.x : v.x)) / 2 * W, sy = (1 - (behind ? -v.y : v.y)) / 2 * H;
     const inside = !behind && sx > W * 0.05 && sx < W * 0.95 && sy > A * 2.2 && sy < H * 0.95;
     // sopra la boa (b = 0) o sul bordo (b = 1): si passa dall'uno all'altro in un quarto di secondo
@@ -204,7 +208,7 @@ export class HUD {
   /** Sui telefoni i tasti diventano i nomi dei pulsanti. */
   keyless(t) {
     if (!this.touch) return t;
-    return t.replace(/ \(Z\)/i, ' (RIDUCI)').replace(/ \(X\)/i, ' (AUMENTA)').replace(/ \(SPAZIO\)/i, '').replace(/ \(K\)/i, '').replace(/ \(Y\)/i, '').replace(/ \(E\)/i, '').replace(/ \(U\)/i, '');
+    return t.replace(/ \(Z\)/i, ' (RIDUCI)').replace(/ \(X\)/i, ' (AUMENTA)').replace(/ \(SPAZIO\)/i, '').replace(/ \(K\)/i, '').replace(/ \(Y\)/i, '').replace(/ \(E\)/i, '').replace(/ \(U\)/i, '').replace(/ \(0\)/, '');
   }
 
   /** Comandi a dito: posizione della barra, scotte, pulsanti che cambiano scritta, dati essenziali. */
@@ -240,11 +244,14 @@ export class HUD {
     cappa.style.display = s.cappa || (twa < 130 && !s.spi && !s.backMain) ? '' : 'none';
     HUD.put('tPause', sim.paused ? 'RIPARTI' : 'PAUSA').classList.toggle('on', sim.paused);
     $('tMob').classList.toggle('on', !!sim.mob);
+    const gavB = HUD.put('tGav', sim.gav?.moored ? 'MOLLA GAVITELLO' : 'GAVITELLO');
+    gavB.classList.toggle('on', !!sim.gav);
+    gavB.style.display = sim.mob ? 'none' : '';
     HUD.put('tReplay', sim.replay !== null ? 'DIRETTA' : 'MOVIOLA').classList.toggle('on', sim.replay !== null);
     const lap = sim.lapStart !== null ? `  ·  giro ${((sim.time - sim.lapStart) / 60) | 0}:${String(((sim.time - sim.lapStart) | 0) % 60).padStart(2, '0')}` : '';
-    const mob = sim.mobShown, m = mob ?? sim.marks[sim.nextMark];
+    const mob = sim.mobShown, gav = sim.gav ? sim.gavShown : null, m = mob ?? gav ?? sim.marks[sim.nextMark];
     const heel = `${Math.abs(s.heel).toFixed(0)}°`;
-    HUD.put('mini', this.phone.matches ? `Vento ${s.tws.toFixed(0)} nodi · sband. ${heel}\n${mob ? 'Salvagente' : 'Boa'} a ${len(sub(m, s.pos)).toFixed(0)} m${lap}` : `Sbandamento ${heel}`);
+    HUD.put('mini', this.phone.matches ? `Vento ${s.tws.toFixed(0)} nodi · sband. ${heel}\n${mob ? 'Salvagente' : gav ? 'Gavitello' : 'Boa'} a ${len(sub(m, s.pos)).toFixed(0)} m${lap}` : `Sbandamento ${heel}`);
     $('mini').style.color = Math.abs(s.heel) > 25 ? COLORS.bad : '';
   }
 
@@ -323,6 +330,14 @@ export class HUD {
       g.beginPath(); g.arc(x, y, 3.5, 0, 7); g.fill(); g.stroke();
       if (i === sim.nextMark) { g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 7 * (1 + 0.15 * Math.sin(time * 4)), 0, 7); g.stroke(); }
     });
+    {
+      // il gavitello della scuola: pallino bianco col centro arancione, che pulsa durante l'esercizio
+      const [x, y] = P(sim.gavShown);
+      g.fillStyle = '#fff'; g.strokeStyle = '#000'; g.lineWidth = 1;
+      g.beginPath(); g.arc(x, y, 3, 0, 7); g.fill(); g.stroke();
+      g.fillStyle = '#ff7a1f'; g.beginPath(); g.arc(x, y, 1.4, 0, 7); g.fill();
+      if (sim.gav && !sim.gav.moored) { g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 7 * (1 + 0.15 * Math.sin(time * 4)), 0, 7); g.stroke(); }
+    }
     const mob = sim.mobShown;
     if (mob) {
       // il salvagente: pallino arancione che lampeggia
