@@ -119,6 +119,7 @@ export class HUD {
     msg.style.opacity = clamp(4 - age, 0, 1);
     const st = $('status');
     if (sim.replay !== null) st.textContent = `◀◀  MOVIOLA  ${(sim.historySpan[1] - sim.replay).toFixed(1)} s fa  ·  ${this.touch ? 'DIRETTA per tornare in mare' : 'R per tornare in diretta, P pausa'}`;
+    else if (this.heard && time - this.heard.at < 3 && !sim.paused) st.textContent = `🎤 «${this.heard.text.slice(-48)}»`;
     else if (sim.paused) st.textContent = this.touch ? 'PAUSA  ·  trascina col dito per girare intorno alla barca' : 'PAUSA  ·  trascina col tasto destro per girare intorno alla barca  ·  P per ripartire';
     else st.textContent = '';
     if (!this.touch) $('footer').textContent = `Vista: ${CAMERAS[world.mode]} (C)   ·   9 pronti a virare   ·   INVIO uomo a mare   ·   0 gavitello   ·   H comandi   ·   ESC menu`;

@@ -201,6 +201,14 @@ Le voci robotiche del Mac (Eddy, Reed, Grandma...) si usano solo se non ce n'è 
   - Strambata chiamata con le vele automatiche: al «pronti!» chi sta alla randa la cazza al centro e il boma passa piano. Senza chiamata la randa resta lascata e il boma passa di colpo, come prima.
   - Con le vele manuali la randa al centro va cazzata a mano: lo ricorda il messaggio.
   - La chiamata vale 20 s, poi scade.
+- **Chiamata a voce, col microfono:** l'icona del microfono accanto all'altoparlante lo accende (verde: ascolta; giallo: si sta accendendo; barrato: spento). La scelta resta per le volte dopo.
+  - Si dice «pronti a virare?» o «pronti a strambare?»: vale quello che si dice, anche in un'andatura diversa. L'equipaggio risponde «pronti!»; poi si dice «viro!» o «strambo!». Detto prima del «pronti!», l'istruttore dice di aspettare.
+  - La voce del timoniere tace: il timoniere è chi parla. Se non si dice «viro!», basta girare la prua.
+  - Si capiscono anche «pronti a girare», «pronti ad virare», «vira», «virò», «stramba». Una frase che il browser corregge mentre si parla conta una volta sola.
+  - Sopra la barca compare per 3 secondi quello che il browser ha capito (🎤 «...»), così si vede se ha sentito male.
+  - Il riconoscimento lo fa il browser: Safari con Apple, Chrome con Google, quindi serve la rete. Firefox non lo sa fare: il microfono resta grigio. La prima volta il browser chiede il permesso; se lo si nega, il microfono resta grigio e un messaggio dice di permetterlo nelle impostazioni.
+  - Il browser smette di ascoltare dopo un silenzio: il gioco lo riaccende da solo (più piano se continua a fermarsi subito). Quando si esce dalla pagina si spegne, e al ritorno si riaccende.
+  - Safari accende il microfono solo da un tocco: dal pulsante, o dal tocco di "uscire in mare" se era acceso l'altra volta.
 - **Se non si avvisa**, l'equipaggio protesta: «ehi, avvisa quando viri!», «attenti al boma!» se il boma passa di colpo, «aspetta, non eravamo pronti!» se si vira prima della risposta. Con gli aiuti c'è anche il messaggio dell'istruttore.
   - Non contano le vele che passano da sole: quasi fermi (sotto 1 nodo), in bando, arrivando sul gavitello o quando la cappa finisce.
 - **L'equipaggio grida anche** «uomo a mare!» quando parte l'esercizio e «preso!» quando il salvagente o il gavitello sono a bordo.
@@ -214,6 +222,7 @@ Le voci robotiche del Mac (Eddy, Reed, Grandma...) si usano solo se non ce n'è 
 - **Si spengono** con l'altoparlante (tasto M). Nel menu, VOCI A BORDO lascia equipaggio e istruttore, solo l'equipaggio o nessuna voce; la scelta resta per le volte dopo. Col menu, in pausa e in moviola tacciono.
 - **Telefono:** Safari fa partire la voce solo dopo un tocco; la sblocca il tocco di "uscire in mare".
 - **Prove:** la sequenza della virata e della strambata chiamate, le proteste, la scadenza e i testi.
+  - Col microfono: le frasi capite, una frase che cresce e si corregge (come fa Safari), la chiamata detta a voce senza la voce del timoniere, il «viro!» prima del «pronti!». Nel browser il percorso completo è stato provato con un riconoscitore finto; quello vero non si può provare senza parlare.
   - Un pilota che obbedisce solo a ciò che sente, con mezzo secondo di reazione, prende il gavitello con 10 nodi (orza a 24 m) e con 20 nodi e una mano (orza a 11 m), negli stessi tempi del pilota che legge i consigli.
   - Prima che i comandi urgenti si dicessero subito, con 20 nodi orzava 2-3 m troppo tardi.
 

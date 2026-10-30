@@ -6,6 +6,7 @@ import { Wind, newBoat, step, idealSheets, norm180, norm360, clamp, speedKn, twa
 import { Lake } from '../js/lake.js';
 import { Simulation, Coach, COURSE, WINDS, MOB, mobPlan, GAV, gavPlan, CALL } from '../js/sim.js';
 import { speechText, Voice } from '../js/voice.js';
+import { heardCalls, Ear } from '../js/listen.js';
 
 const dataDir = fileURLToPath(new URL('../data/', import.meta.url));
 let failures = 0;
@@ -609,6 +610,34 @@ check(held < 40 && fastest > -1.8, `con 20 nodi chi spinge il boma cede (tenuto 
   const order = heard.map((h) => h.text).join(' | ');
   check(/^Bolina larga[^|]* \| Pronti a (virare|strambare)\?$/.test(order), `la chiamata del timoniere interrompe l'istruttore (${order})`);
   Object.defineProperty(globalThis, 'performance', { value: realPerf, configurable: true, writable: true });
+}
+
+// microfono: le chiamate capite nelle frasi, anche mentre arrivano a pezzi; detta a voce la chiamata non la ripete il timoniere
+{
+  const cases = [
+    ['Pronti a virare?', 'tack'], ['pronti ad virare', 'tack'], ['pronti a girare', 'tack'], ['Pronti a strambare', 'gybe'],
+    ['pronti a vira', 'tack'], ['viro', 'goTack'], ['Virò!', 'goTack'], ['strambo', 'goGybe'], ['pronti', ''], ['vira la barca', 'goTack'],
+    ['ora vado a virare', ''],
+  ];
+  const what = (t) => Object.entries(heardCalls(t)).filter(([, n]) => n > 0).map(([k]) => k).join(',');
+  const bad = cases.filter(([t, k]) => what(t) !== k);
+  check(!bad.length, 'frasi capite: «pronti a virare?», «pronti a strambare», «viro!», «strambo!»' + bad.map(([t]) => `\n      "${t}" → ${what(t) || 'niente'}`).join(''));
+  // Safari: una frase sola che cresce e si corregge; Chrome: una frase per ogni pezzo detto
+  const got = [], ear = new Ear((k) => got.push(k), () => {}, () => {});
+  for (const t of ['pronti a vira', 'pronti a virare', 'pronti a virare viro', 'pronti a virare viro']) ear.result({ resultIndex: 0, results: [[{ transcript: t }]] });
+  ear.result({ resultIndex: 1, results: [[{ transcript: 'pronti a virare viro' }], [{ transcript: 'pronti a strambare' }]] });
+  check(got.join(' ') === 'tack goTack gybe', `una frase che cresce conta una volta: ${got.join(' ')}`);
+  const sm = new Simulation(lake);
+  sm.settings.gusts = false; sm.reset(); sm.wind.shifts = false; sm.autoTrim = true;
+  Object.assign(sm.boat, { pos: { ...lake.center }, heading: norm360(sm.wind.baseDir - 42), u: 2.5, mainSide: -1, jibSide: -1 });
+  sm.lines.length = 0;
+  sm.announce('tack', true); sm.helmGo('tack');
+  const early = sm.message;
+  for (let i = 0; i < 90; i++) sm.update(1 / 60, { tillerTarget: clamp(norm180(twaOf(sm.boat) - 42) * 1.2 - sm.boat.r * 0.8, -25, 25) });
+  sm.helmGo('tack');
+  const lines = sm.lines.map((l) => `${l.who}: ${l.text}`);
+  check(sm.call?.ready && sm.call.go && early.includes('ASPETTA') && sm.message.includes('VIRO') && lines.join() === 'prodiere: Pronti!',
+    `chiamata a voce: il timoniere tace, «viro!» prima del «pronti!» aspetta (${lines.join(' · ')})`);
 }
 
 console.log(failures === 0 ? 'TUTTO OK' : `${failures} ERRORI`);

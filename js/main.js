@@ -6,6 +6,7 @@ import { World } from './world.js';
 import { HUD } from './hud.js';
 import { Audio } from './audio.js';
 import { Voice } from './voice.js';
+import { Ear } from './listen.js';
 import { BOATS, loadSailLogo } from './textures.js';
 import { clamp, norm180, twaOf, speedKn, Spec } from './physics.js';
 
@@ -59,6 +60,24 @@ async function main() {
     $('sound').title = (audio.muted ? 'Audio spento: tocca per accenderlo' : 'Audio acceso: tocca per spegnerlo') + (TOUCH ? '' : ' (M)');
   };
   showSound();
+  // l'allievo chiama le manovre al microfono; le parole capite compaiono sopra la barca
+  let deniedSaid = false;
+  const ear = new Ear((k) => {
+    if (overlay || sim.paused) return;
+    if (k === 'tack' || k === 'gybe') sim.announce(k, true);
+    else sim.helmGo(k === 'goTack' ? 'tack' : 'gybe');
+  }, (text) => { hud.heard = { text, at: performance.now() / 1000 }; }, showMic);
+  function showMic() {
+    const b = $('mic');
+    b.classList.toggle('on', ear.listening);
+    b.classList.toggle('wait', ear.wanted && !ear.listening);
+    b.classList.toggle('na', !ear.supported || ear.denied);
+    b.title = !ear.supported ? 'Questo browser non sa ascoltare: usa Safari o Chrome'
+      : ear.denied ? 'Microfono non concesso: permettilo nelle impostazioni del browser'
+      : ear.wanted ? 'Ti ascolto: «pronti a virare?», poi «viro!» (tocca per spegnere)' : 'Chiama le manovre a voce: tocca per accendere il microfono';
+    if (ear.denied && !deniedSaid) { deniedSaid = true; sim.say('MICROFONO NON CONCESSO: PERMETTILO NELLE IMPOSTAZIONI DEL BROWSER', 'warn'); }
+  }
+  showMic();
   $('loadBar').style.width = '100%';
 
   function resize() {
@@ -104,6 +123,7 @@ async function main() {
     fullscreen();
     audio.start();
     voice.unlock();
+    ear.start();                               // se era acceso l'altra volta (Safari lo accende solo da un tocco)
     sim.reset();
     sim.autoTrim = true;                       // si parte sempre con le vele regolate in automatico (T per il manuale)
     world.orbitYaw = 0; world.orbitPitch = 0; world.zoom = 1; world.wake.reset();
@@ -260,8 +280,17 @@ async function main() {
   // senza fuoco sul pulsante: la barra spaziatrice resta "vele in bando" e non riaccende l'audio
   $('sound').addEventListener('mousedown', (e) => e.preventDefault());
   $('sound').addEventListener('click', (e) => { e.stopPropagation(); command('KeyM'); });    // senza aprire gli strumenti
+  $('mic').addEventListener('mousedown', (e) => e.preventDefault());
+  $('mic').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!ear.supported) { sim.say('QUESTO BROWSER NON SA ASCOLTARE: USA SAFARI O CHROME', 'warn'); return; }
+    deniedSaid = false;
+    ear.toggle();
+    sim.say(ear.wanted ? "MICROFONO ACCESO: DI' «PRONTI A VIRARE?» E DOPO IL «PRONTI!» «VIRO!»" : 'MICROFONO SPENTO', 'info');
+  });
   $('instruments').addEventListener('click', () => { if (TOUCH) $('instruments').classList.toggle('open'); });
   document.addEventListener('visibilitychange', () => {
+    if (document.hidden) ear.stop(); else ear.start();
     if (!audio.ctx) return;
     if (document.hidden) audio.ctx.suspend(); else audio.ctx.resume();
   });
@@ -334,7 +363,7 @@ async function main() {
     }
     requestAnimationFrame(frame);
   }
-  window.__sim = sim; window.__world = world; window.__voice = voice;
+  window.__sim = sim; window.__world = world; window.__voice = voice; window.__ear = ear;
   requestAnimationFrame(frame);
 }
 

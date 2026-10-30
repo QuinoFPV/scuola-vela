@@ -295,16 +295,25 @@ export class Simulation {
   get gavShown() { return this.replay !== null ? this.shown.gavPos ?? this.gavPos : this.gavPos; }
   get mooredShown() { return this.replay !== null ? !!this.shown.moored : !!this.gav?.moored; }
 
-  /** "Pronti a virare?" di bolina e al traverso, "pronti a strambare?" dal lasco in giu': il timoniere avvisa,
-   *  l'equipaggio risponde "pronti!" e poi si manovra. Chi vira o stramba senza avvisare se lo sente dire. */
-  announce() {
+  /** "Pronti a virare?" di bolina e al traverso, "pronti a strambare?" dal lasco in giu' (col pulsante); a voce vale
+   *  quello che l'allievo ha detto. Il timoniere avvisa, l'equipaggio risponde "pronti!" e poi si manovra. Chi vira o
+   *  stramba senza avvisare se lo sente dire. spoken: l'ha detto l'allievo al microfono, la voce del timoniere tace. */
+  announce(kind = null, spoken = false) {
     if (this.replay !== null) return;
     if (this.gav?.moored) { this.say('ORMEGGIATI: PRIMA SI MOLLA IL GAVITELLO (0)', 'warn'); return; }
-    const kind = Math.abs(twaOf(this.boat)) < 90 ? 'tack' : 'gybe';
+    kind ??= Math.abs(twaOf(this.boat)) < 90 ? 'tack' : 'gybe';
     if (this.call?.kind === kind) return;                // gia' chiamata: si aspetta la risposta o la manovra
-    this.call = { kind, t: this.time, ready: false, go: false };
-    this.talk('timoniere', kind === 'tack' ? 'Pronti a virare?' : 'Pronti a strambare?');
+    this.call = { kind, t: this.time, ready: false, go: false, spoken };
+    if (!spoken) this.talk('timoniere', kind === 'tack' ? 'Pronti a virare?' : 'Pronti a strambare?');
     this.say(kind === 'tack' ? '«PRONTI A VIRARE?»' : '«PRONTI A STRAMBARE?»', 'info');
+  }
+  /** "Viro!" o "strambo!" detto dall'allievo al microfono, dopo il "pronti!" dell'equipaggio. */
+  helmGo(kind) {
+    const c = this.call;
+    if (this.replay !== null || c?.kind !== kind || c.go) return;
+    if (!c.ready) { this.say("ASPETTA IL «PRONTI!» DELL'EQUIPAGGIO", 'warn'); return; }
+    c.go = true;
+    this.say(kind === 'tack' ? '«VIRO!»' : '«STRAMBO!»', 'info');
   }
 
   /** La chiamata della manovra: la risposta dell'equipaggio (in virata chi sta al fiocco, in strambata chi sta alla
@@ -321,7 +330,7 @@ export class Simulation {
       const twa = twaOf(b), into = b.r * Math.sign(twa);  // > 0: la prua va verso il vento
       if (tack ? into > CALL.turn || Math.abs(twa) < 20 : into < -CALL.turn || Math.abs(twa) > 170) {
         c.go = true;
-        this.talk('timoniere', tack ? 'Viro!' : 'Strambo!');
+        if (!c.spoken) this.talk('timoniere', tack ? 'Viro!' : 'Strambo!');
         this.say(tack ? '«VIRO!»' : '«STRAMBO!»', 'info');
       }
     }
@@ -335,7 +344,7 @@ export class Simulation {
         || this.events.some((x) => x.type === 'cappaEnd')) continue;
       this.call = null; this.lastTurn = this.time;
       if (call?.kind === e.type && call.ready) {
-        if (!call.go) this.talk('timoniere', e.type === 'tack' ? 'Viro!' : 'Strambo!');
+        if (!call.go && !call.spoken) this.talk('timoniere', e.type === 'tack' ? 'Viro!' : 'Strambo!');
       } else if (call?.kind === e.type) {
         this.talk(crew, 'Aspetta, non eravamo pronti!');
         this.say("PRIMA DI MANOVRARE SI ASPETTA IL «PRONTI!» DELL'EQUIPAGGIO", 'warn');
