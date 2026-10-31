@@ -7,6 +7,7 @@ import { HUD } from './hud.js';
 import { Audio } from './audio.js';
 import { Voice } from './voice.js';
 import { Ear } from './listen.js';
+import { renderHelp } from './help.js';
 import { BOATS, loadSailLogo } from './textures.js';
 import { clamp, norm180, twaOf, speedKn, Spec } from './physics.js';
 
@@ -134,6 +135,8 @@ async function main() {
     document.body.classList.toggle('sailing', !kind);
     $('menu').style.display = kind === 'menu' ? 'flex' : 'none';
     $('help').style.display = kind === 'help' ? 'flex' : 'none';
+    if (kind === 'help') { renderHelp($('helpBody'), $('helpNav'), TOUCH, voice.on); document.querySelector('.help').scrollTop = 0; }
+    $('credits').style.visibility = kind === 'help' ? 'hidden' : '';      // sul telefono finirebbe sopra l'aiuto
     if (kind === 'menu') hud.showMenu(sim.settings, changeSetting);
   };
   function changeSetting(row, d) {

@@ -13,7 +13,7 @@
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <title>Scuola di Vela · Sportaction</title>
 <meta name="description" content="Simulatore di vela della scuola Sportaction sul Lago d'Iseo: timone, scotte, vento vero, consigli dell'istruttore.">
-<link rel="stylesheet" href="css/style.css?v=1c0efb90">
+<link rel="stylesheet" href="css/style.css?v=0eff35af">
 </head>
 <body>
 <canvas id="view"></canvas>
@@ -82,66 +82,9 @@
 
 <div id="help" class="overlay">
   <div class="card help">
-    <h2>COMANDI</h2>
-    <dl class="tch">
-      <dt>BARRA</dt><dd>in basso a sinistra: trascina il dito e la barra resta dove la lasci; tocca il centro per raddrizzarla</dd>
-      <dt>CAZZA / LASCA</dt><dd>in basso a destra, tienili premuti: compaiono quando le vele sono manuali</dd>
-      <dt>VELE AUTO</dt><dd>vele regolate da sole (si parte così) o manuali</dd>
-      <dt>VELE IN BANDO</dt><dd>in basso a destra: lascia andare le scotte del tutto; di nuovo per riprenderle</dd>
-      <dt>FIOCCO IN CAPPA</dt><dd>il fiocco va cazzato sopravento; poi tu lasci la randa (vele manuali) e metti il timone all'orza: la barca si ferma e scarroccia piano</dd>
-      <dt>SPI</dt><dd>compare dal traverso in giù: issa lo spinnaker (il fiocco si avvolge) e lo ammaina; si chiude se si orza troppo</dd>
-      <dt>FARFALLA</dt><dd>compare in poppa: fiocco dalla parte opposta alla randa, sul tangone; si chiude se si orza oltre i 140°</dd>
-      <dt>SCONTRA RANDA</dt><dd>da fermi prua al vento: si spinge fuori il boma, la barca va indietro e la prua cade da quel lato; in retromarcia il timone lavora al contrario. Di nuovo per mollare il boma</dd>
-      <dt>RIDUCI / AUMENTA</dt><dd>la tela: 1 mano, 2 mani, 2 mani + tormentina</dd>
-      <dt>UOMO A MARE</dt><dd>l'istruttore butta in acqua il salvagente: allontanati, scendi sottovento e torna di bolina larga, arrivando quasi fermo; di nuovo per annullare</dd>
-      <dt>PRONTI A VIRARE? · PRONTI A STRAMBARE?</dt><dd>sopra i pulsanti in basso a destra: avvisi l'equipaggio prima di virare o di strambare. Quando risponde «pronti!» manovri; in strambata, con le vele automatiche, la randa si cazza al centro e il boma passa piano</dd>
-      <dt>GAVITELLO</dt><dd>in basso a destra: rientro alla base, si prende il gavitello della scuola a prua; risali di bolina stretta, orza prua al vento dove dice l'istruttore e arriva per abbrivio, quasi fermo. Ormeggiati, MOLLA GAVITELLO per ripartire</dd>
-      <dt>Scena</dt><dd>trascina con un dito per girare intorno alla barca · due dita per avvicinarti</dd>
-      <dt>VISTA</dt><dd>gommone dietro, timoniere, laterale, dall'alto</dd>
-      <dt>MOVIOLA</dt><dd>gli ultimi 20 secondi al rallentatore</dd>
-      <dt>Altoparlante</dt><dd>in alto a destra nel riquadro della velocità: spegne e riaccende l'audio e le voci, e se lo ricorda la volta dopo</dd>
-      <dt>Fumetto</dt><dd>negli strumenti, accanto al microfono: accende o spegne tutta la modalità vocale (voci, microfono, chiamate delle manovre). Spenta, il gioco è senza voci e senza i pulsanti PRONTI; riaccesa torna com'era</dd>
-      <dt>A voce</dt><dd>col microfono acceso (icona accanto all'altoparlante). Il browser chiede il permesso la prima volta; sopra la barca compare quello che ha capito. Il riconoscimento lo fa il browser (Safari con Apple, Chrome con Google)</dd>
-      <dt>· chiamate</dt><dd>«pronti a virare?», «pronti a strambare?»; dopo il «pronti!» dell'equipaggio «viro!», «strambo!»</dd>
-      <dt>· scotte</dt><dd>«cazza la randa», «lasca il fiocco», «lasca un po' la randa», «cazza tutto», «molla la randa» (si passa alle vele manuali) · «vele manuali», «vele automatiche»</dd>
-      <dt>· manovre</dt><dd>«vele in bando», «riprendi le scotte» · «issa lo spi», «ammaina lo spi» · «farfalla», «togli la farfalla» · «scontra la randa», «molla il boma» · «fiocco in cappa», «libera il fiocco» · «prendi una mano di terzaroli», «sciogli i terzaroli»</dd>
-      <dt>· esercizi</dt><dd>«uomo a mare!» · «prendi il gavitello», «molla il gavitello»</dd>
-      <dt>Voci</dt><dd>equipaggio e istruttore parlano con la voce italiana del telefono; nel menu, MODALITÀ VOCALE: SÌ, SÌ MA SENZA L'ISTRUTTORE A VOCE, oppure NO (tutto spento)</dd>
-      <dt>☰</dt><dd>menu: vento fino a 30 nodi, raffiche, Ora o Sover, timone, barca, aiuti, triangolo dei venti, aria sporca, voci</dd>
-      <dt>Consiglio</dt><dd>dal browser scegli "Aggiungi a schermata Home": si apre a tutto schermo, come un'app</dd>
-    </dl>
-    <dl class="desk">
-      <dt>← →</dt><dd>barra del timone (Shift: piano) · ↓ barra esattamente al centro, basta premerla una volta</dd>
-      <dt>Q / A</dt><dd>cazza / lasca la randa</dd>
-      <dt>W / S</dt><dd>cazza / lasca il fiocco</dd>
-      <dt>T</dt><dd>vele automatiche o manuali (si parte in automatico)</dd>
-      <dt>SPAZIO</dt><dd>vele in bando: scotte libere; di nuovo per riprenderle</dd>
-      <dt>U</dt><dd>fiocco in cappa (cazzato sopravento); poi randa lasca e timone all'orza li metti tu; di nuovo per liberarlo</dd>
-      <dt>E</dt><dd>spinnaker: issa (dal traverso in giù, il fiocco si avvolge) e ammaina; attenzione alla straorzata col vento forte</dd>
-      <dt>Y</dt><dd>andatura a farfalla in poppa (fiocco dall'altra parte, sul tangone); di nuovo per riportarlo</dd>
-      <dt>K · J · L</dt><dd>scontra la randa (dal lato del boma · a sinistra · a dritta): si va indietro; di nuovo per mollare il boma</dd>
-      <dt>Z / X</dt><dd>riduci / aumenta la tela: 1 mano, 2 mani, 2 mani + tormentina</dd>
-      <dt>INVIO</dt><dd>uomo a mare: l'istruttore butta in acqua il salvagente; torna a prenderlo di bolina larga, arrivando quasi fermo (vele in bando); di nuovo per annullare</dd>
-      <dt>A voce</dt><dd>col microfono acceso (icona accanto all'altoparlante). Il browser chiede il permesso la prima volta; sopra la barca compare quello che ha capito. Il riconoscimento lo fa il browser (Safari con Apple, Chrome con Google)</dd>
-      <dt>· chiamate</dt><dd>«pronti a virare?», «pronti a strambare?»; dopo il «pronti!» dell'equipaggio «viro!», «strambo!»</dd>
-      <dt>· scotte</dt><dd>«cazza la randa», «lasca il fiocco», «lasca un po' la randa», «cazza tutto», «molla la randa» (si passa alle vele manuali) · «vele manuali», «vele automatiche»</dd>
-      <dt>· manovre</dt><dd>«vele in bando», «riprendi le scotte» · «issa lo spi», «ammaina lo spi» · «farfalla», «togli la farfalla» · «scontra la randa», «molla il boma» · «fiocco in cappa», «libera il fiocco» · «prendi una mano di terzaroli», «sciogli i terzaroli»</dd>
-      <dt>· esercizi</dt><dd>«uomo a mare!» · «prendi il gavitello», «molla il gavitello»</dd>
-      <dt>7</dt><dd>modalità vocale accesa o spenta, tutta insieme: voci, microfono e chiamate delle manovre (anche col fumetto negli strumenti e dal menu)</dd>
-      <dt>9 · 8</dt><dd>«pronti a virare?» · «pronti a strambare?»: l'equipaggio risponde «pronti!», poi vira o stramba. In strambata, con le vele automatiche, al «pronti!» la randa si cazza al centro e il boma passa piano</dd>
-      <dt>0</dt><dd>gavitello: rientro alla base e ormeggio al gavitello della scuola; risali di bolina stretta, orza prua al vento dove dice l'istruttore e arriva per abbrivio a prua; di nuovo per annullare o, ormeggiati, per mollarlo</dd>
-      <dt>Mouse</dt><dd>trascina a destra/sinistra: barra · tasto destro: gira la vista · rotella: zoom</dd>
-      <dt>Gamepad</dt><dd>levetta sinistra: barra · grilletti: randa · dorsali: fiocco</dd>
-      <dt>C</dt><dd>vista: gommone dietro, timoniere, laterale, dall'alto</dd>
-      <dt>P</dt><dd>pausa (la vista si può girare per spiegare)</dd>
-      <dt>R</dt><dd>moviola: gli ultimi 20 secondi al rallentatore</dd>
-      <dt>I</dt><dd>aiuti istruttore: consigli, filetti, regolazione ideale</dd>
-      <dt>F · O</dt><dd>triangolo dei venti (reale, apparente, barca) · aria sporca sottovento</dd>
-      <dt>1 … 6</dt><dd>vento 6, 10, 15, 20, 25, 30 nodi · G raffiche</dd>
-      <dt>D</dt><dd>Ora (da sud) o Sover (da nord)</dd>
-      <dt>B · V</dt><dd>timone: barra semplice, barra reale o ruota · barca nera o bianca</dd>
-      <dt>N · M</dt><dd>ricomincia dalla base · audio acceso o spento (anche con l'altoparlante in alto a destra negli strumenti; se lo ricorda la volta dopo)</dd>
-    </dl>
+    <h2>COME SI GIOCA</h2>
+    <nav id="helpNav"></nav>
+    <div id="helpBody"></div>
     <button id="closeHelp">CHIUDI<span class="desk"> (H)</span></button>
   </div>
 </div>
@@ -157,23 +100,24 @@
 <script type="importmap">
 {
   "imports": {
-    "./js/audio.js": "./js/audio.js?v=1c0efb90",
-    "./js/base.js": "./js/base.js?v=1c0efb90",
-    "./js/boat.js": "./js/boat.js?v=1c0efb90",
-    "./js/hud.js": "./js/hud.js?v=1c0efb90",
-    "./js/lake.js": "./js/lake.js?v=1c0efb90",
-    "./js/listen.js": "./js/listen.js?v=1c0efb90",
-    "./js/main.js": "./js/main.js?v=1c0efb90",
-    "./js/overlays.js": "./js/overlays.js?v=1c0efb90",
-    "./js/physics.js": "./js/physics.js?v=1c0efb90",
-    "./js/sim.js": "./js/sim.js?v=1c0efb90",
-    "./js/textures.js": "./js/textures.js?v=1c0efb90",
-    "./js/vendor/three.module.min.js": "./js/vendor/three.module.min.js?v=1c0efb90",
-    "./js/voice.js": "./js/voice.js?v=1c0efb90",
-    "./js/world.js": "./js/world.js?v=1c0efb90"
+    "./js/audio.js": "./js/audio.js?v=0eff35af",
+    "./js/base.js": "./js/base.js?v=0eff35af",
+    "./js/boat.js": "./js/boat.js?v=0eff35af",
+    "./js/help.js": "./js/help.js?v=0eff35af",
+    "./js/hud.js": "./js/hud.js?v=0eff35af",
+    "./js/lake.js": "./js/lake.js?v=0eff35af",
+    "./js/listen.js": "./js/listen.js?v=0eff35af",
+    "./js/main.js": "./js/main.js?v=0eff35af",
+    "./js/overlays.js": "./js/overlays.js?v=0eff35af",
+    "./js/physics.js": "./js/physics.js?v=0eff35af",
+    "./js/sim.js": "./js/sim.js?v=0eff35af",
+    "./js/textures.js": "./js/textures.js?v=0eff35af",
+    "./js/vendor/three.module.min.js": "./js/vendor/three.module.min.js?v=0eff35af",
+    "./js/voice.js": "./js/voice.js?v=0eff35af",
+    "./js/world.js": "./js/world.js?v=0eff35af"
   }
 }
 </script>
-<script type="module" src="js/main.js?v=1c0efb90"></script>
+<script type="module" src="js/main.js?v=0eff35af"></script>
 </body>
 </html>

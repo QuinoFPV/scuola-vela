@@ -79,6 +79,10 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
   - vicino a riva la telecamera sale sopra case e collina invece di entrarci;
   - se zoom, rotazione o altezza della telecamera ricevono un valore non valido, si azzerano da soli nello stesso fotogramma (prima lo schermo restava bianco finché non si cambiava vista);
   - uno scatto velocissimo della rotella allontana o avvicina al massimo di una volta e mezza.
+- **Aiuto** (H sul computer; dal menu "Come si gioca col telefono"): diviso in sezioni (timone e vele, manovre, esercizi, voce, vista e aiuti, vento barca e menu), con i pulsanti in cima per saltare da una all'altra. Per ogni funzione:
+  - a sinistra, in grande, i tasti disegnati come tasti veri; sul telefono i pulsanti come sono nel gioco, con dove si trovano;
+  - a destra cosa fa, chi fa cosa ("Tu:" e "Equipaggio:") e, con la modalità vocale accesa, in verde le frasi da dire al microfono;
+  - è costruito da un elenco solo in `js/help.js`, per computer e telefono: una funzione nuova va aggiunta lì.
 - **Audio** (tasto M o altoparlante in alto a destra nel riquadro degli strumenti, anche sul telefono):
   - spegne tutto: vento, acqua, vele che sbattono, winch, boma e voci; da spento l'icona è rosa con la X;
   - la scelta resta anche le volte dopo (salvo nelle finestre private, dove il browser può dimenticarla).
