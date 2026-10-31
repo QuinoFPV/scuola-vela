@@ -50,10 +50,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0a1420; col
 /* false mure: scritta rossa lampeggiante */
 #alarm { position: absolute; top: 124px; left: 0; right: 0; text-align: center; display: none; text-shadow: 0 2px 10px rgba(0, 0, 0, .75); }
 #alarm.on { display: block; }
-#alarm > div { display: inline-block; padding: 4px 22px 8px; border-radius: 14px; background: rgba(30, 6, 6, .6); border: 1px solid rgba(255, 59, 48, .5); }
-#alarm b { display: block; font-size: 38px; font-weight: 800; letter-spacing: 4px; color: #ff3b30; animation: blink .8s steps(1, end) infinite; }
-#alarm span { font-size: 14px; font-weight: 600; color: #ffd6d2; }
-@keyframes blink { 50% { opacity: .12; } }
+/* false mure: un avviso fisso e discreto, non lampeggia (richiesta dell'utente) */
+#alarm > div { display: inline-block; padding: 3px 14px 5px; border-radius: 10px; background: rgba(30, 6, 6, .5); border: 1px solid rgba(255, 59, 48, .4); }
+#alarm b { display: block; font-size: 20px; font-weight: 800; letter-spacing: 2px; color: #ff5a4f; }
+#alarm span { font-size: 12px; font-weight: 600; color: #ffd6d2; }
 /* freccione giallo verso la prossima boa e la sua targhetta */
 #markPtr, #markTag { position: absolute; left: 0; top: 0; display: none; will-change: transform; }
 #markPtr { width: 68px; height: 68px; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .55)); }
@@ -158,7 +158,7 @@ body.touch #dial { right: var(--sr); top: var(--st); }
 body.touch #message { top: calc(var(--st) + 46px); left: 316px; right: 240px; font-size: 20px; }
 body.touch #status { top: calc(var(--st) + 112px); left: 316px; right: 240px; }
 body.touch #alarm { top: calc(var(--st) + 138px); left: 316px; right: 240px; }
-body.touch #alarm b { font-size: 32px; }
+body.touch #alarm b { font-size: 18px; }
 body.touch #markPtr { width: 58px; height: 58px; }
 #tbar { left: calc(var(--sl) + 300px); right: calc(var(--sr) + 226px); transform: none; flex-wrap: wrap; justify-content: center; }
 
@@ -182,10 +182,10 @@ body.touch #markPtr { width: 58px; height: 58px; }
   body.touch #message { top: calc(var(--st) + 44px); left: 250px; right: 150px; font-size: 15px; }
   body.touch #status { top: calc(var(--st) + 86px); left: 250px; right: 150px; font-size: 12px; }
   body.touch #alarm { top: calc(var(--st) + 104px); left: 250px; right: 150px; }
-  body.touch #alarm b { font-size: 22px; letter-spacing: 2px; }
-  body.touch #alarm span { font-size: 10px; }
+  body.touch #alarm b { font-size: 14px; letter-spacing: 1.5px; }
+  body.touch #alarm span { font-size: 9px; }
   body.touch #markPtr { width: 44px; height: 44px; }
-  body.touch #alarm > div { padding: 2px 12px 5px; border-radius: 10px; }
+  body.touch #alarm > div { padding: 2px 10px 4px; border-radius: 8px; }
   body.touch #markTag { padding: 2px 8px 3px; border-radius: 9px; }
   body.touch #markTag b { font-size: 8px; letter-spacing: 1.2px; }
   body.touch #markTag span { font-size: 13px; }

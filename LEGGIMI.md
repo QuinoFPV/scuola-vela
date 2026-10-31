@@ -65,7 +65,7 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
   - a 70 m l'istruttore ricorda di lasciarla a sinistra;
   - la boa vale solo se ci si gira intorno in senso antiorario, entro 45 m; girata al contrario non vale e compare l'avviso.
 - **False mure** (in poppa con la randa dalla parte da cui arriva il vento):
-  - compare la scritta rossa lampeggiante FALSE MURE, con sotto il rischio di strambata involontaria;
+  - compare la scritta rossa FALSE MURE, fissa e piccola (prima lampeggiava ed era grande: dava fastidio), con sotto il rischio di strambata involontaria;
   - negli strumenti, al posto delle mure, c'è "FALSE MURE" in rosso, e l'istruttore dice di orzare un poco o strambare;
   - la scritta si accende da 2° oltre la poppa piena e si spegne sotto mezzo grado, così in poppa piena non lampeggia a caso;
   - poggiando ancora il boma passa da solo dall'altra parte: è la strambata involontaria.
