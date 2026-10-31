@@ -83,7 +83,7 @@ check(speedKn(s) > before * 0.75, `dopo 30 s ha ripreso velocità (${f1(speedKn(
 s = newBoat(); s.heading = 315;
 run(s, w, 30, true, (b) => hold(b, 45));
 run(s, w, 40, false, (b) => { b.mainSheet = 1; b.jibSheet = 1; hold(b, 0); });
-check(Math.abs(speedKn(s)) < 1.2 && s.mainLuff > 0.5, `prua al vento si ferma e le vele sbattono (${f1(speedKn(s))} kn)`);
+check(speedKn(s) < 0.5 && speedKn(s) > -1.5 && s.mainLuff > 0.5, `prua al vento non si va avanti e le vele sbattono (${f1(speedKn(s))} kn)`);
 // scotte lascate al traverso
 s = newBoat(); s.heading = 270;
 run(s, w, 40);
@@ -235,10 +235,12 @@ const back = irons(10), h0 = back.boat.heading;
 back.toggleBackMain(1); secs(back, 4);
 const backedNow = back.boat.mainBacked;
 secs(back, 2);
-check(backedNow && back.boat.u < adrift.boat.u * 2 && back.boat.u < -0.5 && turned(back, h0) > 20,
+// (scadendo l'equipaggio delle vele automatiche molla le scotte, quindi anche cosi' si va un po' indietro)
+check(backedNow && back.boat.u < adrift.boat.u * 1.5 && back.boat.u < -0.5 && turned(back, h0) > 20,
   `randa scontrata a dritta: indietro a ${f1(-back.boat.u / 0.5144)} kn (scadendo ${f1(-adrift.boat.u / 0.5144)}), la prua cade a dritta di ${f0(turned(back, h0))}°`);
 const astern = irons(10), h1 = astern.boat.heading;
-astern.toggleBackMain(1); secs(astern, 16, 30);
+// in retromarcia correzioni dolci: con 20° la pala tiene, con 30° stalla e la barca gira
+astern.toggleBackMain(1); secs(astern, 16, 20);
 check(astern.boat.u < -0.5 && Math.abs(turned(astern, h1)) < 35, `col timone al contrario si va indietro quasi dritti (${f0(turned(astern, h1))}° in 16 s)`);
 while (Math.abs(twaOf(back.boat)) < 65) secs(back, 0.5);
 back.toggleBackMain(0);
@@ -253,6 +255,25 @@ for (let i = 0; i < 10 * 60; i++) {
   if (strong.boat.mainBacked && i > 60) held = Math.min(held, strong.boat.backAng);
 }
 check(held < 40 && fastest > -1.8, `con 20 nodi chi spinge il boma cede (tenuto a ${f0(held)}°) e la retromarcia resta sotto i 3,5 nodi (${f1(-fastest / 0.5144)})`);
+}
+// fermi prua al vento, barra tutta da una parte: l'equipaggio delle vele automatiche molla le scotte e tiene il fiocco a
+// collo, la barca va indietro e la prua cade; ripartita, il timoniere tiene 50° dal vento
+{
+  const outOf = (kn, rudder = 35) => {
+    const sm = new Simulation(lake);
+    sm.settings.gusts = false; sm.settings.windIndex = WINDS.findIndex((x) => x[1] === kn); sm.reset(); sm.wind.shifts = false; sm.autoTrim = true;
+    const b = sm.boat, W = sm.wind.baseDir;
+    Object.assign(b, { pos: { ...lake.center }, heading: norm360(W - 3), u: 0, v: 0, r: 0, twd: W, tws: kn });
+    for (let t = 0; t < 60; t += 1 / 60) {
+      const fwd = b.u > 0.3 && Math.abs(twaOf(b)) > 30, side = Math.sign(twaOf(b)) || 1;
+      sm.update(1 / 60, { tillerTarget: fwd ? clamp(norm180(twaOf(b) - side * 50) * 1.2 - b.r * 0.8, -25, 25) : rudder });
+      if (Math.abs(twaOf(b)) > 35 && speedKn(b) > 1.5) return t;
+    }
+    return null;
+  };
+  const times = [6, 10, 15].map((kn) => outOf(kn));
+  check(times.every((t) => t !== null && t < 20) && outOf(10, 0) === null,
+    `fermi prua al vento, con la barra si riparte in ${times.map((t) => (t === null ? 'MAI' : f0(t))).join(', ')} s con 6, 10, 15 nodi (con la barra al centro si resta fermi)`);
 }
 // andatura a farfalla: in poppa piena il fiocco coperto dalla randa rende poco, a farfalla prende vento pulito
 {

@@ -148,7 +148,7 @@ export function newBoat() {
     mainSheet: 0.4, jibSheet: 0.4, mainAngle: 30, jibAngle: 25, mainSide: 1, jibSide: 1,
     mainAlpha: 0, jibAlpha: 0, mainLuff: 0, jibLuff: 0, crew: 0, reef: 0, reefTimer: 0, jibTimer: 0, bando: false,
     backMain: 0, mainBacked: false, backAng: 0, mainPush: 0, farfalla: false, jibBlanket: 0,
-    spi: 0, spiUp: 0, spiSide: 1, spiGybe: 0, spiLuff: 0, jibFurl: 0, broaching: false, cappa: 0, jibBacked: false,
+    spi: 0, spiUp: 0, spiSide: 1, spiGybe: 0, spiLuff: 0, jibFurl: 0, broaching: false, cappa: 0, jibBacked: false, jibAback: 0,
     twd: 0, tws: 10, awa: 0, aws: 10, drive: 0, time: 0,
   };
 }
@@ -260,7 +260,8 @@ export function step(s, wind, dt) {
   if (s.farfalla && Math.abs(twaOf(s)) < 140) { s.farfalla = false; events.push({ type: 'wingEnd' }); }
   // fiocco in cappa: cazzato sopravento dal lato dove lo si e' messo; se la barca vira finisce sottovento e la cappa e' finita
   if (s.cappa && windSide !== s.cappa && absAwa > 25) { s.cappa = 0; events.push({ type: 'cappaEnd' }); }
-  s.jibSide = s.cappa ? s.cappa : s.farfalla ? -s.mainSide : sideFor(s.jibSide, Math.abs(s.jibAngle));
+  // fiocco a collo per uscire da prua al vento (jibAback): tenuto da un lato come in cappa, ma solo per un momento
+  s.jibSide = s.cappa ? s.cappa : s.jibAback ? s.jibAback : s.farfalla ? -s.mainSide : sideFor(s.jibSide, Math.abs(s.jibAngle));
 
   const heelK = Math.cos(rad(Math.min(80, Math.abs(s.heel)))) ** 2;
   const q = 0.5 * RHO_AIR * (s.aws * KNOT) ** 2 * heelK;
@@ -276,7 +277,7 @@ export function step(s, wind, dt) {
     // mentre si prende una mano (o si cambia il fiocco) la drizza e' lasca: la vela sbandiera
     const changing = main ? s.reefTimer > 0 : s.jibTimer > 0;
     // in cappa la scotta sopravento del fiocco e' cazzata e strozzata
-    const limit = changing ? 180 : !main && s.cappa ? Spec.jibMin + 4 : sheetAngle(main, main ? s.mainSheet : s.jibSheet);
+    const limit = changing ? 180 : !main && (s.cappa || s.jibAback) ? Spec.jibMin + 4 : sheetAngle(main, main ? s.mainSheet : s.jibSheet);
     const side = main ? s.mainSide : s.jibSide;
     const area = main ? Spec.mainArea * Spec.reefArea[mainReefs(s)] : Spec.jibArea * (stormJib(s) ? Spec.stormJibArea : 1);
     const target = main && s.backMain ? s.backMain * s.backAng : side * (side === leeSide ? Math.min(limit, absAwa) : limit);
@@ -355,7 +356,9 @@ export function step(s, wind, dt) {
 
   // timone
   const flowR = Math.abs(u) + 0.15;
-  const rudderAlpha = s.rudder - deg(Math.atan2(rad(s.r) * 1.5, flowR));
+  // la rotazione cambia l'angolo dell'acqua sulla pala e lo riduce mentre la barca gira; andando indietro l'acqua arriva
+  // da poppa e il segno si inverte (prima si sommava, la pala stallava e in retromarcia il timone girava poco)
+  const rudderAlpha = s.rudder - (u >= 0 ? 1 : -1) * deg(Math.atan2(rad(s.r) * 1.5, flowR));
   const ra = Math.abs(rudderAlpha);
   let rcl = ra < 25 ? ra * 0.055 : Math.max(0.45, 1.375 - (ra - 25) * 0.04);
   rcl *= rudderAlpha >= 0 ? 1 : -1;

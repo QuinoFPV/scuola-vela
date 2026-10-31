@@ -44,6 +44,13 @@ Il simulatore della scuola Sportaction sul Lago d'Iseo, nel browser e per comput
   - con 10 nodi in poppa piena si passa da 3,5 a 4,0 nodi, con 15 nodi da 5,1 a 5,6;
   - al gran lasco (150°) conviene invece il fiocco dalla parte della randa: a farfalla si va più piano;
   - si fa solo oltre i 150° dal vento; se si orza sotto i 140° il fiocco si chiude e torna sottovento.
+- **Uscire da prua al vento col timone** (corretto il 31 ottobre: prima spesso la barra non bastava):
+  - fermi prua al vento (sotto 1 nodo, entro 35° dal vento), l'equipaggio delle vele automatiche **molla le scotte**. Prima cazzava la randa al centro, e la randa faceva da banderuola: con la barra tutta da una parte la prua non cadeva mai;
+  - se il timoniere mette la barra (oltre 10°), chi sta al fiocco lo tiene **a collo** dalla parte che aiuta la prua a cadere. Andando indietro il timone lavora al contrario: con la pala a dritta la prua va a sinistra, andando avanti a dritta. I filetti dicono "fiocco a collo";
+  - il timone in retromarcia lavorava male: il calcolo dell'angolo dell'acqua sulla pala aveva il segno sbagliato e la pala stallava girando. Ora in retromarcia la barca risponde al timone; correzioni dolci (con la randa scontrata 20° di barra tengono la barca dritta, 30° la fanno girare);
+  - quanto ci vuole, con la barra tutta da una parte finché si va indietro, poi barra per tenere 50° dal vento: si riparte a 1,5 nodi in 18 s con 6 nodi, 8 s con 10, 5 s con 15. Con la barra al centro si resta fermi;
+  - non vale con la randa scontrata (la manovra la fa l'allievo) né arrivando sul gavitello (lì si arriva apposta prua al vento);
+  - con le vele manuali le scotte e il fiocco a collo (U, fiocco in cappa) restano all'allievo.
 - **Randa scontrata** (K dal lato dov'è il boma, J a sinistra, L a dritta; sul telefono SCONTRA RANDA): l'esercizio per uscire dall'angolo morto e andare in retromarcia.
   - Il marinaio di prua si alza e spinge il boma fuori a 70°; il vento prende la randa dalla parte di fuori, la vela si gonfia al contrario e la barca va indietro.
   - Con 10 nodi la barca va indietro a 1–1,5 nodi in pochi secondi; scadendo senza far niente farebbe 0,3–0,4 nodi.

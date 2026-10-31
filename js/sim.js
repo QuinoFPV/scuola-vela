@@ -71,13 +71,14 @@ export function gavPlan(tws) {
   const luff = Math.round(a[1] + (b[1] - a[1]) * k);
   return { luff, start: luff + 40 };
 }
-/** Le chiamate della manovra (after: per quanti secondi la randa resta al centro dopo una strambata chiamata).
+/** Le chiamate della manovra (after: per quanti secondi la randa resta al centro dopo una strambata chiamata;
+ *  stuck: sotto quanti m/s, prua al vento, l'equipaggio delle vele automatiche molla le scotte).
  *  Dopo quanti secondi l'equipaggio risponde "pronti!"; per quanti secondi la chiamata vale
  *  se poi non si manovra; da quanti gradi al secondo la prua che gira vuol dire che la manovra e' cominciata ("viro!");
  *  sotto quanti nodi le vele che passano dall'altra parte da sole (prua al vento quasi fermi) non sono una manovra;
  *  fin dove chi sta alla randa la cazza prima di una strambata chiamata, con le vele automatiche (sopra 0,45 il boma
  *  passa di colpo). */
-export const CALL = { answer: 1.2, wait: 20, turn: 5, slow: 1, haul: 0.15, after: 2.5 };
+export const CALL = { answer: 1.2, wait: 20, turn: 5, slow: 1, haul: 0.15, after: 2.5, stuck: 0.5 };
 
 export class Simulation {
   constructor(lake) {
@@ -446,7 +447,7 @@ export class Simulation {
       this.ironsTimer += dt;
       if (this.ironsTimer > 4 && this.time - this.messageTime > 6) {
         // sullo schermo torna ogni 6 s, a voce l'istruttore lo dice una volta
-        this.say('FERMI PRUA AL VENTO: SCONTRA LA RANDA (K) O METTI LA BARRA DA UN LATO E ASPETTA CHE LA PRUA CADA', 'warn', !this.ironsSaid);
+        this.say('FERMI PRUA AL VENTO: METTI LA BARRA TUTTA DA UNA PARTE E LASCIA CADERE LA PRUA, O SCONTRA LA RANDA (K)', 'warn', !this.ironsSaid);
         if (!this.ironsSaid) this.stats.irons++;
         this.ironsSaid = true;
       }
@@ -646,6 +647,7 @@ export class Simulation {
     // "pronti!" quando e' al centro); con le manuali la cazza l'allievo dopo il "pronti!"
     // e la tiene al centro ancora un paio di secondi dopo la strambata (CALL.after): se la barca gira ancora e ripassa il
     // vento, il boma non torna di colpo
+    b.jibAback = 0; b.freed = false;                     // scotte mollate e fiocco a collo: solo l'equipaggio delle vele automatiche
     b.haul = ((this.call?.kind === 'gybe' && (this.call.ready || this.autoTrim)) || this.time < this.haulUntil) && Math.abs(twaOf(b)) > 120;
     if (b.bando) {
       // le scotte corrono fuori in un paio di secondi; chi ricomincia a cazzare le riprende in mano
@@ -654,9 +656,20 @@ export class Simulation {
       if ((c.main || 0) > 0 || (c.jib || 0) > 0) { this.autoTrim = false; this.toggleBando(); }
     } else if (this.autoTrim) {
       const id = idealSheets(b);
-      // chi sta alla randa la cazza al centro, cosi' il boma passa piano
-      b.mainSheet += clamp((b.haul ? Math.min(id.main, CALL.haul) : id.main) - b.mainSheet, -0.4 * dt, 0.4 * dt);
-      b.jibSheet += clamp(id.jib - b.jibSheet, -0.4 * dt, 0.4 * dt);
+      // fermi prua al vento (o all'indietro) l'equipaggio molla le scotte: la randa cazzata al centro farebbe da
+      // banderuola e terrebbe la prua nel vento, e il timone non basterebbe a farla cadere
+      // Non con la randa scontrata (la manovra la fa l'allievo) ne' arrivando sul gavitello (li' si arriva apposta prua al
+      // vento, quasi fermi, e la prua la tiene il timoniere sul gavitello)
+      const nearGav = this.gav && len(sub(this.gavPos, b.pos)) < 40;
+      const stuck = b.freed = b.u < CALL.stuck && Math.abs(twaOf(b)) < 35 && !b.backMain && !nearGav;
+      // e se il timoniere mette la barra, chi sta al fiocco lo tiene a collo dalla parte opposta a dove deve andare la prua
+      // (il vento lo prende di fuori e la spinge). Andando indietro il timone lavora al contrario: con la pala a dritta la
+      // prua va a sinistra, andando avanti a dritta
+      b.jibAback = stuck && Math.abs(b.rudder) > 10 && !b.cappa && !b.spi ? Math.sign(b.rudder) * (b.u < 0 ? 1 : -1) : 0;
+      // in strambata chiamata chi sta alla randa la cazza al centro, cosi' il boma passa piano
+      const main = stuck ? 0.85 : b.haul ? Math.min(id.main, CALL.haul) : id.main, jib = stuck ? 0.85 : id.jib;
+      b.mainSheet += clamp(main - b.mainSheet, -0.4 * dt, 0.4 * dt);
+      b.jibSheet += clamp(jib - b.jibSheet, -0.4 * dt, 0.4 * dt);
     } else {
       // un comando a voce porta la scotta dove detto alla velocita' delle mani; tasti e pulsanti la riprendono subito
       for (const [k, rate, held] of [['main', 0.22, c.main || 0], ['jib', 0.25, c.jib || 0]]) {
@@ -686,6 +699,8 @@ export const Coach = {
     if (gav?.moored) return ['Ormeggiati: le vele sbattono, le scotte sono libere', 'info'];
     if (gav && Math.abs(twaOf(s)) < 35 && len(sub(gav.pos, s.pos)) < 60) return ['Prua al vento verso il gavitello: le vele sbattono apposta', 'info'];
     if (s.cappa) return ['Fiocco in cappa: preso dal vento dalla parte di fuori', 'info'];
+    if (s.jibAback) return ['Fiocco a collo: il vento lo prende di fuori e spinge la prua', 'info'];
+    if (s.freed) return ['Fermi prua al vento: le scotte sono mollate', 'info'];
     if (s.jibFurl > 0.5) return ['Fiocco avvolto: con lo spi i filetti non servono', 'info'];
     if (s.bando) return ['Vele in bando: i filetti non lavorano', 'info'];
     if (s.jibTimer > 0) return ['Cambio del fiocco in corso', 'info'];
@@ -778,7 +793,8 @@ export const Coach = {
       else out.push([`Randa scontrata a ${side}: tieni il boma fuori finché la barca prende abbrivio all'indietro`, 'info']);
     }
     if (twa < 33 && !s.backMain && !luffing) out.push(Math.abs(kn) < 0.6
-      ? ["Sei fermo nell'angolo morto: scontra la randa (K) o metti la barra e lascia cadere la prua", 'bad']
+      ? (s.freed && Math.abs(s.rudder) > 10 ? ["Barra tutta: la barca va indietro e la prua cade, l'equipaggio tiene il fiocco a collo. Quando riparte raddrizza la barra", 'info']
+        : ["Sei fermo nell'angolo morto: metti la barra tutta da una parte e lascia cadere la prua, o scontra la randa (K)", 'bad'])
       : ['Troppo all\'orza: le vele non portano, poggia di qualche grado', 'bad']);
     if (s.cappa) {
       // in cappa: randa lasca e timone all'orza li deve mettere l'allievo
@@ -791,6 +807,7 @@ export const Coach = {
     }
     if (s.bando) out.push(['Vele in bando: senza scotte la barca rallenta (in poppa poco). Per ripartire riprendi le scotte (SPAZIO)', 'info']);
     else if (s.backMain || s.cappa) { /* il boma lo tiene l'equipaggio: niente consigli sulla scotta della randa */ }
+    else if (s.freed) { /* fermi prua al vento l'equipaggio ha mollato le scotte apposta */ }
     else if (s.haul) out.push([s.mainSheet > 0.45 ? 'Strambata chiamata: cazza la randa al centro, poi poggia e stramba'
       : 'Randa al centro: ora poggia e stramba, il boma passerà piano', s.mainSheet > 0.45 ? 'warn' : 'good']);
     else if (s.reefTimer > 0) { /* durante i terzaroli la randa sbatte apposta */ }
@@ -798,7 +815,7 @@ export const Coach = {
     else if (s.mainLuff > 0.35 && twa >= 33) out.push(['La randa fileggia (sbatte): cazzala', 'bad']);
     else if (s.mainSheet - ideal.main > 0.09 && twa < 160) out.push(["Randa troppo lascata: cazzala finché smette di fileggiare", 'warn']);
     else if (ideal.main - s.mainSheet > 0.09 && twa > 45) out.push(["Randa troppo cazzata: lasca finché non fileggia, poi riprendi un po'", 'warn']);
-    if (s.jibTimer > 0 || s.bando || s.backMain || s.jibFurl > 0.5 || s.cappa) { /* il fiocco sbatte, e' avvolto o e' in cappa apposta */ }
+    if (s.jibTimer > 0 || s.bando || s.backMain || s.jibFurl > 0.5 || s.cappa || s.freed) { /* il fiocco sbatte, e' avvolto, in cappa o a collo apposta */ }
     else if (s.farfalla) out.push([twa < 155 ? "A farfalla stai orzando troppo: poggia, sotto i 140° il fiocco si chiude" : 'A farfalla: tieni la poppa piena, randa e fiocco prendono tutti e due vento pulito', twa < 155 ? 'warn' : 'good']);
     else if (s.jibBlanket > 0.5) out.push(['In poppa il fiocco è coperto dalla randa e sbatte: prova la farfalla (Y)', 'info']);
     else if (s.jibLuff > 0.35 && twa >= 33) out.push(['Il fiocco sbatte: cazza la scotta del fiocco', 'bad']);
