@@ -219,7 +219,7 @@ export class HUD {
   /** Sui telefoni i tasti diventano i nomi dei pulsanti. */
   keyless(t) {
     if (!this.touch) return t;
-    return t.replace(/ \(Z\)/i, ' (RIDUCI)').replace(/ \(X\)/i, ' (AUMENTA)').replace(/ \(SPAZIO\)/i, '').replace(/ \(K\)/i, '').replace(/ \(Y\)/i, '').replace(/ \(E\)/i, '').replace(/ \(U\)/i, '').replace(/ \(0\)/, '').replace(/ \([89]\)/, '').replace(/ \(Q\)/, '');
+    return t.replace(/ \(Z\)/i, ' (RIDUCI)').replace(/ \(X\)/i, ' (AUMENTA)').replace(/ \(SPAZIO\)/i, '').replace(/ \(K\)/i, '').replace(/ \(Y\)/i, '').replace(/ \(E\)/i, '').replace(/ \(U\)/i, '').replace(/ \(0\)/, '').replace(/ \([89]\)/, '').replace(/ \([QAWS]\)/g, '').replace(/ \(T\)/, ' (VELE AUTO)');
   }
 
   /** Comandi a dito: posizione della barra, scotte, pulsanti che cambiano scritta, dati essenziali. */
@@ -461,7 +461,7 @@ export class HUD {
       const p = progress[l.id];
       return `<div class="lcard" data-i="${i}"><span class="num">${i + 1}</span><div><h3>${l.title}</h3><p>${l.goal}</p></div>`
         + `<div class="lstars">${p ? '★'.repeat(p.stars) + '☆'.repeat(3 - p.stars) : '☆☆☆'}<small>${p ? 'in ' + mmss(p.time) : 'da fare'}</small></div></div>`;
-    }).join('') + '<p class="lsoon">Prossimamente: prua al vento e ripartenza, vele manuali, uomo a mare, gavitello, giro delle boe</p>';
+    }).join('');
     for (const c of $('lessonList').querySelectorAll('.lcard')) c.onclick = () => onPick(+c.dataset.i);
   }
 

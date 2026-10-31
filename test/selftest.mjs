@@ -749,6 +749,112 @@ check(held < 40 && fastest > -1.8, `con 20 nodi chi spinge il boma cede (tenuto 
   }
   const lazy = lesson('virata', { noCall: true });
   check(!lazy.run.done || lazy.run.stars < 3, `virare senza chiamare non vale tre stelle (${lazy.run.done ? lazy.run.stars + ' stelle' : 'ferma a ' + lazy.run.step.title})`);
+
+  // le altre lezioni, ognuna col suo pilota. helm: porta la barca a want gradi dal vento (col segno delle mure); per
+  // cambiare mure chiama la manovra e aspetta il «pronti!». toward: verso un punto, di bolina a 44° sulle mure che si
+  // hanno finche' il punto non si prende sulle altre
+  const helm = (sm, want) => {
+    const b = sm.boat, cur = twaOf(b);
+    if (Math.sign(want) !== Math.sign(cur) && Math.abs(speedKn(b)) > 1.2) {
+      const kind = Math.abs(cur) + Math.abs(want) < 180 ? 'tack' : 'gybe';
+      if (sm.call?.kind !== kind) sm.announce(kind);
+      if (!sm.call?.ready) want = cur;
+    }
+    return { tillerTarget: clamp(norm180(cur - want) * 1.2 - b.r * 0.8, -25, 25) };
+  };
+  const toward = (sm, p) => {
+    const b = sm.boat, cur = twaOf(b) || 1;
+    let want = norm180(b.twd - bearing(sub(p, b.pos)));
+    if (Math.abs(want) < 44) want = 44 * Math.sign(cur);
+    if (Math.abs(want) > 165) want = 165 * Math.sign(cur);
+    return helm(sm, want);
+  };
+  const pilots = {
+    prua: (sm, run, m) => {
+      const st = run.step.title, b = sm.boat, side = Math.sign(twaOf(b)) || 1;
+      if (st === 'BOLINA STRETTA') return helm(sm, 45 * side);
+      if (st === 'PRUA AL VENTO') return { tillerTarget: clamp(norm180(twaOf(b) - 8 * side) * 1.5 - b.r * 0.8, -25, 25) };
+      if (st === 'RIPARTI COL TIMONE') return { tillerTarget: 30 };
+      if (st === 'INDIETRO') { if (!b.backMain) sm.toggleBackMain(0); return { tillerTarget: 0 }; }
+      if (b.backMain && Math.abs(twaOf(b)) > 60) sm.toggleBackMain(0);      // MOLLA IL BOMA quando la prua e' caduta
+      return { tillerTarget: b.backMain ? 0 : clamp(norm180(twaOf(b) - 60 * side) * 1.2, -25, 25) };
+    },
+    manuali: (sm, run) => {
+      const st = run.step.title, b = sm.boat, side = Math.sign(twaOf(b)) || 1, id = idealSheets(b);
+      if (st === 'VELE MANUALI') sm.autoTrim = false;
+      if (st === 'VELE AUTOMATICHE') sm.autoTrim = true;
+      const trim = (sheet, ideal) => Math.abs(sheet - ideal) < 0.02 ? 0 : sheet > ideal ? 1 : -1;
+      return { ...helm(sm, ({ 'BOLINA STRETTA': 45, LASCO: 120 }[st] ?? 90) * side),
+        main: sm.autoTrim ? 0 : trim(b.mainSheet, id.main), jib: sm.autoTrim || st === 'RANDA' ? 0 : trim(b.jibSheet, id.jib) };
+    },
+    uomo: (sm, run, m) => {
+      const st = run.step.title, b = sm.boat;
+      m.side ??= Math.sign(twaOf(b));
+      if (st === 'TRAVERSO' || st === 'UOMO A MARE') return helm(sm, 90 * m.side);
+      if (st === 'VIRA') { if (m.flip !== run.i) { m.flip = run.i; m.side = -m.side; } return helm(sm, 45 * m.side); }
+      if (st === 'SOTTO AL SALVAGENTE') return helm(sm, 150 * m.side);
+      if (!sm.mob) return {};
+      const d = len(sub(sm.mob.pos, b.pos)), aim = add(sm.mob.pos, mul(dirVec(b.twd), d > 15 ? 2 : 1));
+      if (d < mobPlan(sm.windKn).stop && !b.bando) sm.toggleBando();
+      return helm(sm, d < 10 && speedKn(b) > 2 ? 30 * Math.sign(twaOf(b)) : norm180(b.twd - bearing(sub(aim, b.pos))));
+    },
+    // come il pilota del gavitello: bolina stretta fino alla linea del vento del gavitello, virando (chiamato) se la
+    // incrocia troppo sotto; orza quando lo dice l'istruttore e libera le scotte quando lo dice
+    gavitello: (sm, run, m) => {
+      const b = sm.boat, g = sm.gavPos, plan = gavPlan(sm.windKn), U = dirVec(b.twd), P = dirVec(b.twd + 90), rel = sub(g, b.pos);
+      const above = rel.x * U.x + rel.y * U.y, lat = rel.x * P.x + rel.y * P.y;
+      m.twa0 ??= twaOf(b) > 0 ? 42 : -42; m.tTack ??= -100; m.phase ??= 'bolina';
+      const coming = m.twa0 > 0 ? lat < 0 : lat > 0, tip = sm.gav ? Coach.gavTip(b, sm.gav)[0] : '';
+      if (m.phase === 'bolina' && sm.time - m.tTack > 8 && !m.tacking) {
+        if (tip.startsWith('Ora orza') && coming && Math.abs(lat) < 3.5) m.phase = 'orza';
+        else if (!coming && Math.abs(lat) > Math.max(6, (above - plan.luff) / 1.9)) m.tacking = true;
+      }
+      if (m.tacking) {
+        const c = helm(sm, -m.twa0);
+        if (Math.sign(twaOf(b)) === -Math.sign(m.twa0) && Math.abs(twaOf(b)) > 35) { m.twa0 = -m.twa0; m.tacking = false; m.tTack = sm.time; }
+        return c;
+      }
+      if (m.phase !== 'orza') return helm(sm, m.twa0);
+      if (tip.includes('lascia andare le scotte') && !b.bando) sm.toggleBando();
+      return { tillerTarget: clamp(norm180(b.twd + clamp(norm180(bearing(rel) - b.twd), -15, 15) - b.heading) * 1.2 - b.r * 0.8, -25, 25) };
+    },
+    // le boe: punta 10 m a destra della prossima boa, cosi' la lascia a sinistra e le gira intorno
+    boe: (sm, run) => {
+      const b = sm.boat, M = sm.marks[sm.nextMark];
+      if (run.step.title === 'BOLINA STRETTA') return helm(sm, 45 * Math.sign(twaOf(b)));
+      return toward(sm, add(M, mul(dirVec(bearing(sub(M, b.pos)) + 90), 10)));
+    },
+  };
+  const lesson2 = (id, windFrom = 0, meddle = null) => {
+    const def = LESSONS.find((l) => l.id === id), sm = new Simulation(lake);
+    Object.assign(sm.settings, { windIndex: lessonWindIndex(def), gusts: false, aids: true, voices: 0, windFrom });
+    sm.reset(); sm.wind.shifts = false; sm.autoTrim = true; sm.forceCalls = true;
+    placeForLesson(sm, def);
+    const run = new LessonRun(sm, def), memo = {};
+    let t = 0;
+    while (!run.done && t < 600) {
+      meddle?.(sm, run, t);
+      sm.update(1 / 30, pilots[id](sm, run, memo));
+      run.update(sm);
+      t += 1 / 30;
+    }
+    return { run, sm, t };
+  };
+  for (const id of ['prua', 'manuali', 'uomo', 'gavitello', 'boe']) {
+    // il gavitello e il giro delle boe partono da posti propri: col vento da sud (Ora) e da nord (Sover)
+    for (const windFrom of id === 'gavitello' || id === 'boe' ? [0, 1] : [0]) {
+      const { run, sm, t } = lesson2(id, windFrom);
+      check(run.done && run.stars === 3 && t < run.def.par * 0.7,
+        `lezione «${run.def.title}»${windFrom ? ' col Sover' : ''}: ${run.steps.length} tappe in ${f0(t)} s (tre stelle sotto ${run.def.par} s), ${run.stars ?? 0} stelle${run.done ? '' : ` (ferma a ${run.step.title})`}${run.errors(sm).map(([l, n]) => `, ${n} ${l}`).join('')}`);
+    }
+  }
+  // prua al vento apposta non e' un errore; annullato il salvagente (INVIO) l'istruttore lo ributta e si ricomincia da li'
+  const pr = lesson2('prua');
+  pr.sm.stats.irons += 2;
+  let thrown = 0;
+  const mo = lesson2('uomo', 0, (sm, run, t) => { if (run.step.title === 'UOMO A MARE' && t > 12 && !thrown) { thrown = t; sm.manOverboard(); } });
+  check(mo.run.done && mo.run.stars === 3 && thrown && !pr.run.errors(pr.sm).length,
+    `prua al vento apposta non conta come errore; salvagente annullato a ${f0(thrown)} s e ributtato, lezione finita in ${f0(mo.t)} s`);
 }
 
 console.log(failures === 0 ? 'TUTTO OK' : `${failures} ERRORI`);

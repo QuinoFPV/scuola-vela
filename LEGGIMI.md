@@ -146,26 +146,32 @@ Il test automatico confronta con la polare ORC:
 - con lo spi: 120°, 150° e il VMG di poppa.
 
 ## Lezioni guidate
-Un percorso a tappe come a scuola. Per ora tre lezioni: le andature, la virata, la strambata.
-- **Come si apre:** dal menu, LEZIONI GUIDATE (L sul computer); si sceglie la lezione toccandola (o col numero). Ogni lezione mostra il voto migliore e il tempo.
+Un percorso a tappe come a scuola, in otto lezioni: le andature, la virata, la strambata, prua al vento e ripartenza, le vele a mano, uomo a mare, il gavitello, il giro delle boe.
+- **Come si apre:** dal menu, LEZIONI GUIDATE (L sul computer); si sceglie la lezione toccandola (o col numero, da 1 a 8). Le schede sono su due colonne, così le otto lezioni stanno anche sul telefono. Ogni lezione mostra il voto migliore e il tempo.
 - **Durante la lezione:**
   - il riquadro dell'istruttore in basso a sinistra mostra la lezione, la tappa ("TAPPA 3 DI 12") e cosa fare. Quando la tappa va tenuta per qualche secondo, una barretta verde si riempie: se si esce dall'andatura torna a zero;
   - l'istruttore legge ogni tappa a voce, con la modalità vocale accesa; finita una tappa compare "BENE · ... FATTO";
   - N (o D) ricomincia la lezione, ESC la lascia.
-- **Condizioni della lezione:** 10 nodi di vento costante (niente raffiche), aiuti dell'istruttore accesi, vele automatiche, barca in acqua libera 80 m sottovento al centro del lago. Uscendo dalla lezione vento, raffiche e aiuti tornano come erano.
+- **Condizioni della lezione:** 10 nodi di vento costante (niente raffiche), aiuti dell'istruttore accesi, vele automatiche, barca in acqua libera 80 m sottovento al centro del lago (il gavitello e il giro delle boe partono da posti propri, vedi sotto). Uscendo dalla lezione vento, raffiche e aiuti tornano come erano.
   - Le chiamate delle manovre (PRONTI A VIRARE? / A STRAMBARE?) ci sono anche con la modalità vocale spenta: fanno parte della lezione.
 - **Le lezioni:**
   1. **Le andature** (6 tappe): traverso, bolina stretta, bolina larga, lasco, gran lasco, poppa. Ogni andatura si tiene 8 secondi; vale il nome scritto negli strumenti. La bolina stretta vale solo sopra 2,5 nodi.
   2. **La virata** (12 tappe): tre volte bolina stretta, «pronti a virare?» e attesa del «pronti!», virata, bolina stretta sulle nuove mure sopra i 3 nodi.
   3. **La strambata** (8 tappe): due volte gran lasco, «pronti a strambare?», strambata, gran lasco sulle nuove mure.
-- **Il voto:** tre stelle senza errori e sotto 2:30, due stelle con uno o due errori (o oltre il tempo), una stella con più errori. Errori: manovre senza avvisare, prima del «pronti!» o diverse da quella chiamata, strambate involontarie, fermi prua al vento, secche, boe o barche urtate. Il voto migliore resta salvato nel browser.
+  4. **Prua al vento e ripartenza** (8 tappe): bolina stretta; prua al vento fino a fermarsi (sotto 0,6 nodi, entro 30° dal vento); barra tutta da una parte finché la prua è caduta oltre 55° (l'equipaggio molla le scotte e tiene il fiocco a collo); bolina stretta sopra i 3 nodi; di nuovo prua al vento; randa scontrata (K) e indietro per 3 s a più di 0,6 nodi; boma mollato (K) con la prua caduta oltre 50°; bolina stretta. Qui fermarsi prua al vento non è un errore. Tre stelle sotto 2:30.
+  5. **Le vele a mano** (6 tappe): vele manuali (T, sul telefono VELE AUTO); al traverso la randa regolata per 4 s, poi anche il fiocco coi filetti; bolina stretta e lasco con tutte e due regolate per 5 s; di nuovo vele automatiche. Vale lo stesso margine dei consigli dell'istruttore: la randa entro 0,09 della corsa della scotta dalla regolazione giusta, il fiocco entro 0,1. Tre stelle sotto 3:00.
+  6. **Uomo a mare** (5 tappe): traverso per 5 s; poi l'istruttore butta il salvagente da solo (l'equipaggio grida «uomo a mare!») e si resta al traverso finché ci si è allontanati quanto dice l'istruttore (70 m con 10 nodi); virata chiamata; gran lasco finché il salvagente è sopravento di almeno 10 m e a 45-75° dal vento; bolina larga e recupero. Se lo si prende prima, le tappe che mancano valgono fatte. Annullato l'esercizio (INVIO), l'istruttore ributta il salvagente e si ricomincia dalla seconda tappa. Errore in più: salvagente investito. Tre stelle sotto 4:00.
+  7. **Il gavitello** (2 tappe): la barca parte di bolina stretta 114 m sottovento al gavitello della scuola (con 10 nodi: 90 m sotto il punto in cui orzare) e 50 m di lato, dalla parte dove c'è acqua libera, così va bene sia con l'Ora sia col Sover. Prima tappa: risalire finché il gavitello è dritto sopravento (entro 6 m di lato) e a meno di 30 m; seconda: prenderlo. Fermarsi prua al vento non conta come errore; urtare il gavitello sì. Annullato (0), si ricomincia. Tre stelle sotto 2:30.
+  8. **Il giro delle boe** (4 tappe): la barca parte di bolina mure a dritta 80 m sotto la boa di bolina e 100 m alla sua destra, sulle mure giuste per lasciarla a sinistra. Boa di bolina, boa di traverso (girandola si stramba: va chiamata), boa di poppa, poi bolina stretta sopra i 3 nodi per 3 s. Le boe sono quelle del giro di sempre e valgono le stesse regole (senso antiorario, boa toccata = errore). Tre stelle sotto 8:00.
+- **Il voto:** tre stelle senza errori e sotto il tempo della lezione, due stelle con uno o due errori (o oltre il tempo), una stella con più errori. Errori: manovre senza avvisare, prima del «pronti!» o diverse da quella chiamata, strambate involontarie, fermi prua al vento, secche, boe o barche urtate, salvagente investito, gavitello urtato. Il voto migliore resta salvato nel browser.
 - **La pagina del voto:** stelle, tempo, gli errori uno per uno; RIPROVA (R), PROSSIMA LEZIONE (INVIO), TUTTE LE LEZIONI (L).
 - **Strambata, cambiata anche fuori dalle lezioni:**
   - con le vele automatiche chi sta alla randa la cazza subito alla chiamata e risponde «pronti!» quando è al centro (prima rispondeva dopo 1,2 s anche con la randa ancora fuori, e chi strambava subito prendeva il boma di colpo);
   - dopo la strambata tiene la randa al centro ancora 2,5 s, così se la barca gira ancora e ripassa il vento il boma non torna di colpo.
 - **Contatori:** la simulazione conta virate, strambate ed errori dall'uscita (`sim.stats`); servono al voto e serviranno alla pagella.
-- **Prove:** un pilota che fa quello che dice ogni tappa finisce le tre lezioni con tre stelle (andature in 59 s, virata in 46 s, strambata in 28 s). Chi vira senza chiamare non prende tre stelle.
-- **Prossime lezioni** (in elenco come "prossimamente"): prua al vento e ripartenza, vele manuali, uomo a mare, gavitello, giro delle boe. Si aggiungono in `LESSONS` di `js/lessons.js`.
+- **Prove:** un pilota che fa quello che dice ogni tappa finisce tutte le lezioni con tre stelle: andature in 59 s, virata in 46 s, strambata in 28 s, prua al vento in 84 s, vele a mano in 24 s, uomo a mare in 92 s, gavitello in 60 s, giro delle boe in 299 s (gavitello e boe provati sia con l'Ora sia col Sover). Chi vira senza chiamare non prende tre stelle. Il tempo delle tre stelle è almeno una volta e mezza quello del pilota.
+- **Sul telefono** i tasti tra parentesi spariscono dai testi: (T) diventa (VELE AUTO), (A), (W), (S) e (Q) spariscono perché ci sono i pulsanti CAZZA e LASCA.
+- Le lezioni nuove si aggiungono in `LESSONS` di `js/lessons.js`.
 
 ## Uomo a mare
 - **Comandi:** INVIO sul computer, UOMO A MARE sul telefono (nella barra in alto); di nuovo per annullare l'esercizio.
