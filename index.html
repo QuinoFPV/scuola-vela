@@ -13,7 +13,7 @@
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <title>Scuola di Vela · Sportaction</title>
 <meta name="description" content="Simulatore di vela della scuola Sportaction sul Lago d'Iseo: timone, scotte, vento vero, consigli dell'istruttore.">
-<link rel="stylesheet" href="css/style.css?v=0eff35af">
+<link rel="stylesheet" href="css/style.css?v=dee72ba8">
 </head>
 <body>
 <canvas id="view"></canvas>
@@ -32,7 +32,7 @@
   </div>
   <canvas id="dial"></canvas>
   <canvas id="map"></canvas>
-  <div id="tips" class="panel"><h4>L'ISTRUTTORE DICE</h4><ul id="tipList"></ul></div>
+  <div id="tips" class="panel"><h4 id="tipsTitle">L'ISTRUTTORE DICE</h4><ul id="tipList"></ul></div>
   <div id="controls" class="panel">
     <div class="bars">
       <div class="bar"><label>RANDA</label><div class="track"><span class="ends"><i>CAZZATA</i><i>LASCATA</i></span><div id="mainFill" class="fill"></div><div id="mainIdeal" class="ideal"></div></div><em id="mainVal"></em></div>
@@ -75,8 +75,34 @@
     <h1>SCUOLA DI VELA</h1>
     <p class="sub">Lago d'Iseo, base Sportaction di Castro · Protagonist 7.50 con randa e fiocco</p>
     <div id="menuRows"></div>
-    <button id="startBtn"><span class="desk">INVIO PER USCIRE IN MARE</span><span class="tch">TOCCA QUI PER USCIRE IN MARE</span></button>
+    <div class="starts">
+      <button id="startBtn"><span class="desk">INVIO PER USCIRE IN MARE</span><span class="tch">USCIRE IN MARE</span></button>
+      <button id="lessonsBtn"><span class="desk">L </span>LEZIONI GUIDATE</button>
+    </div>
     <p class="hint"><span class="desk">↑ ↓ scegli · ← → cambia · </span><a href="#" id="helpBtn"><span class="desk">H per tutti i comandi</span><span class="tch">Come si gioca col telefono</span></a></p>
+  </div>
+</div>
+
+<div id="lessons" class="overlay">
+  <div class="card lessonsCard">
+    <h2>LEZIONI GUIDATE</h2>
+    <p class="sub">Come a scuola: ogni lezione ha le sue tappe, l'istruttore le spiega e alla fine c'è il voto.</p>
+    <div id="lessonList"></div>
+    <button id="lessonsBack">TORNA AL MENU<span class="desk"> (ESC)</span></button>
+  </div>
+</div>
+
+<div id="lessonEnd" class="overlay">
+  <div class="card lessonsCard">
+    <h2 id="leTitle"></h2>
+    <div id="leStars" class="bigstars"></div>
+    <p id="leInfo" class="sub"></p>
+    <ul id="leErrors"></ul>
+    <div class="starts">
+      <button id="leAgain">RIPROVA<span class="desk"> (R)</span></button>
+      <button id="leNext">PROSSIMA LEZIONE<span class="desk"> (INVIO)</span></button>
+      <button id="leList">TUTTE LE LEZIONI<span class="desk"> (L)</span></button>
+    </div>
   </div>
 </div>
 
@@ -100,24 +126,25 @@
 <script type="importmap">
 {
   "imports": {
-    "./js/audio.js": "./js/audio.js?v=0eff35af",
-    "./js/base.js": "./js/base.js?v=0eff35af",
-    "./js/boat.js": "./js/boat.js?v=0eff35af",
-    "./js/help.js": "./js/help.js?v=0eff35af",
-    "./js/hud.js": "./js/hud.js?v=0eff35af",
-    "./js/lake.js": "./js/lake.js?v=0eff35af",
-    "./js/listen.js": "./js/listen.js?v=0eff35af",
-    "./js/main.js": "./js/main.js?v=0eff35af",
-    "./js/overlays.js": "./js/overlays.js?v=0eff35af",
-    "./js/physics.js": "./js/physics.js?v=0eff35af",
-    "./js/sim.js": "./js/sim.js?v=0eff35af",
-    "./js/textures.js": "./js/textures.js?v=0eff35af",
-    "./js/vendor/three.module.min.js": "./js/vendor/three.module.min.js?v=0eff35af",
-    "./js/voice.js": "./js/voice.js?v=0eff35af",
-    "./js/world.js": "./js/world.js?v=0eff35af"
+    "./js/audio.js": "./js/audio.js?v=dee72ba8",
+    "./js/base.js": "./js/base.js?v=dee72ba8",
+    "./js/boat.js": "./js/boat.js?v=dee72ba8",
+    "./js/help.js": "./js/help.js?v=dee72ba8",
+    "./js/hud.js": "./js/hud.js?v=dee72ba8",
+    "./js/lake.js": "./js/lake.js?v=dee72ba8",
+    "./js/lessons.js": "./js/lessons.js?v=dee72ba8",
+    "./js/listen.js": "./js/listen.js?v=dee72ba8",
+    "./js/main.js": "./js/main.js?v=dee72ba8",
+    "./js/overlays.js": "./js/overlays.js?v=dee72ba8",
+    "./js/physics.js": "./js/physics.js?v=dee72ba8",
+    "./js/sim.js": "./js/sim.js?v=dee72ba8",
+    "./js/textures.js": "./js/textures.js?v=dee72ba8",
+    "./js/vendor/three.module.min.js": "./js/vendor/three.module.min.js?v=dee72ba8",
+    "./js/voice.js": "./js/voice.js?v=dee72ba8",
+    "./js/world.js": "./js/world.js?v=dee72ba8"
   }
 }
 </script>
-<script type="module" src="js/main.js?v=0eff35af"></script>
+<script type="module" src="js/main.js?v=dee72ba8"></script>
 </body>
 </html>

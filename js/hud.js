@@ -103,7 +103,16 @@ export class HUD {
     $('tell').style.display = aids ? 'block' : 'none';
     if (aids && text) {
       // sui telefoni i tasti Z e X sono i pulsanti RIDUCI e AUMENTA
-      HUD.put('tipList', Coach.tips(s, this.lake, sim.mob, sim.gav).map(([t, tone]) => `<li style="color:${COLORS[tone]}">${this.keyless(t)}</li>`).join(''), 'innerHTML');
+      let tips = Coach.tips(s, this.lake, sim.mob, sim.gav).map(([t, tone]) => `<li style="color:${COLORS[tone]}">${this.keyless(t)}</li>`);
+      // in lezione la tappa da fare viene prima di tutto, con la barretta che si riempie mentre la si tiene
+      const L = this.lesson;
+      if (L && !L.done) {
+        const st = L.step, fill = st.hold ? Math.min(1, L.hold / st.hold) : 0;
+        tips = [`<li class="lstep"><small>LEZIONE ${L.n} · TAPPA ${L.i + 1} DI ${L.steps.length}</small><b>${st.title}</b> ${this.keyless(st.text)}`
+          + `${st.hold ? `<span class="lbar"><i style="width:${(fill * 100).toFixed(0)}%"></i></span>` : ''}</li>`, ...tips.slice(0, 2)];
+      }
+      HUD.put('tipList', tips.join(''), 'innerHTML');
+      HUD.put('tipsTitle', L && !L.done ? `LEZIONE ${L.n} · ${L.def.title.toUpperCase()}` : "L'ISTRUTTORE DICE");
     }
     if (aids) {
       const [t, tone] = Coach.telltales(s, sim.gav);
@@ -442,6 +451,17 @@ export class HUD {
       ['MODALITÀ VOCALE', VOICE_MODES[st.voices ?? 0]],
     ];
   }
+  /** L'elenco delle lezioni guidate, col voto migliore di ognuna. */
+  showLessons(list, progress, onPick) {
+    const mmss = (s) => `${(s / 60) | 0}:${String(s % 60).padStart(2, '0')}`;
+    $('lessonList').innerHTML = list.map((l, i) => {
+      const p = progress[l.id];
+      return `<div class="lcard" data-i="${i}"><span class="num">${i + 1}</span><div><h3>${l.title}</h3><p>${l.goal}</p></div>`
+        + `<div class="lstars">${p ? '★'.repeat(p.stars) + '☆'.repeat(3 - p.stars) : '☆☆☆'}<small>${p ? 'in ' + mmss(p.time) : 'da fare'}</small></div></div>`;
+    }).join('') + '<p class="lsoon">Prossimamente: prua al vento e ripartenza, vele manuali, uomo a mare, gavitello, giro delle boe</p>';
+    for (const c of $('lessonList').querySelectorAll('.lcard')) c.onclick = () => onPick(+c.dataset.i);
+  }
+
   showMenu(st, onChange) {
     const rows = this.menuRows(st);
     $('menuRows').innerHTML = rows.map(([a, b], i) =>

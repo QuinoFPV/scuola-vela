@@ -7,6 +7,7 @@ import { Lake } from '../js/lake.js';
 import { Simulation, Coach, COURSE, WINDS, MOB, mobPlan, GAV, gavPlan, CALL } from '../js/sim.js';
 import { speechText, Voice } from '../js/voice.js';
 import { heardCommands, Ear } from '../js/listen.js';
+import { LESSONS, LessonRun, placeForLesson, lessonWindIndex } from '../js/lessons.js';
 
 const dataDir = fileURLToPath(new URL('../data/', import.meta.url));
 let failures = 0;
@@ -685,6 +686,39 @@ check(held < 40 && fastest > -1.8, `con 20 nodi chi spinge il boma cede (tenuto 
   for (let i = 0; i < 120; i++) sm.update(1 / 60, {});
   check(!sm.autoTrim && msg.includes('VELE MANUALI') && half > m0 + 0.15 && half < goal && Math.abs(sm.boat.mainSheet - goal) < 0.01,
     `«molla la randa»: vele manuali, scotta da ${f1(m0 * 100)} a ${f1(goal * 100)}% in ${f1(0.3 / 0.22)} s`);
+}
+
+// lezioni guidate: un pilota che fa quello che dice ogni tappa le finisce con tre stelle; senza chiamare la virata
+// l'errore conta e le stelle scendono
+{
+  const TARGET = { TRAVERSO: 90, 'BOLINA STRETTA': 45, 'BOLINA LARGA': 65, LASCO: 120, 'GRAN LASCO': 150, POPPA: 168, 'NUOVE MURE': null };
+  const lesson = (id, opts = {}) => {
+    const def = LESSONS.find((l) => l.id === id), sm = new Simulation(lake);
+    Object.assign(sm.settings, { windIndex: lessonWindIndex(def), gusts: false, aids: true, voices: opts.voices ?? 0 });
+    sm.reset(); sm.wind.shifts = false; sm.autoTrim = true; sm.forceCalls = true;
+    placeForLesson(sm, def);
+    const run = new LessonRun(sm, def);
+    let side = Math.sign(twaOf(sm.boat)), t = 0, flipped = -1;
+    while (!run.done && t < 400) {
+      const st = run.step.title, b = sm.boat;
+      let want = TARGET[st];
+      if (st === 'PRONTI A VIRARE?' || st === 'PRONTI A STRAMBARE?') { if (!opts.noCall && !sm.call) sm.announce(st.includes('VIRARE') ? 'tack' : 'gybe'); want = Math.abs(twaOf(b)); }
+      if (opts.noCall && st === 'PRONTI A VIRARE?') { side = -side; want = 45; }
+      // in strambata si poggia appena oltre la poppa, poi si riprende il gran lasco: girando forte la barca ripasserebbe il vento
+      if (st === 'VIRA' || st === 'STRAMBA') { if (flipped !== run.i) { flipped = run.i; side = -side; } want = st === 'VIRA' ? 45 : 168; }
+      if (st === 'NUOVE MURE') want = run.def.id === 'virata' ? 45 : 150;
+      sm.update(1 / 30, { tillerTarget: clamp(norm180(twaOf(b) - side * want) * 1.2 - b.r * 0.8, -25, 25) });
+      run.update(sm);
+      t += 1 / 30;
+    }
+    return { run, sm, t };
+  };
+  for (const id of ['andature', 'virata', 'strambata']) {
+    const { run, sm, t } = lesson(id);
+    check(run.done && run.stars === 3, `lezione «${run.def.title}»: ${run.steps.length} tappe in ${f0(t)} s, ${run.stars ?? 0} stelle${run.done ? '' : ` (ferma a ${run.step.title})`}${run.errors(sm).map(([l, n]) => `, ${n} ${l}`).join('')}`);
+  }
+  const lazy = lesson('virata', { noCall: true });
+  check(!lazy.run.done || lazy.run.stars < 3, `virare senza chiamare non vale tre stelle (${lazy.run.done ? lazy.run.stars + ' stelle' : 'ferma a ' + lazy.run.step.title})`);
 }
 
 console.log(failures === 0 ? 'TUTTO OK' : `${failures} ERRORI`);

@@ -95,6 +95,31 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0a1420; col
 .help { background: rgba(8, 18, 31, .96); border-radius: 12px; padding: 24px 36px; border: 1px solid rgba(255, 255, 255, .12);
   max-height: calc(100vh - 32px); overflow-y: auto; box-sizing: border-box; }
 .help h2 { margin: 0; padding: 18px 0 2px; }
+/* lezioni guidate: il pulsante nel menu, l'elenco, il voto, la tappa nel riquadro dell'istruttore */
+.starts { display: flex; gap: 6px 34px; justify-content: center; align-items: baseline; flex-wrap: wrap; }
+.lessonsCard { background: rgba(8, 18, 31, .96); border-radius: 12px; padding: 18px 30px 16px; border: 1px solid rgba(255, 255, 255, .12);
+  width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; box-sizing: border-box; touch-action: pan-y; }
+.lessonsCard h2 { margin: 0 0 4px; }
+.lessonsCard .sub { margin: 0 0 12px; font-size: 15px; }
+#lessonList { display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.lcard { display: grid; grid-template-columns: 44px 1fr auto; gap: 14px; align-items: center; padding: 10px 14px; border-radius: 10px; cursor: pointer;
+  background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .15); }
+.lcard:hover { background: rgba(255, 255, 255, .15); }
+.lcard .num { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font: 800 20px "Avenir Next", sans-serif; color: #15202b; background: #ffd94d; }
+.lcard h3 { margin: 0; font-size: 18px; color: #ffd94d; }
+.lcard p { margin: 2px 0 0; font-size: 13px; color: rgba(255, 255, 255, .85); }
+.lstars { font-size: 24px; color: #ffd94d; text-align: center; letter-spacing: 2px; white-space: nowrap; }
+.lstars small { display: block; font-size: 11px; color: rgba(255, 255, 255, .6); letter-spacing: 0; }
+.lsoon { margin: 4px 0 0; font-size: 12px; color: rgba(255, 255, 255, .5); text-align: center; }
+.bigstars { font-size: 64px; color: #ffd94d; letter-spacing: 8px; line-height: 1.1; }
+#leErrors { list-style: none; padding: 0; margin: 6px 0 0; font-size: 15px; color: #ff9a8a; }
+#leErrors li.ok { color: #6dff86; }
+#tipList li.lstep { list-style: none; margin: 0 0 6px -18px; padding-bottom: 6px; border-bottom: 1px solid rgba(255, 255, 255, .15); color: #fff; }
+.lstep small { display: block; font-size: 11px; letter-spacing: 1px; color: #99d9ff; }
+.lstep b { color: #ffd94d; margin-right: 4px; }
+.lbar { display: block; height: 5px; margin-top: 5px; background: rgba(255, 255, 255, .15); border-radius: 3px; overflow: hidden; }
+.lbar i { display: block; height: 100%; background: #4dff66; }
 /* aiuto: per ogni funzione i tasti in grande (disegnati come tasti veri) o i pulsanti come sono nel gioco */
 .help { width: min(1120px, calc(100vw - 32px)); padding: 0 36px 18px; }
 #helpNav { position: sticky; top: 0; z-index: 1; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 10px 0 8px;
@@ -244,6 +269,18 @@ body.touch #markPtr { width: 58px; height: 58px; }
   .card .hint { font-size: 12px; margin: 4px 0 0; }
   .help { padding: 0 16px 8px; }
   .help h2 { font-size: 18px; padding-top: 8px; }
+  .lessonsCard { padding: 10px 16px 8px; }
+  .lessonsCard h2 { font-size: 18px; }
+  .lessonsCard .sub { font-size: 11px; margin-bottom: 6px; }
+  .lcard { grid-template-columns: 32px 1fr auto; gap: 10px; padding: 6px 10px; }
+  .lcard .num { width: 30px; height: 30px; font-size: 15px; }
+  .lcard h3 { font-size: 14px; }
+  .lcard p { font-size: 11px; }
+  .lstars { font-size: 18px; }
+  .bigstars { font-size: 38px; }
+  #leErrors { font-size: 12px; }
+  body.touch #tipList li.lstep { margin-left: -14px; padding-bottom: 3px; margin-bottom: 3px; }
+  .lstep small { font-size: 9px; }
   .hgrid { grid-template-columns: repeat(auto-fill, minmax(370px, 1fr)); gap: 2px 16px; }
   .hitem { grid-template-columns: 118px 1fr; gap: 10px; padding: 5px 0; }
   .hkeys .btn { padding: 6px 8px; font-size: 10px; }

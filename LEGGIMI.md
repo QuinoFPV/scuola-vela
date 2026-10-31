@@ -138,6 +138,28 @@ Il test automatico confronta con la polare ORC:
 - col fiocco: 60°, 75° e 90°;
 - con lo spi: 120°, 150° e il VMG di poppa.
 
+## Lezioni guidate
+Un percorso a tappe come a scuola. Per ora tre lezioni: le andature, la virata, la strambata.
+- **Come si apre:** dal menu, LEZIONI GUIDATE (L sul computer); si sceglie la lezione toccandola (o col numero). Ogni lezione mostra il voto migliore e il tempo.
+- **Durante la lezione:**
+  - il riquadro dell'istruttore in basso a sinistra mostra la lezione, la tappa ("TAPPA 3 DI 12") e cosa fare. Quando la tappa va tenuta per qualche secondo, una barretta verde si riempie: se si esce dall'andatura torna a zero;
+  - l'istruttore legge ogni tappa a voce, con la modalità vocale accesa; finita una tappa compare "BENE · ... FATTO";
+  - N (o D) ricomincia la lezione, ESC la lascia.
+- **Condizioni della lezione:** 10 nodi di vento costante (niente raffiche), aiuti dell'istruttore accesi, vele automatiche, barca in acqua libera 80 m sottovento al centro del lago. Uscendo dalla lezione vento, raffiche e aiuti tornano come erano.
+  - Le chiamate delle manovre (PRONTI A VIRARE? / A STRAMBARE?) ci sono anche con la modalità vocale spenta: fanno parte della lezione.
+- **Le lezioni:**
+  1. **Le andature** (6 tappe): traverso, bolina stretta, bolina larga, lasco, gran lasco, poppa. Ogni andatura si tiene 8 secondi; vale il nome scritto negli strumenti. La bolina stretta vale solo sopra 2,5 nodi.
+  2. **La virata** (12 tappe): tre volte bolina stretta, «pronti a virare?» e attesa del «pronti!», virata, bolina stretta sulle nuove mure sopra i 3 nodi.
+  3. **La strambata** (8 tappe): due volte gran lasco, «pronti a strambare?», strambata, gran lasco sulle nuove mure.
+- **Il voto:** tre stelle senza errori e sotto 2:30, due stelle con uno o due errori (o oltre il tempo), una stella con più errori. Errori: manovre senza avvisare, prima del «pronti!» o diverse da quella chiamata, strambate involontarie, fermi prua al vento, secche, boe o barche urtate. Il voto migliore resta salvato nel browser.
+- **La pagina del voto:** stelle, tempo, gli errori uno per uno; RIPROVA (R), PROSSIMA LEZIONE (INVIO), TUTTE LE LEZIONI (L).
+- **Strambata, cambiata anche fuori dalle lezioni:**
+  - con le vele automatiche chi sta alla randa la cazza subito alla chiamata e risponde «pronti!» quando è al centro (prima rispondeva dopo 1,2 s anche con la randa ancora fuori, e chi strambava subito prendeva il boma di colpo);
+  - dopo la strambata tiene la randa al centro ancora 2,5 s, così se la barca gira ancora e ripassa il vento il boma non torna di colpo.
+- **Contatori:** la simulazione conta virate, strambate ed errori dall'uscita (`sim.stats`); servono al voto e serviranno alla pagella.
+- **Prove:** un pilota che fa quello che dice ogni tappa finisce le tre lezioni con tre stelle (andature in 59 s, virata in 46 s, strambata in 28 s). Chi vira senza chiamare non prende tre stelle.
+- **Prossime lezioni** (in elenco come "prossimamente"): prua al vento e ripartenza, vele manuali, uomo a mare, gavitello, giro delle boe. Si aggiungono in `LESSONS` di `js/lessons.js`.
+
 ## Uomo a mare
 - **Comandi:** INVIO sul computer, UOMO A MARE sul telefono (nella barra in alto); di nuovo per annullare l'esercizio.
 - **Il lancio:** l'istruttore butta in acqua dalla poppa il salvagente anulare arancione, con le fasce bianche, la cima e l'asta galleggiante con la bandierina, che si vede da lontano.

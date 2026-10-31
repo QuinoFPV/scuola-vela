@@ -8,6 +8,7 @@ import { Audio } from './audio.js';
 import { Voice } from './voice.js';
 import { Ear } from './listen.js';
 import { renderHelp } from './help.js';
+import { LESSONS, LessonRun, placeForLesson, lessonWindIndex, loadProgress } from './lessons.js';
 import { BOATS, loadSailLogo } from './textures.js';
 import { clamp, norm180, twaOf, speedKn, Spec } from './physics.js';
 
@@ -135,6 +136,9 @@ async function main() {
     document.body.classList.toggle('sailing', !kind);
     $('menu').style.display = kind === 'menu' ? 'flex' : 'none';
     $('help').style.display = kind === 'help' ? 'flex' : 'none';
+    $('lessons').style.display = kind === 'lessons' ? 'flex' : 'none';
+    $('lessonEnd').style.display = kind === 'lessonEnd' ? 'flex' : 'none';
+    if (kind === 'lessons') hud.showLessons(LESSONS, loadProgress(), (i) => startLesson(LESSONS[i]));
     if (kind === 'help') { renderHelp($('helpBody'), $('helpNav'), TOUCH, voice.on); document.querySelector('.help').scrollTop = 0; }
     $('credits').style.visibility = kind === 'help' ? 'hidden' : '';      // sul telefono finirebbe sopra l'aiuto
     if (kind === 'menu') hud.showMenu(sim.settings, changeSetting);
@@ -158,7 +162,51 @@ async function main() {
     if (!TOUCH || !req || document.fullscreenElement || document.webkitFullscreenElement) return;
     Promise.resolve(req.call(el, { navigationUI: 'hide' })).then(() => screen.orientation?.lock?.('landscape')).catch(() => {});
   };
+  // --- lezioni guidate: impostazioni proprie (10 nodi, vento costante, aiuti), rimesse com'erano quando si esce ---------
+  let lesson = null, lessonSaved = null;
+  function startLesson(def) {
+    const st = sim.settings;
+    lessonSaved ??= { windIndex: st.windIndex, gusts: st.gusts, aids: st.aids };
+    Object.assign(st, { windIndex: lessonWindIndex(def), gusts: false, aids: true });
+    fullscreen(); audio.start(); voice.unlock(); ear.start(true);
+    sim.paused = false; sim.replay = null;
+    sim.reset();
+    sim.autoTrim = true;                       // si parte sempre con le vele regolate in automatico
+    sim.forceCalls = true;                     // le chiamate fanno parte della lezione
+    placeForLesson(sim, def);
+    sim.lines.length = 0;                      // niente "si esce dalla base": parla l'istruttore della lezione
+    sim.say(`LEZIONE ${LESSONS.indexOf(def) + 1}: ${def.title.toUpperCase()}`, 'info');
+    world.orbitYaw = 0; world.orbitPitch = 0; world.zoom = 1; world.wake.reset();
+    lesson = hud.lesson = new LessonRun(sim, def);
+    show('');
+  }
+  function endLesson() {
+    if (lessonSaved) { Object.assign(sim.settings, lessonSaved); sim.applyWind(); lessonSaved = null; }
+    lesson = hud.lesson = null;
+    sim.forceCalls = false;
+  }
+  function showLessonEnd() {
+    const L = lesson, i = LESSONS.indexOf(L.def), errs = L.errors(sim), t = Math.round(L.elapsed);
+    const mmss = (s) => `${(s / 60) | 0}:${String(s % 60).padStart(2, '0')}`;
+    $('leTitle').textContent = `LEZIONE ${i + 1} FINITA: ${L.def.title.toUpperCase()}`;
+    $('leStars').textContent = '★'.repeat(L.stars) + '☆'.repeat(3 - L.stars);
+    $('leInfo').textContent = `Tempo ${mmss(t)} · tre stelle senza errori e sotto ${mmss(L.def.par)}${L.best ? ' · il tuo voto migliore' : ''}`;
+    $('leErrors').innerHTML = errs.length ? errs.map(([label, n]) => `<li>${n} ${label}</li>`).join('') : '<li class="ok">Nessun errore</li>';
+    $('leNext').style.display = i < LESSONS.length - 1 ? '' : 'none';
+    sim.paused = true;
+    show('lessonEnd');
+  }
+  const lessonAgain = () => startLesson(lesson.def);
+  const lessonNext = () => { const i = LESSONS.indexOf(lesson.def); startLesson(LESSONS[Math.min(LESSONS.length - 1, i + 1)]); };
+  const lessonList = () => { sim.paused = false; endLesson(); show('lessons'); };
+  $('lessonsBtn').onclick = () => show('lessons');
+  $('lessonsBack').onclick = () => show('menu');
+  $('leAgain').onclick = lessonAgain;
+  $('leNext').onclick = lessonNext;
+  $('leList').onclick = lessonList;
+
   const startSailing = () => {
+    endLesson();
     fullscreen();
     audio.start();
     voice.unlock();
@@ -175,7 +223,7 @@ async function main() {
   function command(code) {
     const st = sim.settings;
     switch (code) {
-      case 'Escape': sim.paused = false; sim.replay = null; show('menu'); break;
+      case 'Escape': sim.paused = false; sim.replay = null; endLesson(); show('menu'); break;
       case 'KeyH': sim.paused = true; helpReturn = ''; show('help'); break;
       case 'Space': sim.toggleBando(); break;          // vele in bando: scotte libere, di nuovo per riprenderle
       case 'KeyK': sim.toggleBackMain(0); break;       // randa scontrata dal lato dov'e' il boma, di nuovo per mollarla
@@ -213,8 +261,8 @@ async function main() {
         sim.say(['BARRA SEMPLICE: LA FRECCIA INDICA DOVE VA LA PRUA', 'BARRA REALE: SPINGI A SINISTRA E LA PRUA VA A DRITTA', 'RUOTA: SI GIRA COME UN VOLANTE'][st.steering], 'info');
         break;
       case 'KeyV': st.boat = (st.boat + 1) % BOATS.length; world.boat.setStyle(BOATS[st.boat].sails); sim.say('BARCA: ' + BOATS[st.boat].name, 'info'); break;
-      case 'KeyD': st.windFrom = (st.windFrom + 1) % 2; sim.reset(); world.wake.reset(); break;
-      case 'KeyN': sim.reset(); world.wake.reset(); break;
+      case 'KeyD': st.windFrom = (st.windFrom + 1) % 2; if (lesson) lessonAgain(); else { sim.reset(); world.wake.reset(); } break;
+      case 'KeyN': if (lesson) lessonAgain(); else { sim.reset(); world.wake.reset(); } break;   // in lezione: la ricomincia
       case 'Digit1': case 'Digit2': case 'Digit3': case 'Digit4': case 'Digit5': case 'Digit6':
         st.windIndex = +code.slice(5) - 1; sim.applyWind(); sim.say(`VENTO ${WINDS[st.windIndex][0]}: ${WINDS[st.windIndex][1]} NODI`, 'info'); break;
     }
@@ -226,8 +274,21 @@ async function main() {
       if (e.code === 'KeyH' || e.code === 'Escape') { show(helpReturn); if (!helpReturn) sim.paused = false; }
       return;
     }
+    if (overlay === 'lessons') {
+      const n = +e.code.replace(/^(Digit|Numpad)/, '');
+      if (n >= 1 && n <= LESSONS.length) startLesson(LESSONS[n - 1]);
+      if (e.code === 'Escape') show('menu');
+      return;
+    }
+    if (overlay === 'lessonEnd') {
+      if (e.code === 'KeyR') lessonAgain();
+      if (e.code === 'Enter' || e.code === 'NumpadEnter') { if (LESSONS.indexOf(lesson.def) < LESSONS.length - 1) lessonNext(); else lessonAgain(); }
+      if (e.code === 'KeyL' || e.code === 'Escape') lessonList();
+      return;
+    }
     if (overlay === 'menu') {
       const rows = hud.menuRows(sim.settings).length;
+      if (e.code === 'KeyL') { show('lessons'); return; }
       if (e.code === 'ArrowUp') { hud.menuRow = (hud.menuRow + rows - 1) % rows; show('menu'); }
       if (e.code === 'ArrowDown') { hud.menuRow = (hud.menuRow + 1) % rows; show('menu'); }
       if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') changeSetting(hud.menuRow, e.code === 'ArrowRight' ? 1 : -1);
@@ -393,6 +454,11 @@ async function main() {
     sim.update(dt, c);
     world.update(sim, dt, now / 1000);
     voice.update(sim, !overlay && !sim.paused && sim.replay === null && !document.hidden, audio.muted);
+    // la lezione controlla la tappa; finita, un attimo per sentire l'istruttore e poi il voto
+    if (lesson && !overlay && !sim.paused && sim.replay === null) {
+      lesson.update(sim);
+      if (lesson.done && sim.time - lesson.last > 2) showLessonEnd();
+    }
     for (const e of sim.events) if (e.type === 'gybe' || e.type === 'tack') audio.boom(e.type === 'gybe' && e.violent);
     const s = sim.shown, quiet = sim.paused || sim.replay !== null;
     audio.set({ aws: quiet ? 0 : s.aws, speed: quiet ? 0 : speedKn(s), luff: quiet ? 0 : Math.max(s.mainLuff, s.jibLuff * (1 - s.jibFurl), s.spiLuff * s.spiUp), winching: (c.main || 0) > 0 || (c.jib || 0) > 0 }, dt);
@@ -411,7 +477,7 @@ async function main() {
     }
     requestAnimationFrame(frame);
   }
-  window.__sim = sim; window.__world = world; window.__voice = voice; window.__ear = ear;
+  window.__sim = sim; window.__world = world; window.__voice = voice; window.__ear = ear; window.__lesson = () => lesson;
   requestAnimationFrame(frame);
 }
 
