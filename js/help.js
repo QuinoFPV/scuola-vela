@@ -29,7 +29,8 @@ const SECTIONS = [
     { t: 'Pronti a strambare?', call: true, k: [['8']], b: [['PRONTI A STRAMBARE?', 'in basso a destra', 'blue']], v: ['pronti a strambare?', 'strambo!'],
       d: 'Si avvisa prima di strambare; senza avviso il boma passa di colpo.',
       you: 'dopo il «pronti!» poggi fino a strambare (con le vele manuali prima cazzi la randa al centro).',
-      crew: 'risponde; con le vele automatiche cazza la randa al centro e poi la rilascia.' },
+      crew: 'risponde; con le vele automatiche cazza la randa al centro e poi la rilascia.',
+      bq: [['RANDA AL CENTRO', 'vele automatiche', 'blue']], quiet: 'niente chiamata, ma con le vele automatiche chi sta alla randa la cazza al centro lo stesso: poi poggi e strambi.' },
     { t: 'Spinnaker', k: [['E']], b: [['ISSA SPI', 'dal traverso in giù']], v: ['issa lo spi', 'ammaina lo spi'],
       d: 'Si issa dal traverso in giù; di nuovo per ammainarlo.',
       crew: 'issa, avvolge il fiocco, mette il tangone e regola lo spi.', you: 'non orzare troppo (si chiude); col vento forte attento alla straorzata.' },
@@ -94,9 +95,9 @@ export function renderHelp(body, nav, touch, voiceOn) {
     ? `<span class="btn ${style ?? ''}">${esc(label)}</span>` : `<kbd${label.length > 3 ? ' class="wide"' : ''}>${esc(label)}</kbd>`}${note ? `<small>${esc(note)}</small>` : ''}</span>`;
   const item = (it) => {
     if ((it.desk && touch) || (it.touch && !touch)) return '';
-    const keys = touch ? it.b ?? [] : it.k ?? [];
+    const keys = touch ? (!voiceOn && it.bq) || it.b || [] : it.k ?? [];
     const who = (label, text) => text ? `<div class="hwho"><span>${label}</span> ${esc(text)}</div>` : '';
-    const off = it.call && !voiceOn ? `<div class="hwho"><span>Spenta:</span> accendi la modalità vocale (${touch ? '💬' : '7'}).</div>` : '';
+    const off = it.call && !voiceOn ? `<div class="hwho"><span>Spenta:</span> ${it.quiet ? esc(it.quiet) : `accendi la modalità vocale (${touch ? '💬' : '7'}).`}</div>` : '';
     const voice = voiceOn && it.v ? `<div class="hvoice">🎤 ${it.v.map((p) => `«${esc(p)}»`).join(' · ')}</div>` : '';
     return `<div class="hitem"><div class="hkeys">${keys.map(cap).join('') || '<span class="kc"><small>da solo</small></span>'}</div>`
       + `<div class="htext"><b>${esc(it.t)}</b><p>${esc((touch && it.dt) || it.d)}</p>${who('Tu:', it.you)}${who('Equipaggio:', it.crew)}${off}${voice}</div></div>`;

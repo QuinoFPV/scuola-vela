@@ -319,11 +319,16 @@ export class Simulation {
    *  e al traverso si vira, dal lasco in giu' si stramba). Il timoniere avvisa, l'equipaggio risponde "pronti!" e poi si manovra. Chi vira o
    *  stramba senza avvisare se lo sente dire. spoken: l'ha detto l'allievo al microfono, la voce del timoniere tace. */
   announce(kind = null, spoken = false) {
-    if (this.replay !== null || !this.talking) return;
+    // modalita' vocale spenta: niente chiamate, ma l'8 resta "randa al centro" per strambare (quiet), senza parole.
+    // Senza, con le vele automatiche ogni strambata passerebbe col boma di colpo
+    const quiet = !this.talking;
+    if (this.replay !== null || (quiet && kind !== 'gybe')) return;
     if (this.gav?.moored) { this.say('ORMEGGIATI: PRIMA SI MOLLA IL GAVITELLO (0)', 'warn'); return; }
     kind ??= Math.abs(twaOf(this.boat)) < 90 ? 'tack' : 'gybe';
     if (this.call?.kind === kind) return;                // gia' chiamata: si aspetta la risposta o la manovra
-    this.call = { kind, t: this.time, ready: false, go: false, spoken };
+    // con le vele manuali la randa la cazza l'allievo: c'e' solo da dirglielo
+    this.call = { kind, t: this.time, ready: quiet && !this.autoTrim, go: false, spoken, quiet };
+    if (quiet) { this.say(this.autoTrim ? 'RANDA AL CENTRO PER STRAMBARE' : 'CAZZA LA RANDA AL CENTRO (Q), POI STRAMBA', 'info'); return; }
     if (!spoken) this.talk('timoniere', kind === 'tack' ? 'Pronti a virare?' : 'Pronti a strambare?');
     this.say(kind === 'tack' ? '«PRONTI A VIRARE?»' : '«PRONTI A STRAMBARE?»', 'info');
   }
@@ -342,8 +347,21 @@ export class Simulation {
   get talking() { return this.settings.voices !== 2 || this.forceCalls; }
 
   checkCall() {
-    if (!this.talking) { this.call = null; return; }
+    if (this.call && this.call.quiet === this.talking) this.call = null;     // cambiata la modalita' vocale
     const b = this.boat, c = this.call, tack = c?.kind === 'tack';
+    if (!this.talking) {
+      if (c && !c.ready && this.time - c.t >= CALL.answer && b.mainSheet <= CALL.haul + 0.15) {
+        c.ready = true;
+        this.say('RANDA AL CENTRO: ORA STRAMBA', 'good');
+      }
+      // dopo la strambata la randa resta al centro ancora un attimo, come con le chiamate
+      if (c && this.events.some((e) => e.type === 'gybe' || e.type === 'tack')) {
+        if (this.events.some((e) => e.type === 'gybe')) this.haulUntil = this.time + CALL.after;
+        this.call = null;
+      }
+      if (this.call && this.time - this.call.t > CALL.wait) this.call = null;
+      return;
+    }
     // in strambata, con le vele automatiche, chi sta alla randa risponde quando l'ha cazzata al centro
     const hauled = tack || !this.autoTrim || b.mainSheet <= CALL.haul + 0.15 || Math.abs(twaOf(b)) <= 120;
     if (c && !c.ready && this.time - c.t >= CALL.answer && hauled) {

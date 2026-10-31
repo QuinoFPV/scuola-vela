@@ -581,6 +581,15 @@ check(held < 40 && fastest > -1.8, `con 20 nodi chi spinge il boma cede (tenuto 
   const saidOff = sail(off, 12, -42);
   check(!off.call && !saidOff.some((t) => /[a-z]/.test(t) && !t.includes(' NODI')) && saidOff.includes('VIRATA') && off.message.startsWith('VIRATA: ORA'),
     `modalità vocale spenta: nessuna chiamata, nessuna protesta (${saidOff.filter((t) => !t.includes(' NODI')).join(' → ')}, "${off.message}")`);
+  // ma l'8 resta "randa al centro", senza parole: con le vele automatiche il boma passa piano
+  const q = make(150); q.settings.voices = 2; sail(q, 15, 150); q.announce('gybe');
+  const saidQ = sail(q, 4, 150), readyQ = q.call?.ready && q.message.includes('ORA STRAMBA'); sail(q, 12, -150, saidQ);
+  const q0 = make(150); q0.settings.voices = 2; sail(q0, 15, 150); const saidQ0 = sail(q0, 15, -150);
+  const qm = make(150); qm.settings.voices = 2; qm.autoTrim = false; sail(qm, 2, 150); qm.announce('gybe');
+  const qs = make(150); qs.settings.voices = 2; sail(qs, 2, 150); qs.announce('gybe'); qs.settings.voices = 0; sail(qs, 0.1, 150);
+  check(readyQ && saidQ.includes('STRAMBATA') && !saidQ.includes('BOMA DI COLPO') && !saidQ.some((t) => /[a-z]/.test(t) && !t.includes(' NODI'))
+    && saidQ0.includes('BOMA DI COLPO') && qm.message.includes('CAZZA LA RANDA') && !qs.call,
+    'modalità vocale spenta: con l\'8 la randa va al centro e il boma passa piano, senza l\'8 passa di colpo');
   const ex = make(42); sail(ex, 5, 42); ex.announce(); const said3 = sail(ex, CALL.wait + 2, 42);
   check(!ex.call && !said3.includes('Viro!'), `senza manovra la chiamata scade dopo ${CALL.wait} s`);
   // per la voce: minuscole, niente tasti, minuti e metri per esteso
