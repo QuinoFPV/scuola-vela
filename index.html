@@ -13,7 +13,7 @@
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <title>Scuola di Vela · Sportaction</title>
 <meta name="description" content="Simulatore di vela della scuola Sportaction sul Lago d'Iseo: timone, scotte, vento vero, consigli dell'istruttore.">
-<link rel="stylesheet" href="css/style.css?v=810ebbe9">
+<link rel="stylesheet" href="css/style.css?v=d10f160a">
 </head>
 <body>
 <canvas id="view"></canvas>
@@ -60,7 +60,7 @@
   </div>
   <div id="tiller"><div class="rail"></div><div class="mid"></div><div id="tillerKnob"></div><span id="tillerLabel">BARRA</span></div>
   <div id="sheets">
-    <div class="calls"><button id="tCall" data-k="Digit9">PRONTI A VIRARE?</button></div>
+    <div class="calls"><button id="tCallG" data-k="Digit8">PRONTI A STRAMBARE?</button><button id="tCall" data-k="Digit9">PRONTI A VIRARE?</button></div>
     <div class="acts"><button id="tSpi" data-k="KeyE">ISSA SPI</button><button id="tWing" data-k="KeyY">FARFALLA</button><button id="tBack" data-k="KeyK">SCONTRA RANDA</button><button id="tCappa" data-k="KeyU">FIOCCO IN CAPPA</button><button id="tGav" data-k="Digit0">GAVITELLO</button><button id="tBando" data-k="Space">VELE IN BANDO</button></div>
     <div class="cols">
     <div class="sheet"><button data-hold="main" data-d="1">CAZZA</button><label>RANDA</label><div class="meter"><div id="tMainFill"></div><div id="tMainIdeal" class="ideal"></div></div><button data-hold="main" data-d="-1">LASCA</button></div>
@@ -93,7 +93,7 @@
       <dt>SCONTRA RANDA</dt><dd>da fermi prua al vento: si spinge fuori il boma, la barca va indietro e la prua cade da quel lato; in retromarcia il timone lavora al contrario. Di nuovo per mollare il boma</dd>
       <dt>RIDUCI / AUMENTA</dt><dd>la tela: 1 mano, 2 mani, 2 mani + tormentina</dd>
       <dt>UOMO A MARE</dt><dd>l'istruttore butta in acqua il salvagente: allontanati, scendi sottovento e torna di bolina larga, arrivando quasi fermo; di nuovo per annullare</dd>
-      <dt>PRONTI A VIRARE?</dt><dd>sopra i pulsanti in basso a destra: avvisi l'equipaggio prima di virare (in poppa e al lasco: prima di strambare). Quando risponde «pronti!» vira; in strambata, con le vele automatiche, la randa si cazza al centro e il boma passa piano</dd>
+      <dt>PRONTI A VIRARE? · PRONTI A STRAMBARE?</dt><dd>sopra i pulsanti in basso a destra: avvisi l'equipaggio prima di virare o di strambare. Quando risponde «pronti!» manovri; in strambata, con le vele automatiche, la randa si cazza al centro e il boma passa piano</dd>
       <dt>GAVITELLO</dt><dd>in basso a destra: rientro alla base, si prende il gavitello della scuola a prua; risali di bolina stretta, orza prua al vento dove dice l'istruttore e arriva per abbrivio, quasi fermo. Ormeggiati, MOLLA GAVITELLO per ripartire</dd>
       <dt>Scena</dt><dd>trascina con un dito per girare intorno alla barca · due dita per avvicinarti</dd>
       <dt>VISTA</dt><dd>gommone dietro, timoniere, laterale, dall'alto</dd>
@@ -117,7 +117,7 @@
       <dt>Z / X</dt><dd>riduci / aumenta la tela: 1 mano, 2 mani, 2 mani + tormentina</dd>
       <dt>INVIO</dt><dd>uomo a mare: l'istruttore butta in acqua il salvagente; torna a prenderlo di bolina larga, arrivando quasi fermo (vele in bando); di nuovo per annullare</dd>
       <dt>Microfono</dt><dd>icona accanto all'altoparlante: chiami le manovre a voce, «pronti a virare?» o «pronti a strambare?», e dopo il «pronti!» «viro!» o «strambo!». Sopra la barca compare quello che ha capito. Funziona con Chrome e Safari (il riconoscimento lo fa il browser, con Google o Apple)</dd>
-      <dt>9</dt><dd>«pronti a virare?» (in poppa e al lasco «pronti a strambare?»): l'equipaggio risponde «pronti!», poi vira. In strambata, con le vele automatiche, al «pronti!» la randa si cazza al centro e il boma passa piano</dd>
+      <dt>9 · 8</dt><dd>«pronti a virare?» · «pronti a strambare?»: l'equipaggio risponde «pronti!», poi vira o stramba. In strambata, con le vele automatiche, al «pronti!» la randa si cazza al centro e il boma passa piano</dd>
       <dt>0</dt><dd>gavitello: rientro alla base e ormeggio al gavitello della scuola; risali di bolina stretta, orza prua al vento dove dice l'istruttore e arriva per abbrivio a prua; di nuovo per annullare o, ormeggiati, per mollarlo</dd>
       <dt>Mouse</dt><dd>trascina a destra/sinistra: barra · tasto destro: gira la vista · rotella: zoom</dd>
       <dt>Gamepad</dt><dd>levetta sinistra: barra · grilletti: randa · dorsali: fiocco</dd>
@@ -146,23 +146,23 @@
 <script type="importmap">
 {
   "imports": {
-    "./js/audio.js": "./js/audio.js?v=810ebbe9",
-    "./js/base.js": "./js/base.js?v=810ebbe9",
-    "./js/boat.js": "./js/boat.js?v=810ebbe9",
-    "./js/hud.js": "./js/hud.js?v=810ebbe9",
-    "./js/lake.js": "./js/lake.js?v=810ebbe9",
-    "./js/listen.js": "./js/listen.js?v=810ebbe9",
-    "./js/main.js": "./js/main.js?v=810ebbe9",
-    "./js/overlays.js": "./js/overlays.js?v=810ebbe9",
-    "./js/physics.js": "./js/physics.js?v=810ebbe9",
-    "./js/sim.js": "./js/sim.js?v=810ebbe9",
-    "./js/textures.js": "./js/textures.js?v=810ebbe9",
-    "./js/vendor/three.module.min.js": "./js/vendor/three.module.min.js?v=810ebbe9",
-    "./js/voice.js": "./js/voice.js?v=810ebbe9",
-    "./js/world.js": "./js/world.js?v=810ebbe9"
+    "./js/audio.js": "./js/audio.js?v=d10f160a",
+    "./js/base.js": "./js/base.js?v=d10f160a",
+    "./js/boat.js": "./js/boat.js?v=d10f160a",
+    "./js/hud.js": "./js/hud.js?v=d10f160a",
+    "./js/lake.js": "./js/lake.js?v=d10f160a",
+    "./js/listen.js": "./js/listen.js?v=d10f160a",
+    "./js/main.js": "./js/main.js?v=d10f160a",
+    "./js/overlays.js": "./js/overlays.js?v=d10f160a",
+    "./js/physics.js": "./js/physics.js?v=d10f160a",
+    "./js/sim.js": "./js/sim.js?v=d10f160a",
+    "./js/textures.js": "./js/textures.js?v=d10f160a",
+    "./js/vendor/three.module.min.js": "./js/vendor/three.module.min.js?v=d10f160a",
+    "./js/voice.js": "./js/voice.js?v=d10f160a",
+    "./js/world.js": "./js/world.js?v=d10f160a"
   }
 }
 </script>
-<script type="module" src="js/main.js?v=810ebbe9"></script>
+<script type="module" src="js/main.js?v=d10f160a"></script>
 </body>
 </html>

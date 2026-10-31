@@ -295,8 +295,8 @@ export class Simulation {
   get gavShown() { return this.replay !== null ? this.shown.gavPos ?? this.gavPos : this.gavPos; }
   get mooredShown() { return this.replay !== null ? !!this.shown.moored : !!this.gav?.moored; }
 
-  /** "Pronti a virare?" di bolina e al traverso, "pronti a strambare?" dal lasco in giu' (col pulsante); a voce vale
-   *  quello che l'allievo ha detto. Il timoniere avvisa, l'equipaggio risponde "pronti!" e poi si manovra. Chi vira o
+  /** "Pronti a virare?" o "pronti a strambare?": dal pulsante, dal tasto o detto al microfono (senza dire quale: di bolina
+   *  e al traverso si vira, dal lasco in giu' si stramba). Il timoniere avvisa, l'equipaggio risponde "pronti!" e poi si manovra. Chi vira o
    *  stramba senza avvisare se lo sente dire. spoken: l'ha detto l'allievo al microfono, la voce del timoniere tace. */
   announce(kind = null, spoken = false) {
     if (this.replay !== null) return;
@@ -348,12 +348,17 @@ export class Simulation {
       } else if (call?.kind === e.type) {
         this.talk(crew, 'Aspetta, non eravamo pronti!');
         this.say("PRIMA DI MANOVRARE SI ASPETTA IL «PRONTI!» DELL'EQUIPAGGIO", 'warn');
+      } else if (call) {
+        // chiamata una manovra, fatta l'altra
+        this.talk(crew, e.type === 'tack' ? 'Ma non si strambava?' : 'Ma non si virava?');
+        if (e.type === 'gybe' && e.violent) this.talk('randista', 'Attenti al boma!');
+        if (this.settings.aids) this.say(e.type === 'tack' ? 'HAI CHIAMATO LA STRAMBATA MA HAI VIRATO' : 'HAI CHIAMATO LA VIRATA MA HAI STRAMBATO', 'warn');
       } else if (e.type === 'gybe' && e.violent) {
         this.talk('randista', 'Attenti al boma!');
       } else {
         this.talk(crew, e.type === 'tack' ? 'Ehi, avvisa quando viri!' : 'Ehi, avvisa quando strambi!');
         if (this.settings.aids) this.say(e.type === 'tack' ? 'VIRATA SENZA AVVISARE: PRIMA SI CHIAMA «PRONTI A VIRARE?» (9)'
-          : 'STRAMBATA SENZA AVVISARE: PRIMA SI CHIAMA «PRONTI A STRAMBARE?» (9)', 'warn');
+          : 'STRAMBATA SENZA AVVISARE: PRIMA SI CHIAMA «PRONTI A STRAMBARE?» (8)', 'warn');
       }
     }
     if (this.call && this.time - this.call.t > CALL.wait) this.call = null;   // nessuna manovra: la chiamata scade
@@ -601,6 +606,8 @@ export class Simulation {
     if (c.tillerTarget !== null && c.tillerTarget !== undefined) b.rudder += clamp(c.tillerTarget - b.rudder, -90 * dt, 90 * dt);
     else if (c.tiller) b.rudder += c.tiller * (c.tillerFine ? 10 : 40) * dt;
     b.rudder = clamp(b.rudder, -Spec.rudderMax, Spec.rudderMax);
+    // strambata chiamata: al "pronti!" la randa va al centro (da sola con le vele automatiche, a mano con le manuali)
+    b.haul = this.call?.kind === 'gybe' && this.call.ready && Math.abs(twaOf(b)) > 120;
     if (b.bando) {
       // le scotte corrono fuori in un paio di secondi; chi ricomincia a cazzare le riprende in mano
       b.mainSheet = Math.min(1, b.mainSheet + 0.8 * dt);
@@ -608,9 +615,8 @@ export class Simulation {
       if ((c.main || 0) > 0 || (c.jib || 0) > 0) { this.autoTrim = false; this.toggleBando(); }
     } else if (this.autoTrim) {
       const id = idealSheets(b);
-      // strambata chiamata: al "pronti!" chi sta alla randa la cazza al centro, cosi' il boma passa piano
-      const gybe = this.call?.kind === 'gybe' && this.call.ready && Math.abs(twaOf(b)) > 120;
-      b.mainSheet += clamp((gybe ? Math.min(id.main, CALL.haul) : id.main) - b.mainSheet, -0.4 * dt, 0.4 * dt);
+      // chi sta alla randa la cazza al centro, cosi' il boma passa piano
+      b.mainSheet += clamp((b.haul ? Math.min(id.main, CALL.haul) : id.main) - b.mainSheet, -0.4 * dt, 0.4 * dt);
       b.jibSheet += clamp(id.jib - b.jibSheet, -0.4 * dt, 0.4 * dt);
     } else {
       b.mainSheet = clamp(b.mainSheet - (c.main || 0) * 0.22 * dt, 0, 1);
@@ -741,6 +747,8 @@ export const Coach = {
     }
     if (s.bando) out.push(['Vele in bando: senza scotte la barca rallenta (in poppa poco). Per ripartire riprendi le scotte (SPAZIO)', 'info']);
     else if (s.backMain || s.cappa) { /* il boma lo tiene l'equipaggio: niente consigli sulla scotta della randa */ }
+    else if (s.haul) out.push([s.mainSheet > 0.45 ? 'Strambata chiamata: cazza la randa al centro, poi poggia e stramba'
+      : 'Randa al centro: ora poggia e stramba, il boma passerà piano', s.mainSheet > 0.45 ? 'warn' : 'good']);
     else if (s.reefTimer > 0) { /* durante i terzaroli la randa sbatte apposta */ }
     else if (s.mainLuff > 0.35 && twa >= 33 && Math.abs(s.heel) > 20) out.push(['La randa fileggia per scaricare: con questo vento va bene così', 'info']);
     else if (s.mainLuff > 0.35 && twa >= 33) out.push(['La randa fileggia (sbatte): cazzala', 'bad']);

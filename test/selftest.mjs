@@ -549,6 +549,11 @@ check(held < 40 && fastest > -1.8, `con 20 nodi chi spinge il boma cede (tenuto 
     `strambata chiamata, vele automatiche: randa cazzata al centro, il boma passa piano (${gy.said.filter((t) => !t.includes(' NODI')).join(' → ')})`);
   const gy0 = make(150); sail(gy0, 15, 150); const said2 = sail(gy0, 15, -150);
   check(said2.includes('BOMA DI COLPO') && said2.includes('Attenti al boma!'), 'strambata senza avvisare: il boma passa di colpo, "Attenti al boma!"');
+  // chiamata la virata, fatta la strambata (e viceversa): l'equipaggio se ne accorge
+  const wr = make(150); sail(wr, 15, 150); wr.announce('tack'); const said4 = sail(wr, 2, 150).concat(sail(wr, 15, -150));
+  const wr2 = make(42); sail(wr2, 15, 42); wr2.announce('gybe'); const said5 = sail(wr2, 2, 42).concat(sail(wr2, 12, -42));
+  check(said4.includes('Ma non si virava?') && said5.includes('Ma non si strambava?') && wr.message.includes('MA HAI STRAMBATO'),
+    'chiamata una manovra e fatta l\'altra: "Ma non si virava?", "Ma non si strambava?"');
   const ex = make(42); sail(ex, 5, 42); ex.announce(); const said3 = sail(ex, CALL.wait + 2, 42);
   check(!ex.call && !said3.includes('Viro!'), `senza manovra la chiamata scade dopo ${CALL.wait} s`);
   // per la voce: minuscole, niente tasti, minuti e metri per esteso
@@ -617,7 +622,8 @@ check(held < 40 && fastest > -1.8, `con 20 nodi chi spinge il boma cede (tenuto 
   const cases = [
     ['Pronti a virare?', 'tack'], ['pronti ad virare', 'tack'], ['pronti a girare', 'tack'], ['Pronti a strambare', 'gybe'],
     ['pronti a vira', 'tack'], ['viro', 'goTack'], ['Virò!', 'goTack'], ['strambo', 'goGybe'], ['pronti', ''], ['vira la barca', 'goTack'],
-    ['ora vado a virare', ''],
+    ['ora vado a virare', ''], ['pronti astrambare', 'gybe'], ['pronti a stambare', 'gybe'], ['Pronti alla strambata', 'gybe'],
+    ['pronti avvirare', 'tack'], ['pronti a sdrambare', 'gybe'], ['Strambò', 'goGybe'],
   ];
   const what = (t) => Object.entries(heardCalls(t)).filter(([, n]) => n > 0).map(([k]) => k).join(',');
   const bad = cases.filter(([t, k]) => what(t) !== k);

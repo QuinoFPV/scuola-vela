@@ -130,12 +130,13 @@ body.touch #touchUI { display: block; position: fixed; inset: 0; pointer-events:
   line-height: 1.05; background: rgba(8, 18, 31, .72); border: 1px solid rgba(255, 255, 255, .22); }
 #sheets .acts button.on { background: rgba(242, 140, 26, .95); }
 /* la chiamata della manovra: un pulsante largo per il pollice, sopra quelli delle manovre */
-#sheets .calls { display: flex; justify-content: flex-end; }
-#sheets .calls button { pointer-events: auto; min-width: 170px; height: 36px; padding: 0 14px; border-radius: 9px; font-size: 11px; font-weight: 700;
+#sheets .calls { display: flex; justify-content: flex-end; gap: 6px; }
+#sheets .calls button { pointer-events: auto; min-width: 170px; line-height: 1.05; height: 36px; padding: 0 14px; border-radius: 9px; font-size: 11px; font-weight: 700;
   letter-spacing: .3px; background: rgba(20, 70, 120, .8); border: 1px solid rgba(140, 200, 255, .4); }
 #sheets .calls button.on { background: rgba(242, 140, 26, .95); }
 /* con le vele manuali sopra c'e' poco posto (filetti): va in basso a sinistra, accanto a CAZZA e LASCA */
 body:not(.auto-trim) #sheets .calls { position: absolute; left: 0; bottom: 0; }
+body:not(.auto-trim) #sheets .calls button { min-width: 0; width: 104px; padding: 0 6px; }
 .sheet { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 90px; padding: 6px;
   background: rgba(8, 18, 31, .62); border: 1px solid rgba(255, 255, 255, .14); border-radius: 12px; }
 .sheet button { pointer-events: auto; width: 100%; height: 42px; border-radius: 9px; font-size: 12px; font-weight: 700;

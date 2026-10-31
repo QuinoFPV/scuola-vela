@@ -194,22 +194,23 @@ L'esercizio di fine lezione: si rientra e si prende il gavitello della scuola a 
 Equipaggio e istruttore parlano con la voce italiana del telefono o del computer (sintesi vocale del sistema, nessuna registrazione).
 Il timbro cambia da un dispositivo all'altro; dove c'è una voce italiana sola (sul Mac "Alice") i ruoli si distinguono dal tono.
 Le voci robotiche del Mac (Eddy, Reed, Grandma...) si usano solo se non ce n'è un'altra.
-- **Chiamata della manovra:** 9 sul computer, PRONTI A VIRARE? sul telefono (sopra i pulsanti in basso a destra; con le vele manuali in basso, accanto a CAZZA e LASCA).
-  - Di bolina e al traverso il timoniere chiama «pronti a virare?», dal lasco in giù «pronti a strambare?».
+- **Chiamata della manovra:** sul computer 9 per «pronti a virare?» e 8 per «pronti a strambare?». Sul telefono ci sono due pulsanti, PRONTI A STRAMBARE? e PRONTI A VIRARE?, sempre tutti e due: si può strambare anche partendo dal traverso. Stanno sopra i pulsanti in basso a destra; con le vele manuali vanno in basso, accanto a CAZZA e LASCA.
+  - Prima c'era un pulsante solo, che diventava "strambare" solo oltre i 90° dal vento: di bolina o al traverso la strambata non si vedeva.
   - Dopo 1,2 s l'equipaggio risponde «pronti!»: in virata chi sta al fiocco, in strambata chi sta alla randa. Sul telefono il pulsante diventa arancione: PRONTI! ORA VIRA.
   - Quando la prua comincia a girare (più di 5° al secondo nel verso giusto) il timoniere dice «viro!» o «strambo!».
   - Strambata chiamata con le vele automatiche: al «pronti!» chi sta alla randa la cazza al centro e il boma passa piano. Senza chiamata la randa resta lascata e il boma passa di colpo, come prima.
   - Con le vele manuali la randa al centro va cazzata a mano: lo ricorda il messaggio.
+  - Mentre la randa si cazza l'istruttore non dice più "randa troppo cazzata". Dice "randa al centro: ora poggia e stramba" (o di cazzarla, con le vele manuali).
   - La chiamata vale 20 s, poi scade.
 - **Chiamata a voce, col microfono:** l'icona del microfono accanto all'altoparlante lo accende (verde: ascolta; giallo: si sta accendendo; barrato: spento). La scelta resta per le volte dopo.
   - Si dice «pronti a virare?» o «pronti a strambare?»: vale quello che si dice, anche in un'andatura diversa. L'equipaggio risponde «pronti!»; poi si dice «viro!» o «strambo!». Detto prima del «pronti!», l'istruttore dice di aspettare.
   - La voce del timoniere tace: il timoniere è chi parla. Se non si dice «viro!», basta girare la prua.
-  - Si capiscono anche «pronti a girare», «pronti ad virare», «vira», «virò», «stramba». Una frase che il browser corregge mentre si parla conta una volta sola.
+  - Si capiscono anche «pronti a girare», «pronti ad virare», «vira», «virò», «stramba», «strambò». "Strambare" è una parola rara e il riconoscimento la scrive in tanti modi: «stambare», «strabare», «sdrambare», «astrambare», «alla strambata» valgono tutti. Una frase che il browser corregge mentre si parla conta una volta sola.
   - Sopra la barca compare per 3 secondi quello che il browser ha capito (🎤 «...»), così si vede se ha sentito male.
   - Il riconoscimento lo fa il browser: Safari con Apple, Chrome con Google, quindi serve la rete. Firefox non lo sa fare: il microfono resta grigio. La prima volta il browser chiede il permesso; se lo si nega, il microfono resta grigio e un messaggio dice di permetterlo nelle impostazioni.
   - Il browser smette di ascoltare dopo un silenzio: il gioco lo riaccende da solo (più piano se continua a fermarsi subito). Quando si esce dalla pagina si spegne, e al ritorno si riaccende.
   - Safari accende il microfono solo da un tocco: dal pulsante, o dal tocco di "uscire in mare" se era acceso l'altra volta.
-- **Se non si avvisa**, l'equipaggio protesta: «ehi, avvisa quando viri!», «attenti al boma!» se il boma passa di colpo, «aspetta, non eravamo pronti!» se si vira prima della risposta. Con gli aiuti c'è anche il messaggio dell'istruttore.
+- **Se non si avvisa**, l'equipaggio protesta: «ehi, avvisa quando viri!», «attenti al boma!» se il boma passa di colpo, «aspetta, non eravamo pronti!» se si vira prima della risposta. Se si chiama una manovra e si fa l'altra: «ma non si virava?» o «ma non si strambava?». Con gli aiuti c'è anche il messaggio dell'istruttore.
   - Non contano le vele che passano da sole: quasi fermi (sotto 1 nodo), in bando, arrivando sul gavitello o quando la cappa finisce.
 - **L'equipaggio grida anche** «uomo a mare!» quando parte l'esercizio e «preso!» quando il salvagente o il gavitello sono a bordo.
 - **L'istruttore dice a voce:**

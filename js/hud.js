@@ -122,7 +122,7 @@ export class HUD {
     else if (this.heard && time - this.heard.at < 3 && !sim.paused) st.textContent = `🎤 «${this.heard.text.slice(-48)}»`;
     else if (sim.paused) st.textContent = this.touch ? 'PAUSA  ·  trascina col dito per girare intorno alla barca' : 'PAUSA  ·  trascina col tasto destro per girare intorno alla barca  ·  P per ripartire';
     else st.textContent = '';
-    if (!this.touch) $('footer').textContent = `Vista: ${CAMERAS[world.mode]} (C)   ·   9 pronti a virare   ·   INVIO uomo a mare   ·   0 gavitello   ·   H comandi   ·   ESC menu`;
+    if (!this.touch) $('footer').textContent = `Vista: ${CAMERAS[world.mode]} (C)   ·   9 pronti a virare   ·   8 pronti a strambare   ·   INVIO uomo a mare   ·   0 gavitello   ·   H comandi   ·   ESC menu`;
   }
 
   /** Freccione giallo verso la prossima boa (con gli aiuti). Da lontano sta sopra la boa e la indica; se la boa e'
@@ -210,7 +210,7 @@ export class HUD {
   /** Sui telefoni i tasti diventano i nomi dei pulsanti. */
   keyless(t) {
     if (!this.touch) return t;
-    return t.replace(/ \(Z\)/i, ' (RIDUCI)').replace(/ \(X\)/i, ' (AUMENTA)').replace(/ \(SPAZIO\)/i, '').replace(/ \(K\)/i, '').replace(/ \(Y\)/i, '').replace(/ \(E\)/i, '').replace(/ \(U\)/i, '').replace(/ \(0\)/, '').replace(/ \(9\)/, '').replace(/ \(Q\)/, '');
+    return t.replace(/ \(Z\)/i, ' (RIDUCI)').replace(/ \(X\)/i, ' (AUMENTA)').replace(/ \(SPAZIO\)/i, '').replace(/ \(K\)/i, '').replace(/ \(Y\)/i, '').replace(/ \(E\)/i, '').replace(/ \(U\)/i, '').replace(/ \(0\)/, '').replace(/ \([89]\)/, '').replace(/ \(Q\)/, '');
   }
 
   /** Comandi a dito: posizione della barra, scotte, pulsanti che cambiano scritta, dati essenziali. */
@@ -245,12 +245,13 @@ export class HUD {
     cappa.classList.toggle('on', !!s.cappa);
     cappa.style.display = s.cappa || (twa < 130 && !s.spi && !s.backMain) ? '' : 'none';
     HUD.put('tPause', sim.paused ? 'RIPARTI' : 'PAUSA').classList.toggle('on', sim.paused);
-    // la chiamata della manovra: si vira di bolina e al traverso, si stramba dal lasco in giu'
-    const call = sim.call, gybe = call ? call.kind === 'gybe' : twa >= 90;
-    const callB = HUD.put('tCall', !call ? (gybe ? 'PRONTI A STRAMBARE?' : 'PRONTI A VIRARE?')
-      : call.ready ? (gybe ? 'PRONTI! ORA STRAMBA' : 'PRONTI! ORA VIRA') : (gybe ? '«PRONTI A STRAMBARE?»' : '«PRONTI A VIRARE?»'));
-    callB.classList.toggle('on', !!call);
-    callB.style.display = sim.gav?.moored || sim.replay !== null ? 'none' : '';
+    // la chiamata della manovra: un pulsante per la virata e uno per la strambata, sempre tutti e due
+    for (const [id, kind, ask, go] of [['tCall', 'tack', 'PRONTI A VIRARE?', 'PRONTI! ORA VIRA'], ['tCallG', 'gybe', 'PRONTI A STRAMBARE?', 'PRONTI! ORA STRAMBA']]) {
+      const mine = sim.call?.kind === kind;
+      const b = HUD.put(id, !mine ? ask : sim.call.ready ? go : `«${ask}»`);
+      b.classList.toggle('on', mine);
+      b.style.display = sim.gav?.moored || sim.replay !== null ? 'none' : '';
+    }
     $('tMob').classList.toggle('on', !!sim.mob);
     const gavB = HUD.put('tGav', sim.gav?.moored ? 'MOLLA GAVITELLO' : 'GAVITELLO');
     gavB.classList.toggle('on', !!sim.gav);

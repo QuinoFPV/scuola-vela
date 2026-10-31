@@ -145,7 +145,8 @@ async function main() {
       case 'KeyU': sim.toggleCappa(); break;           // fiocco in cappa / libero
       case 'Enter': case 'NumpadEnter': sim.manOverboard(); break;   // uomo a mare: salvagente in acqua, di nuovo per annullare
       case 'Digit0': case 'Numpad0': sim.mooring(); break;          // gavitello: rientro e ormeggio, di nuovo per annullare o mollarlo
-      case 'Digit9': case 'Numpad9': voice.unlock(); sim.announce(); break;   // "pronti a virare?" (o a strambare)
+      case 'Digit9': case 'Numpad9': voice.unlock(); sim.announce('tack'); break;   // "pronti a virare?"
+      case 'Digit8': case 'Numpad8': voice.unlock(); sim.announce('gybe'); break;   // "pronti a strambare?"
       case 'ArrowDown': case 'ArrowUp': centering = true; break;
       case 'KeyJ': sim.toggleBackMain(-1); break;      // ... a sinistra
       case 'KeyL': sim.toggleBackMain(1); break;       // ... a dritta

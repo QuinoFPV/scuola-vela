@@ -1,20 +1,28 @@
 // L'allievo chiama le manovre a voce: il riconoscimento vocale del browser (Safari, Chrome) ascolta dal microfono.
 // Il riconoscimento lo fa il browser (Apple o Google): qui arrivano solo le parole capite.
 
+/** Parole che il riconoscimento scrive per "virare" (anche "girare", "avvirare" attaccato alla a) e per "strambare"
+ *  (parola rara: a volte "stambare", "strabare", "sdrambare", "astrambare", "strambata"). */
+const TACK = /^a?(?:v+ir|gir|bir)/, GYBE = /^a?(?:s[td]?|t)r?[aou]m?b/;
+const GO_TACK = ['viro', 'vira', 'virò'], GO_GYBE = ['strambo', 'stramba', 'strambò', 'strombo'];
+
 /** Quante chiamate ci sono in una frase capita: "pronti a virare?" (tack), "pronti a strambare?" (gybe), "viro!" (goTack),
- *  "strambo!" (goGybe). Il riconoscimento a volte capisce "girare" o "pronta", e scrive "virò": si accetta anche quello.
- *  Il "vira" dentro "pronti a vira(re)", mentre la frase non e' ancora finita, non e' un "viro!". */
+ *  "strambo!" (goGybe). Dopo "pronti" si accettano "a", "ad", "alla", "per". Il "vira" dentro "pronti a vira(re)", mentre
+ *  la frase non e' ancora finita, non e' un "viro!". */
 export function heardCalls(text) {
-  const t = ` ${text.toLowerCase().replace(/[^a-zàèéìòù]+/g, ' ')} `;
-  const count = (re) => (t.match(re) || []).length;
-  const words = t.replace(/ pront\S* ad? \S+/g, ' ').trim().split(' ');
-  const said = (...w) => words.filter((x) => w.includes(x)).length;
-  return {
-    tack: count(/ pront\S* ad? (?:vir|gir)\S*/g),
-    gybe: count(/ pront\S* ad? str?[ao]mb\S*/g),
-    goTack: said('viro', 'vira', 'virò'),
-    goGybe: said('strambo', 'stramba', 'strambò'),
-  };
+  const words = text.toLowerCase().replace(/[^a-zàèéìòù]+/g, ' ').trim().split(' ');
+  const got = { tack: 0, gybe: 0, goTack: 0, goGybe: 0 };
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    if (w.startsWith('pront')) {
+      const j = ['a', 'ad', 'alla', 'per'].includes(words[i + 1]) ? i + 2 : i + 1, next = words[j] ?? '';
+      if (TACK.test(next)) { got.tack++; i = j; continue; }
+      if (GYBE.test(next)) { got.gybe++; i = j; continue; }
+    }
+    if (GO_TACK.includes(w)) got.goTack++;
+    if (GO_GYBE.includes(w)) got.goGybe++;
+  }
+  return got;
 }
 
 export class Ear {
