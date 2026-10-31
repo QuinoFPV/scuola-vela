@@ -82,7 +82,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0a1420; col
 .card button { margin-top: 24px; background: none; border: none; color: #ffd94d; font: 700 22px "Avenir Next", sans-serif; cursor: pointer; }
 .card .hint { color: rgba(255, 255, 255, .6); font-size: 14px; }
 .card .hint a { color: inherit; }
-.help { background: rgba(8, 18, 31, .85); border-radius: 12px; padding: 24px 36px; border: 1px solid rgba(255, 255, 255, .12); }
+.help { background: rgba(8, 18, 31, .85); border-radius: 12px; padding: 24px 36px; border: 1px solid rgba(255, 255, 255, .12);
+  max-height: calc(100vh - 32px); overflow-y: auto; box-sizing: border-box; }
 .help h2 { margin: 0 0 14px; }
 .help dl { display: grid; grid-template-columns: 110px 1fr; gap: 8px 18px; text-align: left; font-size: 16px; margin: 0; }
 .help dt { color: #ffd94d; font-weight: 700; text-align: right; }

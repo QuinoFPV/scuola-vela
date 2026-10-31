@@ -60,13 +60,36 @@ async function main() {
     $('sound').title = (audio.muted ? 'Audio spento: tocca per accenderlo' : 'Audio acceso: tocca per spegnerlo') + (TOUCH ? '' : ' (M)');
   };
   showSound();
-  // l'allievo chiama le manovre al microfono; le parole capite compaiono sopra la barca
+  // l'allievo da' i comandi al microfono; le parole capite compaiono sopra la barca. I comandi a voce non sono
+  // interruttori come i tasti: "vele in bando" mette in bando, non toglie (cosi' se l'eco ripete un ordine non lo annulla)
   let deniedSaid = false;
   const ear = new Ear((k) => {
-    if (overlay || sim.paused) return;
-    if (k === 'tack' || k === 'gybe') sim.announce(k, true);
-    else sim.helmGo(k === 'goTack' ? 'tack' : 'gybe');
-  }, (text) => { hud.heard = { text, at: performance.now() / 1000 }; }, showMic);
+    if (overlay || sim.paused || sim.replay !== null) return;
+    const b = sim.boat;
+    if (k.startsWith('sheet:')) { const [, sail, d] = k.split(':'); sim.trimBy(sail, +d); return; }
+    switch (k) {
+      case 'tack': case 'gybe': sim.announce(k, true); break;
+      case 'goTack': sim.helmGo('tack'); break;
+      case 'goGybe': sim.helmGo('gybe'); break;
+      case 'bandoOn': if (!b.bando) sim.toggleBando(); break;
+      case 'bandoOff': if (b.bando) sim.toggleBando(); break;
+      case 'spiUp': if (!b.spi) sim.toggleSpi(); break;
+      case 'spiDown': if (b.spi) sim.toggleSpi(); break;
+      case 'wingOn': if (!b.farfalla) sim.toggleFarfalla(); break;
+      case 'wingOff': if (b.farfalla) sim.toggleFarfalla(); break;
+      case 'backOn': if (!b.backMain) sim.toggleBackMain(0); break;
+      case 'backOff': if (b.backMain) sim.toggleBackMain(0); break;
+      case 'cappaOn': if (!b.cappa) sim.toggleCappa(); break;
+      case 'cappaOff': if (b.cappa) sim.toggleCappa(); break;
+      case 'mob': if (!sim.mob) sim.manOverboard(true); break;
+      case 'gav': if (!sim.gav) sim.mooring(); break;
+      case 'gavOff': if (sim.gav?.moored) sim.mooring(); break;
+      case 'reefIn': sim.reef(1); break;
+      case 'reefOut': sim.reef(-1); break;
+      case 'auto': if (!sim.autoTrim) command('KeyT'); break;
+      case 'manual': if (sim.autoTrim) command('KeyT'); break;
+    }
+  }, (text) => { hud.heard = { text, at: performance.now() / 1000 }; }, showMic, () => voice.recent());
   function showMic() {
     const b = $('mic');
     b.classList.toggle('on', ear.listening);
@@ -74,7 +97,8 @@ async function main() {
     b.classList.toggle('na', !ear.supported || ear.denied);
     b.title = !ear.supported ? 'Questo browser non sa ascoltare: usa Safari o Chrome'
       : ear.denied ? 'Microfono non concesso: permettilo nelle impostazioni del browser'
-      : ear.wanted ? 'Ti ascolto: «pronti a virare?», poi «viro!» (tocca per spegnere)' : 'Chiama le manovre a voce: tocca per accendere il microfono';
+      : ear.blocked ? 'Tocca lo schermo per riaccendere il microfono'
+      : ear.wanted ? 'Ti ascolto: «pronti a virare?», «vele in bando», «cazza la randa»... (tocca per spegnere)' : 'Comandi a voce: tocca per accendere il microfono';
     if (ear.denied && !deniedSaid) { deniedSaid = true; sim.say('MICROFONO NON CONCESSO: PERMETTILO NELLE IMPOSTAZIONI DEL BROWSER', 'warn'); }
   }
   showMic();
@@ -123,7 +147,7 @@ async function main() {
     fullscreen();
     audio.start();
     voice.unlock();
-    ear.start();                               // se era acceso l'altra volta (Safari lo accende solo da un tocco)
+    ear.start(true);                           // se era acceso l'altra volta (Safari lo accende solo da un tocco)
     sim.reset();
     sim.autoTrim = true;                       // si parte sempre con le vele regolate in automatico (T per il manuale)
     world.orbitYaw = 0; world.orbitPitch = 0; world.zoom = 1; world.wake.reset();
@@ -281,13 +305,15 @@ async function main() {
   // senza fuoco sul pulsante: la barra spaziatrice resta "vele in bando" e non riaccende l'audio
   $('sound').addEventListener('mousedown', (e) => e.preventDefault());
   $('sound').addEventListener('click', (e) => { e.stopPropagation(); command('KeyM'); });    // senza aprire gli strumenti
+  // se il browser ha spento il microfono e vuole un tocco per riaccenderlo, va bene qualunque tocco o tasto
+  for (const ev of ['pointerdown', 'keydown']) window.addEventListener(ev, () => { if (ear.blocked) ear.start(true); }, true);
   $('mic').addEventListener('mousedown', (e) => e.preventDefault());
   $('mic').addEventListener('click', (e) => {
     e.stopPropagation();
     if (!ear.supported) { sim.say('QUESTO BROWSER NON SA ASCOLTARE: USA SAFARI O CHROME', 'warn'); return; }
     deniedSaid = false;
     ear.toggle();
-    sim.say(ear.wanted ? "MICROFONO ACCESO: DI' «PRONTI A VIRARE?» E DOPO IL «PRONTI!» «VIRO!»" : 'MICROFONO SPENTO', 'info');
+    sim.say(ear.wanted ? "MICROFONO ACCESO: DAI I COMANDI A VOCE (L'ELENCO È NELL'AIUTO)" : 'MICROFONO SPENTO', 'info');
   });
   $('instruments').addEventListener('click', () => { if (TOUCH) $('instruments').classList.toggle('open'); });
   document.addEventListener('visibilitychange', () => {

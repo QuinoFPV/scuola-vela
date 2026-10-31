@@ -6,7 +6,7 @@ import { Wind, newBoat, step, idealSheets, norm180, norm360, clamp, speedKn, twa
 import { Lake } from '../js/lake.js';
 import { Simulation, Coach, COURSE, WINDS, MOB, mobPlan, GAV, gavPlan, CALL } from '../js/sim.js';
 import { speechText, Voice } from '../js/voice.js';
-import { heardCalls, Ear } from '../js/listen.js';
+import { heardCommands, Ear } from '../js/listen.js';
 
 const dataDir = fileURLToPath(new URL('../data/', import.meta.url));
 let failures = 0;
@@ -617,22 +617,50 @@ check(held < 40 && fastest > -1.8, `con 20 nodi chi spinge il boma cede (tenuto 
   Object.defineProperty(globalThis, 'performance', { value: realPerf, configurable: true, writable: true });
 }
 
-// microfono: le chiamate capite nelle frasi, anche mentre arrivano a pezzi; detta a voce la chiamata non la ripete il timoniere
+// microfono: i comandi capiti nelle frasi, anche mentre arrivano a pezzi; l'eco delle voci del gioco non comanda;
+// detta a voce la chiamata non la ripete il timoniere; le scotte a voce
 {
   const cases = [
     ['Pronti a virare?', 'tack'], ['pronti ad virare', 'tack'], ['pronti a girare', 'tack'], ['Pronti a strambare', 'gybe'],
     ['pronti a vira', 'tack'], ['viro', 'goTack'], ['Virò!', 'goTack'], ['strambo', 'goGybe'], ['pronti', ''], ['vira la barca', 'goTack'],
     ['ora vado a virare', ''], ['pronti astrambare', 'gybe'], ['pronti a stambare', 'gybe'], ['Pronti alla strambata', 'gybe'],
     ['pronti avvirare', 'tack'], ['pronti a sdrambare', 'gybe'], ['Strambò', 'goGybe'],
+    ['Vele in bando!', 'bandoOn'], ['lascia andare le scotte', 'bandoOn'], ['molla tutto', 'bandoOn'], ['riprendi le scotte', 'bandoOff'],
+    ['issa lo spi', 'spiUp'], ['ammaina lo spinnaker', 'spiDown'], ['farfalla', 'wingOn'], ['togli la farfalla', 'wingOff'],
+    ['scontra la randa', 'backOn'], ['molla il boma', 'backOff'], ['fiocco in cappa', 'cappaOn'], ['libera il fiocco', 'cappaOff'],
+    ['Uomo a mare!', 'mob'], ['prendi il gavitello', 'gav'], ['molla il gavitello', 'gavOff'],
+    ['prendi una mano di terzaroli', 'reefIn'], ['riduci la tela', 'reefIn'], ['sciogli i terzaroli', 'reefOut'],
+    ['vele manuali', 'manual'], ['vele automatiche', 'auto'],
+    ['cazza la randa', 'sheet:main:-0.15'], ["lasca un po' il fiocco", 'sheet:jib:0.07'], ['cazza tutto', 'sheet:both:-1'],
+    ['cazza la randa a ferro', 'sheet:main:-1'], ['molla la randa', 'sheet:main:0.3'], ['lascia', ''], ['il vento sta calando', ''],
+    ['pronti a virare vele in bando cazza il fiocco', 'tack,bandoOn,sheet:jib:-0.15'],
   ];
-  const what = (t) => Object.entries(heardCalls(t)).filter(([, n]) => n > 0).map(([k]) => k).join(',');
-  const bad = cases.filter(([t, k]) => what(t) !== k);
-  check(!bad.length, 'frasi capite: «pronti a virare?», «pronti a strambare», «viro!», «strambo!»' + bad.map(([t]) => `\n      "${t}" → ${what(t) || 'niente'}`).join(''));
+  const bad = cases.filter(([t, k]) => heardCommands(t).join() !== k);
+  check(!bad.length, `${cases.length} frasi capite: chiamate, scotte, manovre, esercizi` + bad.map(([t]) => `\n      "${t}" → ${heardCommands(t).join() || 'niente'}`).join(''));
   // Safari: una frase sola che cresce e si corregge; Chrome: una frase per ogni pezzo detto
-  const got = [], ear = new Ear((k) => got.push(k), () => {}, () => {});
+  let got = [], said = [];
+  const ear = new Ear((k) => got.push(k), () => {}, () => {}, () => said);
   for (const t of ['pronti a vira', 'pronti a virare', 'pronti a virare viro', 'pronti a virare viro']) ear.result({ resultIndex: 0, results: [[{ transcript: t }]] });
   ear.result({ resultIndex: 1, results: [[{ transcript: 'pronti a virare viro' }], [{ transcript: 'pronti a strambare' }]] });
   check(got.join(' ') === 'tack goTack gybe', `una frase che cresce conta una volta: ${got.join(' ')}`);
+  // eco: l'istruttore dice "ora frena: vele in bando" e il microfono lo sente; l'allievo che lo ripete dopo, si'
+  const now = performance.now() / 1000;
+  said = [{ text: 'Ora frena: vele in bando, arrivi per abbrivio', start: now - 2, end: now - 0.2 }];
+  got = []; ear.result({ resultIndex: 2, results: [[], [], [{ transcript: 'ora frena vele in bando arrivi per abbrivio' }]] });
+  ear.result({ resultIndex: 3, results: [[], [], [], [{ transcript: 'vele in bando' }]] });
+  const echo1 = got.join();
+  said = [{ text: 'Ora frena: vele in bando, arrivi per abbrivio', start: now - 3, end: now - 1.5 }];
+  got = []; ear.result({ resultIndex: 4, results: [[], [], [], [], [{ transcript: 'vele in bando' }]] });
+  check(echo1 === '' && got.join() === 'bandoOn', `l'eco dell'istruttore non comanda, l'allievo che ripete dopo sì (${echo1 || 'niente'} / ${got.join()})`);
+  // Safari: rifiutato da solo (senza un tocco) si aspetta un tocco; rifiutato dopo un tocco e' il permesso negato
+  const sr = new Ear(() => {}, () => {}, () => {});
+  let last = null;
+  Object.assign(sr, { supported: true, wanted: true, SR: class { constructor() { last = this; } start() {} abort() {} } });
+  sr.start(); last.onerror({ error: 'not-allowed' }); sr.rec = null;
+  const waits = sr.blocked && sr.wanted && !sr.denied;
+  sr.start(); const quiet = sr.rec === null;
+  sr.start(true); last.onerror({ error: 'not-allowed' });
+  check(waits && quiet && sr.denied && !sr.wanted, 'microfono rifiutato senza tocco: aspetta un tocco; rifiutato dopo un tocco: permesso negato');
   const sm = new Simulation(lake);
   sm.settings.gusts = false; sm.reset(); sm.wind.shifts = false; sm.autoTrim = true;
   Object.assign(sm.boat, { pos: { ...lake.center }, heading: norm360(sm.wind.baseDir - 42), u: 2.5, mainSide: -1, jibSide: -1 });
@@ -644,6 +672,14 @@ check(held < 40 && fastest > -1.8, `con 20 nodi chi spinge il boma cede (tenuto 
   const lines = sm.lines.map((l) => `${l.who}: ${l.text}`);
   check(sm.call?.ready && sm.call.go && early.includes('ASPETTA') && sm.message.includes('VIRO') && lines.join() === 'prodiere: Pronti!',
     `chiamata a voce: il timoniere tace, «viro!» prima del «pronti!» aspetta (${lines.join(' · ')})`);
+  // scotte a voce: dalle vele automatiche si passa alle manuali e la scotta va dove detto, alla velocita' delle mani
+  const m0 = sm.boat.mainSheet; sm.trimBy('main', 0.3);
+  const goal = m0 + 0.3, msg = sm.message;
+  for (let i = 0; i < 60; i++) sm.update(1 / 60, {});
+  const half = sm.boat.mainSheet;
+  for (let i = 0; i < 120; i++) sm.update(1 / 60, {});
+  check(!sm.autoTrim && msg.includes('VELE MANUALI') && half > m0 + 0.15 && half < goal && Math.abs(sm.boat.mainSheet - goal) < 0.01,
+    `«molla la randa»: vele manuali, scotta da ${f1(m0 * 100)} a ${f1(goal * 100)}% in ${f1(0.3 / 0.22)} s`);
 }
 
 console.log(failures === 0 ? 'TUTTO OK' : `${failures} ERRORI`);

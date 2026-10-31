@@ -114,7 +114,7 @@ export class Simulation {
     this.courseStep = 0; this.lapStart = null; this.lastLap = null; this.buoyTouch = -100;
     this.mob = null; this.lastMob = null;
     this.gav = null; this.lastGav = null; this.gavPos = { ...lake.base.gav };
-    this.call = null; this.lastTurn = -100; this.lines.length = 0;
+    this.call = null; this.lastTurn = -100; this.lines.length = 0; this.sheetGoal = {};
     this.sweep = 0; this.sweepAngle = null; this.wrongWay = false; this.approachSaid = false;
     this.replay = null;
     this.time = 0;
@@ -160,7 +160,8 @@ export class Simulation {
    *  la vela interessata sbatte (la randa per i terzaroli, il fiocco per la tormentina). */
   reef(d) {
     const b = this.boat;
-    if (this.replay !== null || b.reefTimer > 0 || b.jibTimer > 0) return;
+    if (this.replay !== null) return;
+    if (b.reefTimer > 0 || b.jibTimer > 0) { this.say('MANOVRA DELLA TELA IN CORSO: ASPETTA CHE FINISCA', 'info'); return; }
     const r = b.reef + d;
     if (r < 0 || r > 3) { this.say(d > 0 ? 'TELA GIÀ AL MINIMO: DUE MANI DI TERZAROLI E TORMENTINA' : 'LA TELA È GIÀ TUTTA A RIVA', 'info'); return; }
     const jibChange = (b.reef === 3) !== (r === 3);
@@ -194,6 +195,19 @@ export class Simulation {
     return s;
   }
   get historySpan() { return this.history.length ? [this.history[0].time, this.history[this.history.length - 1].time] : [0, 0]; }
+
+  /** Comando a voce sulle scotte ("cazza la randa", "lasca un po' il fiocco"): d e' di quanto, in frazione della corsa
+   *  (negativo = cazzare); sail main, jib o both. La scotta va dove detto alla velocita' delle mani. Chi da' ordini
+   *  sulle scotte le vuole regolare lui: con le vele automatiche (o in bando) si passa alle vele manuali. */
+  trimBy(sail, d) {
+    if (this.replay !== null) return;
+    const b = this.boat, pre = this.autoTrim || b.bando ? 'VELE MANUALI · ' : '';
+    this.autoTrim = false; b.bando = false;
+    for (const k of sail === 'both' ? ['main', 'jib'] : [sail]) this.sheetGoal[k] = clamp(b[k + 'Sheet'] + d, 0, 1);
+    const what = { main: 'RANDA', jib: 'FIOCCO', both: 'RANDA E FIOCCO' }[sail];
+    const how = Math.abs(d) >= 1 ? ' TUTTO' : Math.abs(d) < 0.1 ? " UN PO'" : '';
+    this.say(`${pre}${what}: SI ${d < 0 ? 'CAZZA' : 'LASCA'}${how}`, 'info');
+  }
 
   /** Vele in bando: si liberano le scotte e le vele vanno fuori del tutto; di nuovo per riprenderle. */
   toggleBando() {
@@ -262,15 +276,15 @@ export class Simulation {
 
   /** Uomo a mare: l'istruttore butta in acqua il salvagente anulare (con l'asta e la bandierina) dalla poppa e
    *  l'allievo deve tornare a prenderlo. Di nuovo per annullare l'esercizio. */
-  manOverboard() {
+  manOverboard(spoken = false) {
     if (this.replay !== null) return;
     if (this.mob) { this.mob = null; this.say('ESERCIZIO ANNULLATO, IL GOMMONE RIPRENDE IL SALVAGENTE', 'info'); return; }
     this.gav = null;                                       // un esercizio alla volta
     const b = this.boat, fwd = dirVec(b.heading), side = dirVec(b.heading + 90), k = Math.random() < 0.5 ? -1 : 1;
     const from = sub(b.pos, mul(fwd, 3.4));
     this.mob = { from, pos: add(from, add(mul(fwd, -3), mul(side, 2 * k))), t0: this.time, fly: MOB.fly, hit: -100, miss: -100, away: false, far: false };
-    // a bordo lo grida chi lo vede cadere; l'istruttore ricorda la prima regola
-    this.talk('prodiere', 'Uomo a mare!');
+    // a bordo lo grida chi lo vede cadere (se non l'ha gia' gridato l'allievo); l'istruttore ricorda la prima regola
+    if (!spoken) this.talk('prodiere', 'Uomo a mare!');
     this.say('UOMO A MARE! NON PERDERE DI VISTA IL SALVAGENTE', 'bad');
     this.talk('istruttore', 'Non perdere di vista il salvagente');
   }
@@ -619,8 +633,13 @@ export class Simulation {
       b.mainSheet += clamp((b.haul ? Math.min(id.main, CALL.haul) : id.main) - b.mainSheet, -0.4 * dt, 0.4 * dt);
       b.jibSheet += clamp(id.jib - b.jibSheet, -0.4 * dt, 0.4 * dt);
     } else {
-      b.mainSheet = clamp(b.mainSheet - (c.main || 0) * 0.22 * dt, 0, 1);
-      b.jibSheet = clamp(b.jibSheet - (c.jib || 0) * 0.25 * dt, 0, 1);
+      // un comando a voce porta la scotta dove detto alla velocita' delle mani; tasti e pulsanti la riprendono subito
+      for (const [k, rate, held] of [['main', 0.22, c.main || 0], ['jib', 0.25, c.jib || 0]]) {
+        const f = k + 'Sheet', goal = this.sheetGoal[k];
+        if (held || goal === undefined) { delete this.sheetGoal[k]; b[f] = clamp(b[f] - held * rate * dt, 0, 1); continue; }
+        b[f] += clamp(goal - b[f], -rate * dt, rate * dt);
+        if (b[f] === goal) delete this.sheetGoal[k];
+      }
     }
   }
 }

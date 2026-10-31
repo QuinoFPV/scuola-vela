@@ -36,7 +36,7 @@ export class Voice {
   constructor() {
     this.synth = typeof speechSynthesis !== 'undefined' ? speechSynthesis : null;
     try { this.mode = (+localStorage.getItem('scuolaVela.voci') || 0) % VOICE_MODES.length; } catch { this.mode = 0; }
-    this.pool = []; this.queue = []; this.current = null; this.unlocked = false; this.simTime = 0;
+    this.pool = []; this.queue = []; this.current = null; this.unlocked = false; this.simTime = 0; this.said = [];
     this.tipKey = ''; this.tipSince = 0; this.saidKey = ''; this.tipCheck = 0; this.lastCoach = -100; this.tipTimes = new Map();
     if (this.synth) {
       this.pickVoices();
@@ -71,7 +71,14 @@ export class Voice {
 
   stop() {
     this.queue.length = 0;
-    if (this.current) { this.current = null; this.synth.cancel(); }
+    if (this.current) { this.current.rec.end = performance.now() / 1000; this.current = null; this.synth.cancel(); }
+  }
+
+  /** Le frasi dette negli ultimi secondi, con quando sono cominciate e finite: il microfono le riconosce come eco. */
+  recent() {
+    const now = performance.now() / 1000;
+    this.said = this.said.filter((r) => now - r.start < 10);
+    return this.said.map((r) => ({ text: r.text, start: r.start, end: Math.min(r.end, r.until) }));
   }
 
   /** A ogni fotogramma: raccoglie le frasi della simulazione e le dice una alla volta. active e' falso col menu, in
@@ -126,6 +133,7 @@ export class Voice {
     if (cur && now < cur.until) {
       const crew = first.who !== 'istruttore';
       if (cur.who !== 'istruttore' || !(crew || first.urgent)) return;
+      cur.rec.end = now;
       this.current = null;
       this.synth.cancel();
     }
@@ -141,8 +149,10 @@ export class Voice {
     if (v) u.voice = v;
     u.lang = v?.lang || 'it-IT'; u.pitch = role.pitch; u.rate = role.rate;
     // se il browser non avvisa della fine, la frase si considera finita dopo il tempo che serve a dirla
-    const cur = this.current = { who: l.who, urgent: !!l.urgent, until: now + 1 + text.length * 0.075 / role.rate, u };
-    u.onend = u.onerror = () => { if (this.current === cur) this.current = null; };
+    const until = now + 1 + text.length * 0.075 / role.rate, rec = { text, start: now, end: Infinity, until };
+    const cur = this.current = { who: l.who, urgent: !!l.urgent, until, u, rec };
+    this.said.push(rec);
+    u.onend = u.onerror = () => { rec.end = Math.min(rec.end, performance.now() / 1000); if (this.current === cur) this.current = null; };
     if (l.who === 'istruttore') this.lastCoach = now;
     this.synth.resume?.();                       // Chrome a volte resta in pausa dopo che la scheda e' stata nascosta
     this.synth.speak(u);
