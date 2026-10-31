@@ -83,6 +83,7 @@ export class Ear {
     this.onCommand = onCommand; this.onHeard = onHeard; this.onState = onState; this.recent = recent;
     try { this.wanted = localStorage.getItem('scuolaVela.ascolto') === '1'; } catch { this.wanted = false; }
     this.rec = null; this.listening = false; this.denied = false; this.blocked = false; this.fired = []; this.retry = 300; this.started = 0;
+    this.enabled = true;                         // falso con la modalita' vocale spenta: il microfono resta spento
   }
 
   /** Acceso o spento dal pulsante col microfono; la scelta resta per le volte dopo. */
@@ -96,7 +97,7 @@ export class Ear {
   /** Safari accende il microfono solo da un tocco o da un tasto (gesture). Rifiutato da un tocco vuol dire permesso
    *  negato; rifiutato da solo (ripartenza, ritorno sulla pagina) vuol dire che serve un tocco: si aspetta il prossimo. */
   start(gesture = false) {
-    if (!this.supported || !this.wanted || this.rec || (this.blocked && !gesture)) return;
+    if (!this.supported || !this.enabled || !this.wanted || this.rec || (this.blocked && !gesture)) return;
     const r = this.rec = new this.SR();
     r.lang = 'it-IT'; r.continuous = true; r.interimResults = true; r.maxAlternatives = 1;
     r.onstart = () => { this.listening = true; this.blocked = false; this.onState(); };
@@ -111,7 +112,7 @@ export class Ear {
       if (this.rec !== r) return;
       this.rec = null; this.listening = false; this.fired = [];
       this.retry = performance.now() - this.started < 1500 ? Math.min(5000, this.retry * 2) : 300;
-      if (this.wanted && !this.blocked && !document.hidden) setTimeout(() => this.start(), this.retry);
+      if (this.wanted && this.enabled && !this.blocked && !document.hidden) setTimeout(() => this.start(), this.retry);
       this.onState();
     };
     this.started = performance.now();

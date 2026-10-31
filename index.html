@@ -13,7 +13,7 @@
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <title>Scuola di Vela · Sportaction</title>
 <meta name="description" content="Simulatore di vela della scuola Sportaction sul Lago d'Iseo: timone, scotte, vento vero, consigli dell'istruttore.">
-<link rel="stylesheet" href="css/style.css?v=7b6d4f44">
+<link rel="stylesheet" href="css/style.css?v=1c0efb90">
 </head>
 <body>
 <canvas id="view"></canvas>
@@ -23,6 +23,7 @@
   <div id="markTag"><b id="markName"></b><span id="markDist"></span></div>
   <div id="instruments" class="panel">
     <button id="sound" title="Audio acceso o spento (M)"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M3 9h4l5-4v14l-5-4H3z"/><path class="on" d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12"/><path class="off" d="M16 9l6 6M22 9l-6 6"/></svg></button>
+    <button id="talk" title="Modalità vocale"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v10h-9l-5 4v-4H4z"/><path class="on" d="M8 9h8M8 12h5"/><path class="off" d="M3 3l18 18"/></svg></button>
     <button id="mic" title="Chiama le manovre a voce: tocca per accendere il microfono"><svg viewBox="0 0 24 24" aria-hidden="true"><rect class="cap" x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6"/><path class="off" d="M4 4l16 16"/></svg></button>
     <div id="spd" class="big">0.0 nodi</div>
     <div id="posail"></div>
@@ -99,12 +100,13 @@
       <dt>VISTA</dt><dd>gommone dietro, timoniere, laterale, dall'alto</dd>
       <dt>MOVIOLA</dt><dd>gli ultimi 20 secondi al rallentatore</dd>
       <dt>Altoparlante</dt><dd>in alto a destra nel riquadro della velocità: spegne e riaccende l'audio e le voci, e se lo ricorda la volta dopo</dd>
+      <dt>Fumetto</dt><dd>negli strumenti, accanto al microfono: accende o spegne tutta la modalità vocale (voci, microfono, chiamate delle manovre). Spenta, il gioco è senza voci e senza i pulsanti PRONTI; riaccesa torna com'era</dd>
       <dt>A voce</dt><dd>col microfono acceso (icona accanto all'altoparlante). Il browser chiede il permesso la prima volta; sopra la barca compare quello che ha capito. Il riconoscimento lo fa il browser (Safari con Apple, Chrome con Google)</dd>
       <dt>· chiamate</dt><dd>«pronti a virare?», «pronti a strambare?»; dopo il «pronti!» dell'equipaggio «viro!», «strambo!»</dd>
       <dt>· scotte</dt><dd>«cazza la randa», «lasca il fiocco», «lasca un po' la randa», «cazza tutto», «molla la randa» (si passa alle vele manuali) · «vele manuali», «vele automatiche»</dd>
       <dt>· manovre</dt><dd>«vele in bando», «riprendi le scotte» · «issa lo spi», «ammaina lo spi» · «farfalla», «togli la farfalla» · «scontra la randa», «molla il boma» · «fiocco in cappa», «libera il fiocco» · «prendi una mano di terzaroli», «sciogli i terzaroli»</dd>
       <dt>· esercizi</dt><dd>«uomo a mare!» · «prendi il gavitello», «molla il gavitello»</dd>
-      <dt>Voci</dt><dd>equipaggio e istruttore parlano con la voce italiana del telefono; nel menu, VOCI A BORDO le lascia tutte, solo quelle dell'equipaggio o nessuna</dd>
+      <dt>Voci</dt><dd>equipaggio e istruttore parlano con la voce italiana del telefono; nel menu, MODALITÀ VOCALE: SÌ, SÌ MA SENZA L'ISTRUTTORE A VOCE, oppure NO (tutto spento)</dd>
       <dt>☰</dt><dd>menu: vento fino a 30 nodi, raffiche, Ora o Sover, timone, barca, aiuti, triangolo dei venti, aria sporca, voci</dd>
       <dt>Consiglio</dt><dd>dal browser scegli "Aggiungi a schermata Home": si apre a tutto schermo, come un'app</dd>
     </dl>
@@ -125,6 +127,7 @@
       <dt>· scotte</dt><dd>«cazza la randa», «lasca il fiocco», «lasca un po' la randa», «cazza tutto», «molla la randa» (si passa alle vele manuali) · «vele manuali», «vele automatiche»</dd>
       <dt>· manovre</dt><dd>«vele in bando», «riprendi le scotte» · «issa lo spi», «ammaina lo spi» · «farfalla», «togli la farfalla» · «scontra la randa», «molla il boma» · «fiocco in cappa», «libera il fiocco» · «prendi una mano di terzaroli», «sciogli i terzaroli»</dd>
       <dt>· esercizi</dt><dd>«uomo a mare!» · «prendi il gavitello», «molla il gavitello»</dd>
+      <dt>7</dt><dd>modalità vocale accesa o spenta, tutta insieme: voci, microfono e chiamate delle manovre (anche col fumetto negli strumenti e dal menu)</dd>
       <dt>9 · 8</dt><dd>«pronti a virare?» · «pronti a strambare?»: l'equipaggio risponde «pronti!», poi vira o stramba. In strambata, con le vele automatiche, al «pronti!» la randa si cazza al centro e il boma passa piano</dd>
       <dt>0</dt><dd>gavitello: rientro alla base e ormeggio al gavitello della scuola; risali di bolina stretta, orza prua al vento dove dice l'istruttore e arriva per abbrivio a prua; di nuovo per annullare o, ormeggiati, per mollarlo</dd>
       <dt>Mouse</dt><dd>trascina a destra/sinistra: barra · tasto destro: gira la vista · rotella: zoom</dd>
@@ -154,23 +157,23 @@
 <script type="importmap">
 {
   "imports": {
-    "./js/audio.js": "./js/audio.js?v=7b6d4f44",
-    "./js/base.js": "./js/base.js?v=7b6d4f44",
-    "./js/boat.js": "./js/boat.js?v=7b6d4f44",
-    "./js/hud.js": "./js/hud.js?v=7b6d4f44",
-    "./js/lake.js": "./js/lake.js?v=7b6d4f44",
-    "./js/listen.js": "./js/listen.js?v=7b6d4f44",
-    "./js/main.js": "./js/main.js?v=7b6d4f44",
-    "./js/overlays.js": "./js/overlays.js?v=7b6d4f44",
-    "./js/physics.js": "./js/physics.js?v=7b6d4f44",
-    "./js/sim.js": "./js/sim.js?v=7b6d4f44",
-    "./js/textures.js": "./js/textures.js?v=7b6d4f44",
-    "./js/vendor/three.module.min.js": "./js/vendor/three.module.min.js?v=7b6d4f44",
-    "./js/voice.js": "./js/voice.js?v=7b6d4f44",
-    "./js/world.js": "./js/world.js?v=7b6d4f44"
+    "./js/audio.js": "./js/audio.js?v=1c0efb90",
+    "./js/base.js": "./js/base.js?v=1c0efb90",
+    "./js/boat.js": "./js/boat.js?v=1c0efb90",
+    "./js/hud.js": "./js/hud.js?v=1c0efb90",
+    "./js/lake.js": "./js/lake.js?v=1c0efb90",
+    "./js/listen.js": "./js/listen.js?v=1c0efb90",
+    "./js/main.js": "./js/main.js?v=1c0efb90",
+    "./js/overlays.js": "./js/overlays.js?v=1c0efb90",
+    "./js/physics.js": "./js/physics.js?v=1c0efb90",
+    "./js/sim.js": "./js/sim.js?v=1c0efb90",
+    "./js/textures.js": "./js/textures.js?v=1c0efb90",
+    "./js/vendor/three.module.min.js": "./js/vendor/three.module.min.js?v=1c0efb90",
+    "./js/voice.js": "./js/voice.js?v=1c0efb90",
+    "./js/world.js": "./js/world.js?v=1c0efb90"
   }
 }
 </script>
-<script type="module" src="js/main.js?v=7b6d4f44"></script>
+<script type="module" src="js/main.js?v=1c0efb90"></script>
 </body>
 </html>

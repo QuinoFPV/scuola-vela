@@ -313,7 +313,7 @@ export class Simulation {
    *  e al traverso si vira, dal lasco in giu' si stramba). Il timoniere avvisa, l'equipaggio risponde "pronti!" e poi si manovra. Chi vira o
    *  stramba senza avvisare se lo sente dire. spoken: l'ha detto l'allievo al microfono, la voce del timoniere tace. */
   announce(kind = null, spoken = false) {
-    if (this.replay !== null) return;
+    if (this.replay !== null || !this.talking) return;
     if (this.gav?.moored) { this.say('ORMEGGIATI: PRIMA SI MOLLA IL GAVITELLO (0)', 'warn'); return; }
     kind ??= Math.abs(twaOf(this.boat)) < 90 ? 'tack' : 'gybe';
     if (this.call?.kind === kind) return;                // gia' chiamata: si aspetta la risposta o la manovra
@@ -332,7 +332,11 @@ export class Simulation {
 
   /** La chiamata della manovra: la risposta dell'equipaggio (in virata chi sta al fiocco, in strambata chi sta alla
    *  randa), il "viro!" quando la prua comincia a girare e, alla virata o strambata, se era stata chiamata bene. */
+  /** Modalita' vocale accesa (sim.settings.voices diverso da 2): solo allora ci sono le chiamate delle manovre. */
+  get talking() { return this.settings.voices !== 2; }
+
   checkCall() {
+    if (!this.talking) { this.call = null; return; }
     const b = this.boat, c = this.call, tack = c?.kind === 'tack';
     if (c && !c.ready && this.time - c.t >= CALL.answer) {
       c.ready = true;

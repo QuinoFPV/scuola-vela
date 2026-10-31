@@ -122,7 +122,7 @@ export class HUD {
     else if (this.heard && time - this.heard.at < 3 && !sim.paused) st.textContent = `🎤 «${this.heard.text.slice(-48)}»`;
     else if (sim.paused) st.textContent = this.touch ? 'PAUSA  ·  trascina col dito per girare intorno alla barca' : 'PAUSA  ·  trascina col tasto destro per girare intorno alla barca  ·  P per ripartire';
     else st.textContent = '';
-    if (!this.touch) $('footer').textContent = `Vista: ${CAMERAS[world.mode]} (C)   ·   9 pronti a virare   ·   8 pronti a strambare   ·   INVIO uomo a mare   ·   0 gavitello   ·   H comandi   ·   ESC menu`;
+    if (!this.touch) $('footer').textContent = `Vista: ${CAMERAS[world.mode]} (C)   ·   ${sim.talking ? '9 pronti a virare   ·   8 pronti a strambare   ·   ' : ''}INVIO uomo a mare   ·   0 gavitello   ·   H comandi   ·   ESC menu`;
   }
 
   /** Freccione giallo verso la prossima boa (con gli aiuti). Da lontano sta sopra la boa e la indica; se la boa e'
@@ -250,7 +250,7 @@ export class HUD {
       const mine = sim.call?.kind === kind;
       const b = HUD.put(id, !mine ? ask : sim.call.ready ? go : `«${ask}»`);
       b.classList.toggle('on', mine);
-      b.style.display = sim.gav?.moored || sim.replay !== null ? 'none' : '';
+      b.style.display = sim.gav?.moored || sim.replay !== null || !sim.talking ? 'none' : '';
     }
     $('tMob').classList.toggle('on', !!sim.mob);
     const gavB = HUD.put('tGav', sim.gav?.moored ? 'MOLLA GAVITELLO' : 'GAVITELLO');
@@ -439,7 +439,7 @@ export class HUD {
       ['AIUTI ISTRUTTORE', st.aids ? 'SÌ' : 'NO'],
       ['TRIANGOLO DEI VENTI', st.triangle ? 'SÌ (frecce sull\'acqua)' : 'NO'],
       ['ARIA SPORCA', st.dirtyAir ? 'SÌ (scia sottovento)' : 'NO'],
-      ['VOCI A BORDO', VOICE_MODES[st.voices ?? 0]],
+      ['MODALITÀ VOCALE', VOICE_MODES[st.voices ?? 0]],
     ];
   }
   showMenu(st, onChange) {

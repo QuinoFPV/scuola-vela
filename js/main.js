@@ -55,6 +55,14 @@ async function main() {
   const audio = new Audio();
   const voice = new Voice();
   sim.settings.voices = voice.mode;
+  // modalita' vocale: voci, microfono e chiamate delle manovre si accendono e si spengono tutti insieme
+  function setVoiceMode(m) {
+    voice.setMode(m);
+    sim.settings.voices = m;
+    ear.enabled = voice.on;
+    if (voice.on) ear.start(true); else { ear.stop(); sim.call = null; }
+    showMic();
+  }
   const showSound = () => {
     $('sound').classList.toggle('muted', audio.muted);
     $('sound').title = (audio.muted ? 'Audio spento: tocca per accenderlo' : 'Audio acceso: tocca per spegnerlo') + (TOUCH ? '' : ' (M)');
@@ -64,7 +72,7 @@ async function main() {
   // interruttori come i tasti: "vele in bando" mette in bando, non toglie (cosi' se l'eco ripete un ordine non lo annulla)
   let deniedSaid = false;
   const ear = new Ear((k) => {
-    if (overlay || sim.paused || sim.replay !== null) return;
+    if (overlay || sim.paused || sim.replay !== null || !voice.on) return;
     const b = sim.boat;
     if (k.startsWith('sheet:')) { const [, sail, d] = k.split(':'); sim.trimBy(sail, +d); return; }
     switch (k) {
@@ -91,6 +99,9 @@ async function main() {
     }
   }, (text) => { hud.heard = { text, at: performance.now() / 1000 }; }, showMic, () => voice.recent());
   function showMic() {
+    $('talk').classList.toggle('off', !voice.on);
+    $('talk').title = voice.on ? 'Modalità vocale accesa: voci, microfono e chiamate (tocca per spegnere tutto)' : 'Modalità vocale spenta (tocca per accenderla)';
+    $('instruments').classList.toggle('voiceoff', !voice.on);       // il microfono sparisce, il fumetto prende il suo posto
     const b = $('mic');
     b.classList.toggle('on', ear.listening);
     b.classList.toggle('wait', ear.wanted && !ear.listening);
@@ -101,6 +112,7 @@ async function main() {
       : ear.wanted ? 'Ti ascolto: «pronti a virare?», «vele in bando», «cazza la randa»... (tocca per spegnere)' : 'Comandi a voce: tocca per accendere il microfono';
     if (ear.denied && !deniedSaid) { deniedSaid = true; sim.say('MICROFONO NON CONCESSO: PERMETTILO NELLE IMPOSTAZIONI DEL BROWSER', 'warn'); }
   }
+  ear.enabled = voice.on;
   showMic();
   $('loadBar').style.width = '100%';
 
@@ -134,7 +146,7 @@ async function main() {
     if (row === 5) st.aids = !st.aids;
     if (row === 6) st.triangle = !st.triangle;
     if (row === 7) st.dirtyAir = !st.dirtyAir;
-    if (row === 8) { voice.setMode((voice.mode + (d > 0 ? 1 : 2)) % 3); st.voices = voice.mode; }
+    if (row === 8) setVoiceMode((voice.mode + (d > 0 ? 1 : 2)) % 3);
     show('menu');
   }
   // a tutto schermo e in orizzontale dove il browser lo permette (Android, iPad); l'iPhone lo fa dalla schermata Home
@@ -186,6 +198,10 @@ async function main() {
       case 'KeyR': if (sim.replay === null) sim.startReplay(); else sim.stopReplay(); break;
       case 'KeyI': st.aids = !st.aids; sim.say(st.aids ? "AIUTI DELL'ISTRUTTORE ATTIVI" : 'AIUTI DISATTIVATI', 'info'); break;
       case 'KeyM': audio.setMuted(!audio.muted); showSound(); break;
+      case 'Digit7': case 'Numpad7':
+        voice.toggle(); setVoiceMode(voice.mode);
+        sim.say(voice.on ? 'MODALITÀ VOCALE ACCESA' : 'MODALITÀ VOCALE SPENTA', 'info');
+        break;
       case 'KeyZ': sim.reef(1); break;                 // riduce la tela: terzaroli, poi tormentina
       case 'KeyX': sim.reef(-1); break;                // la aumenta
       case 'KeyG': st.gusts = !st.gusts; sim.applyWind(); sim.say(st.gusts ? 'RAFFICHE E SALTI DI VENTO' : 'VENTO COSTANTE', 'info'); break;
@@ -307,6 +323,8 @@ async function main() {
   $('sound').addEventListener('click', (e) => { e.stopPropagation(); command('KeyM'); });    // senza aprire gli strumenti
   // se il browser ha spento il microfono e vuole un tocco per riaccenderlo, va bene qualunque tocco o tasto
   for (const ev of ['pointerdown', 'keydown']) window.addEventListener(ev, () => { if (ear.blocked) ear.start(true); }, true);
+  $('talk').addEventListener('mousedown', (e) => e.preventDefault());
+  $('talk').addEventListener('click', (e) => { e.stopPropagation(); command('Digit7'); });
   $('mic').addEventListener('mousedown', (e) => e.preventDefault());
   $('mic').addEventListener('click', (e) => {
     e.stopPropagation();

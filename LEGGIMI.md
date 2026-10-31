@@ -194,6 +194,9 @@ L'esercizio di fine lezione: si rientra e si prende il gavitello della scuola a 
 Equipaggio e istruttore parlano con la voce italiana del telefono o del computer (sintesi vocale del sistema, nessuna registrazione).
 Il timbro cambia da un dispositivo all'altro; dove c'è una voce italiana sola (sul Mac "Alice") i ruoli si distinguono dal tono.
 Le voci robotiche del Mac (Eddy, Reed, Grandma...) si usano solo se non ce n'è un'altra.
+- **Modalità vocale, accesa o spenta tutta insieme:** l'icona col fumetto negli strumenti (accanto al microfono), il tasto 7 sul computer, o nel menu la riga MODALITÀ VOCALE.
+  - Spenta: niente voci, il microfono si spegne e sparisce, spariscono i pulsanti PRONTI A VIRARE? e PRONTI A STRAMBARE? (e i tasti 8 e 9 non fanno niente), nessuna protesta se non si avvisa. Il gioco è come prima delle voci, compresa la strambata con le vele automatiche (la randa resta lascata). Il fumetto barrato prende il posto del microfono.
+  - Riaccesa torna com'era: col microfono acceso se lo era, e con la scelta del menu. Nel menu: SÌ, SÌ MA SENZA L'ISTRUTTORE A VOCE (parla solo l'equipaggio), NO. La scelta resta per le volte dopo.
 - **Chiamata della manovra:** sul computer 9 per «pronti a virare?» e 8 per «pronti a strambare?». Sul telefono ci sono due pulsanti, PRONTI A STRAMBARE? e PRONTI A VIRARE?, sempre tutti e due: si può strambare anche partendo dal traverso. Stanno sopra i pulsanti in basso a destra; con le vele manuali vanno in basso, accanto a CAZZA e LASCA.
   - Prima c'era un pulsante solo, che diventava "strambare" solo oltre i 90° dal vento: di bolina o al traverso la strambata non si vedeva.
   - Dopo 1,2 s l'equipaggio risponde «pronti!»: in virata chi sta al fiocco, in strambata chi sta alla randa. Sul telefono il pulsante diventa arancione: PRONTI! ORA VIRA.
@@ -223,7 +226,7 @@ Le voci robotiche del Mac (Eddy, Reed, Grandma...) si usano solo se non ce n'è 
   - tace mentre la barca gira, dalla chiamata della manovra fino a 4 s dopo la virata: in virata la prua passa apposta dall'angolo morto.
 - **Precedenze:** l'equipaggio interrompe l'istruttore. Le frasi vecchie si lasciano cadere (un «viro!» dopo la virata non serve).
 - **Testi letti a voce:** in minuscolo e senza i tasti; i tempi diventano "1 minuto e 25 secondi" e le distanze "24 metri".
-- **Si spengono** con l'altoparlante (tasto M). Nel menu, VOCI A BORDO lascia equipaggio e istruttore, solo l'equipaggio o nessuna voce; la scelta resta per le volte dopo. Col menu, in pausa e in moviola tacciono.
+- **Si spengono** anche con l'altoparlante (tasto M), insieme agli altri suoni. Col menu, in pausa e in moviola tacciono.
 - **Telefono:** Safari fa partire la voce solo dopo un tocco; la sblocca il tocco di "uscire in mare".
 - **Prove:** la sequenza della virata e della strambata chiamate, le proteste, la scadenza e i testi.
   - Col microfono: 45 frasi capite, una frase che cresce e si corregge (come fa Safari), l'eco dell'istruttore che non comanda, il rifiuto senza tocco, la chiamata detta a voce senza la voce del timoniere, il «viro!» prima del «pronti!», «molla la randa» che passa alle vele manuali.

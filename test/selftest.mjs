@@ -554,6 +554,11 @@ check(held < 40 && fastest > -1.8, `con 20 nodi chi spinge il boma cede (tenuto 
   const wr2 = make(42); sail(wr2, 15, 42); wr2.announce('gybe'); const said5 = sail(wr2, 2, 42).concat(sail(wr2, 12, -42));
   check(said4.includes('Ma non si virava?') && said5.includes('Ma non si strambava?') && wr.message.includes('MA HAI STRAMBATO'),
     'chiamata una manovra e fatta l\'altra: "Ma non si virava?", "Ma non si strambava?"');
+  // modalita' vocale spenta: niente chiamate ne' proteste, i messaggi di sempre
+  const off = make(42); off.settings.voices = 2; sail(off, 15, 42); off.announce('tack');
+  const saidOff = sail(off, 12, -42);
+  check(!off.call && !saidOff.some((t) => /[a-z]/.test(t) && !t.includes(' NODI')) && saidOff.includes('VIRATA') && off.message.startsWith('VIRATA: ORA'),
+    `modalità vocale spenta: nessuna chiamata, nessuna protesta (${saidOff.filter((t) => !t.includes(' NODI')).join(' → ')}, "${off.message}")`);
   const ex = make(42); sail(ex, 5, 42); ex.announce(); const said3 = sail(ex, CALL.wait + 2, 42);
   check(!ex.call && !said3.includes('Viro!'), `senza manovra la chiamata scade dopo ${CALL.wait} s`);
   // per la voce: minuscole, niente tasti, minuti e metri per esteso

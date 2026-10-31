@@ -10,8 +10,9 @@ const ROLES = {
   randista: { slot: 2, pitch: 0.85, rate: 1.1 },
   timoniere: { slot: 3, pitch: 1, rate: 1.1 },
 };
-/** Le scelte del menu, ricordate per le volte dopo. */
-export const VOICE_MODES = ['EQUIPAGGIO E ISTRUTTORE', 'SOLO EQUIPAGGIO', 'NO'];
+/** La modalita' vocale, ricordata per le volte dopo: tutta accesa, senza l'istruttore a voce, o spenta del tutto
+ *  (niente voci, microfono ne' chiamate delle manovre). */
+export const VOICE_MODES = ['SÌ', "SÌ, MA SENZA L'ISTRUTTORE A VOCE", 'NO'];
 
 /** I messaggi sono in maiuscolo, coi tasti tra parentesi e coi numeri scritti corti: per la voce minuscole, niente
  *  tasti, minuti e metri per esteso. */
@@ -36,6 +37,7 @@ export class Voice {
   constructor() {
     this.synth = typeof speechSynthesis !== 'undefined' ? speechSynthesis : null;
     try { this.mode = (+localStorage.getItem('scuolaVela.voci') || 0) % VOICE_MODES.length; } catch { this.mode = 0; }
+    this.lastOn = this.mode === 2 ? 0 : this.mode;
     this.pool = []; this.queue = []; this.current = null; this.unlocked = false; this.simTime = 0; this.said = [];
     this.tipKey = ''; this.tipSince = 0; this.saidKey = ''; this.tipCheck = 0; this.lastCoach = -100; this.tipTimes = new Map();
     if (this.synth) {
@@ -45,10 +47,14 @@ export class Voice {
   }
 
   setMode(m) {
+    if (m !== 2) this.lastOn = m;
     this.mode = m;
     try { localStorage.setItem('scuolaVela.voci', String(m)); } catch { /* niente memoria: vale solo adesso */ }
     if (m === 2) this.stop();
   }
+  get on() { return this.mode !== 2; }
+  /** Accesa o spenta in un colpo solo (icona col fumetto, tasto 7): riaccesa torna com'era. */
+  toggle() { this.setMode(this.on ? 2 : this.lastOn); }
 
   /** Le voci italiane, prima le migliori e quelle del dispositivo (rispondono subito); senza quelle robotiche del Mac
    *  (Eddy, Reed, Grandma...) se ce n'e' almeno una normale. */
